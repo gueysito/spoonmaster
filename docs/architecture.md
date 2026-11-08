@@ -1,6 +1,8 @@
 # Spoonmaster architecture
 
-Status: design, 2026-11-08. Nothing below is implemented yet.
+Status: target design, 2026-11-08. Only the evidence-only `spoon_candidates` tool,
+bounded OSM adapter and conservative weekly-hours normalization exist. Ranking,
+arrival gates, cards, state and the other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -52,6 +54,7 @@ reused later. Hermes wiring is a thin layer.
 
 | Tool / command | Purpose |
 |---|---|
+| `spoon_candidates` (implemented pilot) | Explicit origin and radius; returns distance-sorted OSM evidence only, with unknowns and no recommendation verdict |
 | `spoon_recommend` | Origin, radius, ask, household; returns pick/runner-up/wildcard cards and a ledger id |
 | `spoon_ledger` / `/why` | Full reject ledger for the last recommendation |
 | `spoon_feedback` | Records feedback; returns the taste diff |
@@ -118,7 +121,8 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
 
 - `plugin.yaml` plus `__init__.py`; `provides_tools` and `provides_hooks` match
   registrations; `capabilities` declared only if used.
-- `requires_hermes` is a SemVer floor, also in `plugin.yaml` (value to determine).
+- `requires_hermes` is `>=0.21.5`, matching the package version declared by
+  `v2026.9.24`; actual host compatibility remains unverified until T3.
 - Dependencies: bounded ranges within Hermes core constraints; prefer stdlib.
 - No self-update, no binaries or bytecode, no core overrides, no private core imports.
 - Anything that waits for a person fails cleanly under cron and the gateway.

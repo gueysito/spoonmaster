@@ -1,0 +1,10 @@
+name: spoonmaster
+version: "0.1.0"
+description: Evidence-only restaurant discovery; recommendations are not implemented yet
+requires_hermes: ">=0.21.5"
+provides_tools:
+  - spoon_candidates
+provides_hooks: []
+capabilities: []
+requires_env: []
+python_dependencies: []

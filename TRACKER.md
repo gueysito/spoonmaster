@@ -16,8 +16,8 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T1 | Data gate spike | For a Shibuya pin: real OSM candidates in radius, parsed hours for most, website evidence for some, honest unknowns | 2 | next | |
-| T2 | Plugin scaffold, Ruff, mock-ctx tests | `plugin.yaml` and `__init__.py` load; unit tests pass; Ruff clean | 2 | planned | |
+| T1 | Data gate spike | For a Shibuya pin: real OSM candidates in radius, parsed hours for most, website evidence for some, honest unknowns | 2 | blocked | [Live probe](docs/data-gate.md): 853 candidates, 174 parsed weekly hours (20.4%); two venue pages add evidence. Majority-hours criterion remains unmet; source strategy/acceptance decision required. |
+| T2 | Plugin scaffold, Ruff, mock-ctx tests | `plugin.yaml` and `__init__.py` load; unit tests pass; Ruff clean | 2 | done | `spoon_candidates`, directory-entrypoint mock test, 20 unit tests and Ruff pass. Real Hermes doctor/validate remain T3, not claimed by the mock test. |
 | T3 | Throwaway profile scripts (up, down) | Profile created, plugin loads, `doctor` and `validate` pass, teardown leaves nothing (listed) | 1 | planned | |
 
 ## Phase 2: Spine (2026-11-09)
@@ -38,7 +38,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 | T10 | Merge profiles (spike `a2a`, else share card) | Merged pick never violates a hard veto; explains fit per person | 3 | planned | |
 | T11 | Order card | Top dishes with evidence counts; local text; no safety promises | 2 | planned | |
 | T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 3 | planned | |
-| T13 | README disclosures and catalog entry draft | Every host, stored item and capability listed | 1 | planned | |
+| T13 | README disclosures and catalog entry draft | Every host, stored item and capability listed | 1 | planned | Pilot network/privacy disclosures present. Resolve shared Overpass backend suitability before public release; [operator policy](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html). |
 | T14 | Security review at the public boundary | Owner chooses run, later or decline | 1 | planned | |
 | T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | blocked | Owner decision |
 | T16 | Demo video, X post, hackathon form | Owner records, posts and submits | 2 | blocked | Owner action |
@@ -49,7 +49,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 |---|---|---|---|
 | V1 | Can a plugin send images in Telegram? | Throwaway bot or final check | planned |
 | V2 | Do Telegram expandable quotes and `ask_choice` buttons render? | Same | planned |
-| V3 | SemVer value for `requires_hermes` | Hermes release notes or source | planned |
+| V3 | SemVer value for `requires_hermes` | [v2026.9.24 package metadata](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/pyproject.toml): 0.21.5; manifest declares >=0.21.5. Real-host compatibility remains T3. | done |
 | V4 | Free tiers for Google Places and HotPepper | Official pricing and terms pages | planned |
 | V5 | Tabelog terms on automated access | Official terms | planned |
 | V6 | Host web tool names for `dispatch_tool` | Read-only listing on the test host | planned |

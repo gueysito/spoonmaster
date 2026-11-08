@@ -1,12 +1,15 @@
 # Current state
 
-Nothing is installable yet: the repo holds the spec, architecture, source ladders and
-plan, and no plugin code exists. Updated 2026-11-08.
+Evidence-only discovery runs locally; recommendations and taste learning do not exist
+yet. The OSM-only data gate failed hours coverage. Updated 2026-11-08.
 
 ## Works
 
 - Product spec, architecture, source ladders, demo spine, decisions, idea register.
 - Standards kit adopted; commit-message and pre-commit hooks active.
+- `spoon_candidates` scaffold, bounded OSM discovery, conservative weekly-hours parser.
+- 20 unit tests, including directory-package registration; Ruff 0.15.6 format/lint.
+- [Shibuya live probe](docs/data-gate.md): 853 candidates, 174 parsed hours, two venue-page checks.
 
 ## Known from the test host (read-only check, 2026-11-08)
 
@@ -19,13 +22,14 @@ plan, and no plugin code exists. Updated 2026-11-08.
 ## Unverified (see TRACKER V-rows)
 
 - Telegram: plugin image sending, expandable quotes, `ask_choice` buttons in use.
-- The SemVer release to declare in `requires_hermes`.
 - Free tiers for Google Places and HotPepper Gourmet; Tabelog terms.
+- Real-host plugin load, `doctor`, `validate`, profile lifecycle and teardown (T3).
 
 ## Next action
 
-T1 data gate: real OpenStreetMap candidates, hours and website evidence around a
-Shibuya pin, plus the T2 plugin scaffold loading in a throwaway profile.
+T1: discuss source enrichment or an explicitly approved acceptance change; only 20.4%
+of candidates have parsed weekly hours. T2 passes locally; T3 needs named remote
+authorization and a verified throwaway-profile run. No release or catalog submission.
 
 ## Deadline
 

@@ -15,15 +15,15 @@ Standards baseline: adopted 2026-11-08
 
 ## Code style and verification
 
-No first-party code exists yet. Python plugin code will use exact-pinned Ruff 0.15.6
-(`ruff format`, `ruff check`, width 100 with explicit E501) from a uv dev group, run
-from `.venv/bin/`. `ruff.toml` and `pyproject.toml` land with the first code slice
-(T2). Generated/vendor/archives/dist paths and the unchanged `.standards/` kit are
-excluded by the kit.
+Python plugin code uses exact-pinned Ruff 0.15.6 (`ruff format`, `ruff check`, width
+100 with explicit E501) from a uv dev group, run from `.venv/bin/`. Use Python
+3.11-3.13 and `uv sync --frozen --no-build`; commit `uv.lock` with dependency changes.
+Generated/vendor/archives/dist paths and the unchanged `.standards/` kit are excluded.
 
 - Once per clone: `sh .standards/setup-hooks.sh`; review preserved hooks.
-- Verify: `sh .standards/check-standards.sh` and `git diff --check`. Once code exists,
-  also the unit tests, `hermes plugins doctor . --ci` and
+- Verify: `.venv/bin/ruff format --check .`, `.venv/bin/ruff check .`,
+  `.venv/bin/python -m unittest discover -v`, `sh .standards/check-standards.sh`
+  and `git diff --check`. Also run `hermes plugins doctor . --ci` and
   `hermes plugins validate . --install-deps` inside a throwaway profile.
 - Commits carry nonempty Why/Changed/Verified (docs-only: Why/Changed) in direct
   voice with no em dashes. Pair each with its tracker row; docs travel with code.

@@ -4,7 +4,8 @@ A Hermes Agent plugin that helps you decide where to eat right now. It learns yo
 taste, checks the right local sources for where you are, shows the reasoning behind
 its pick, and improves from what actually happened at the table.
 
-Status: pre-alpha. Spec, architecture and plan only; no installable plugin yet.
+Status: pre-alpha. Evidence-only discovery and a Hermes plugin scaffold work locally;
+recommendations and taste learning are not implemented. Real-host validation is pending.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
 
@@ -29,6 +30,7 @@ The repository is private until submission, then public.
 | [docs/prd.md](docs/prd.md) | Product spec: experience, features, rules, scope |
 | [docs/architecture.md](docs/architecture.md) | Hermes surfaces, components, data model |
 | [docs/source-ladders.md](docs/source-ladders.md) | Per-country evidence ladders and the locale scout |
+| [docs/data-gate.md](docs/data-gate.md) | Shibuya spike results, source limits and reproduction |
 | [docs/demo.md](docs/demo.md) | 90-second demo spine and alternative flows |
 | [DECISIONS.md](DECISIONS.md) | Settled choices and their alternatives |
 | [docs/idea-register.md](docs/idea-register.md) | Every idea: adopted, roadmap, maybe, postponed, dismissed |
@@ -37,12 +39,53 @@ The repository is private until submission, then public.
 
 ## Install
 
-Not available yet. Once listed in the Hermes plugin catalog:
+No released or catalog-validated installation yet. Once listed in the Hermes plugin catalog:
 `hermes plugins install spoonmaster`.
+
+## Development slice
+
+Use Python 3.11-3.13 and uv. The runtime is standard-library only; the dev group
+pins Ruff 0.15.6. The lock uses a 2026-11-01 release cutoff. Install wheels only:
+
+```sh
+uv sync --frozen --no-build --python 3.13
+.venv/bin/ruff format --check .
+.venv/bin/ruff check .
+.venv/bin/python -m unittest discover -v
+sh .standards/check-standards.sh
+git diff --check
+```
+
+The public-landmark probe is explicit and performs one network request:
+
+```sh
+.venv/bin/python -m spoonmaster.probe --live
+```
+
+The provisional `spoon_candidates` tool accepts explicit latitude/longitude,
+radius (1-2,000 metres, default 1,600), and result limit (1-20, default 10). It
+returns distance-sorted evidence, not recommendations. Tool registration is tested
+against a mock context and a separately loaded directory package. The manifest
+targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
+Real `hermes plugins doctor . --ci` and `hermes plugins validate . --install-deps`
+remain required in the approved throwaway profile before installation is verified.
 
 ## Data and privacy
 
-The baseline uses free, keyless sources: OpenStreetMap, Open-Meteo and venues' own
-websites. Optional sources run only through free API tiers or the host's own tools.
-Taste profiles stay in the Hermes profile's plugin storage; exact locations are not
-stored. Network calls and stored data will be disclosed in full with the first release.
+This slice sends coordinates, radius and a restaurant query to
+`https://overpass-api.de/api/interpreter`, plus an identifying Spoonmaster user agent.
+The service receives the caller's IP address. Requests use TLS, one fixed endpoint,
+no redirects, no automatic retries, a 2 MiB response cap and 35-second socket timeout
+with elapsed-time checks between reads. DNS and a blocked socket read are not a strict
+whole-request deadline. The tool admits one query at a time per process and enforces
+a 10-second cooldown after each request. This is a pilot, not a public-service quota.
+
+No secrets, model calls, website fetches, shell commands, telemetry, background jobs
+or plugin-managed storage are used. Network proxy settings are not inherited. The
+plugin does not save the origin, but Hermes may retain tool arguments/results in its
+own transcript, and Overpass has its own logging policy. Website links are unverified
+source metadata, not approved fetch targets. Source text is untrusted data.
+
+Data is attributed to [OpenStreetMap contributors under ODbL 1.0](https://www.openstreetmap.org/copyright).
+OSM-only hours coverage failed the initial data gate; see the linked results above.
+Open-Meteo, venue-site adapters, optional APIs and profile storage remain planned.
