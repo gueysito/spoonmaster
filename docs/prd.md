@@ -40,7 +40,8 @@ not more information.
 
 1. User asks ("dinner nearby, something good, no production") with a location pin or a
    typed place.
-2. First use: a short, playful onboarding (F8). Later uses reuse the profile.
+2. First conversation after installation: offer "Personalize my picks" or "Find food
+   now" (F8). Onboarding is optional; later uses reuse any existing profile.
 3. The locale scout (F2) confirms where to look for this place.
 4. Discovery finds candidates inside the radius; gates check each one (F3, F4).
 5. The reply leads with one pick, then a runner-up and a wildcard (F5), with a one-line
@@ -165,6 +166,17 @@ Every candidate passes the same visible checks. Each returns pass, fail or **unk
 
 ### F8. Onboarding that coaxes, not interrogates
 
+- Offer two paths on the first conversation after installation: "Personalize my picks"
+  and "Find food now". Use buttons where supported, with numbered text choices as fallback.
+  Installation itself need not have an active conversation in which to show the offer.
+- Choosing "Find food now" starts the search immediately, asking only for missing
+  information needed for this outing. No taste questionnaire is required first.
+- After that first skipped-onboarding outing reaches a venue choice, give one short,
+  non-blocking reminder, not a repeated prompt on every search:
+  "Want more personal picks? Say ‘get me onboarded’ anytime. A few quick questions,
+  then I learn from your choices and feedback."
+- Accept that phrase as an onboarding entry point alongside `/spoon start`. Completing
+  onboarding suppresses the reminder. Skipping it never blocks recommendations.
 - No sommelier vocabulary. Start from mood and dish: "Burger? Pizza? Something fun?"
   then vibe, then specifics.
 - Pairwise "this or that" picks (target 5 to 8) seed the attribute model. Images where
