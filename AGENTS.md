@@ -17,7 +17,7 @@ Standards baseline: adopted 2026-11-08
 
 Python plugin code uses exact-pinned Ruff 0.15.6 (`ruff format`, `ruff check`, width
 100 with explicit E501) from a uv dev group, run from `.venv/bin/`. Use Python
-3.11-3.13 and `uv sync --frozen --no-build`; commit `uv.lock` with dependency changes.
+3.11-3.14 and `uv sync --frozen --no-build`; commit `uv.lock` with dependency changes.
 Generated/vendor/archives/dist paths and the unchanged `.standards/` kit are excluded.
 
 - Once per clone: `sh .standards/setup-hooks.sh`; review preserved hooks.

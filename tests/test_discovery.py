@@ -154,6 +154,8 @@ class DiscoveryTests(unittest.TestCase):
                 opener.return_value.open.side_effect = error
                 with self.assertRaisesRegex(DiscoveryError, f"^{code}$"):
                     fetch_candidates(0, 0)
+                if isinstance(error, HTTPError):
+                    self.assertTrue(error.closed)
 
     def test_invalid_inputs_never_reach_network(self):
         for lat, lon, radius in [

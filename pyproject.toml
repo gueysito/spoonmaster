@@ -2,7 +2,7 @@
 name = "spoonmaster"
 version = "0.1.0"
 description = "Evidence-first dining discovery for Hermes Agent"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 dependencies = []
 
 [dependency-groups]

@@ -5,7 +5,8 @@ taste, checks the right local sources for where you are, shows the reasoning beh
 its pick, and improves from what actually happened at the table.
 
 Status: pre-alpha. Evidence-only discovery and a Hermes plugin scaffold work locally;
-recommendations and taste learning are not implemented. Real-host validation is pending.
+recommendations and taste learning are not implemented. The scaffold passed real-host
+doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
 
@@ -39,12 +40,12 @@ The repository is private until submission, then public.
 
 ## Install
 
-No released or catalog-validated installation yet. Once listed in the Hermes plugin catalog:
+No released or catalog-listed installation yet. Once listed in the Hermes plugin catalog:
 `hermes plugins install spoonmaster`.
 
 ## Development slice
 
-Use Python 3.11-3.13 and uv. The runtime is standard-library only; the dev group
+Use Python 3.11-3.14 and uv. The runtime is standard-library only; the dev group
 pins Ruff 0.15.6. The lock uses a 2026-11-01 release cutoff. Install wheels only:
 
 ```sh
@@ -67,8 +68,17 @@ radius (1-2,000 metres, default 1,600), and result limit (1-20, default 10). It
 returns distance-sorted evidence, not recommendations. Tool registration is tested
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
-Real `hermes plugins doctor . --ci` and `hermes plugins validate . --install-deps`
-remain required in the approved throwaway profile before installation is verified.
+Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
+all 20 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
+deletion and removal of the copied files and temporary root were verified.
+
+`scripts/check-hermes.py --source <checkout> --python <venv-python>` repeats that
+model-free test using an already installed Hermes runtime. It creates an isolated
+Hermes root, a named profile without aliases or bundled skills, and a plugin copy;
+enables the plugin, runs doctor/validate and the tests, then tears down the profile
+and root even on failure. Child processes receive an explicit environment allowlist
+without inherited credentials. Hermes may prepare dependencies inside that temporary
+root; this can take several minutes. Remote execution still needs named authorization.
 
 ## Data and privacy
 
@@ -80,9 +90,11 @@ with elapsed-time checks between reads. DNS and a blocked socket read are not a 
 whole-request deadline. The tool admits one query at a time per process and enforces
 a 10-second cooldown after each request. This is a pilot, not a public-service quota.
 
-No secrets, model calls, website fetches, shell commands, telemetry, background jobs
-or plugin-managed storage are used. Network proxy settings are not inherited. The
-plugin does not save the origin, but Hermes may retain tool arguments/results in its
+The plugin uses no secrets, model calls, website fetches, shell commands, telemetry,
+background jobs or plugin-managed storage. The development host-test script invokes
+the existing Hermes CLI and removes only its own temporary test tree. Network proxy
+settings are not inherited. The plugin does not save the origin, but Hermes may
+retain tool arguments/results in its
 own transcript, and Overpass has its own logging policy. Website links are unverified
 source metadata, not approved fetch targets. Source text is untrusted data.
 

@@ -17,8 +17,8 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
 | T1 | Data gate spike | For a Shibuya pin: real OSM candidates in radius, parsed hours for most, website evidence for some, honest unknowns | 2 | blocked | [Live probe](docs/data-gate.md): 853 candidates, 174 parsed weekly hours (20.4%); two venue pages add evidence. Majority-hours criterion remains unmet; source strategy/acceptance decision required. |
-| T2 | Plugin scaffold, Ruff, mock-ctx tests | `plugin.yaml` and `__init__.py` load; unit tests pass; Ruff clean | 2 | done | `spoon_candidates`, directory-entrypoint mock test, 20 unit tests and Ruff pass. Real Hermes doctor/validate remain T3, not claimed by the mock test. |
-| T3 | Throwaway profile scripts (up, down) | Profile created, plugin loads, `doctor` and `validate` pass, teardown leaves nothing (listed) | 1 | planned | |
+| T2 | Plugin scaffold, Ruff, mock-ctx tests | `plugin.yaml` and `__init__.py` load; unit tests pass; Ruff clean | 2 | done | `spoon_candidates`, directory-entrypoint test, 20 unit tests and Ruff pass on Python 3.13/3.14. Real-host verification is recorded in T3. |
+| T3 | Throwaway profile scripts (up, down) | Profile created, plugin loads, `doctor` and `validate` pass, teardown leaves nothing (listed) | 1 | done | `scripts/check-hermes.py`: named isolated profile created, plugin enabled; doctor --ci, validate --install-deps and 20 tests pass on runtime 2bd378ed1b8d / Python 3.14.9. Profile, copied files, scratch roots, upload and aliases independently confirmed absent. |
 
 ## Phase 2: Spine (2026-11-09)
 
@@ -49,7 +49,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 |---|---|---|---|
 | V1 | Can a plugin send images in Telegram? | Throwaway bot or final check | planned |
 | V2 | Do Telegram expandable quotes and `ask_choice` buttons render? | Same | planned |
-| V3 | SemVer value for `requires_hermes` | [v2026.9.24 package metadata](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/pyproject.toml): 0.21.5; manifest declares >=0.21.5. Real-host compatibility remains T3. | done |
+| V3 | SemVer value for `requires_hermes` | [v2026.9.24 package metadata](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/pyproject.toml): 0.21.5; manifest declares >=0.21.5. Installed-runtime compatibility passed T3; a pristine minimum-version matrix was not run. | done |
 | V4 | Free tiers for Google Places and HotPepper | Official pricing and terms pages | planned |
 | V5 | Tabelog terms on automated access | Official terms | planned |
 | V6 | Host web tool names for `dispatch_tool` | Read-only listing on the test host | planned |

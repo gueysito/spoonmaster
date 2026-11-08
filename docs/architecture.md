@@ -122,7 +122,7 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
 - `plugin.yaml` plus `__init__.py`; `provides_tools` and `provides_hooks` match
   registrations; `capabilities` declared only if used.
 - `requires_hermes` is `>=0.21.5`, matching the package version declared by
-  `v2026.9.24`; actual host compatibility remains unverified until T3.
+  `v2026.9.24`; T3 verified the installed runtime, not a pristine minimum-version matrix.
 - Dependencies: bounded ranges within Hermes core constraints; prefer stdlib.
 - No self-update, no binaries or bytecode, no core overrides, no private core imports.
 - Anything that waits for a person fails cleanly under cron and the gateway.
@@ -140,6 +140,20 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    and removal of every copied file, verified by listing.
 3. **Channel checks:** Telegram-only behavior verified once near the end, or replaced by
    the portable fallback.
+
+The current scaffold passed doctor, validate (including the install scanner) and
+20 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+Python 3.14.9. That source tree has local modifications, so this is evidence for
+the installed host, not a pristine upstream release. `scripts/check-hermes.py`
+provides the isolated lifecycle; cleanup was verified on both failure and success.
+
+Security checks for this slice cover finite/range-checked inputs, fixed-host TLS
+requests, disabled redirects, bounded responses, safe error codes, HTTP-response
+closure, concurrency/cooldown, and no plugin storage or credential reads. The host's
+install scan reported safe. This is not evidence that future model-facing prompt
+injection defenses, sharing authorization, profile deletion or arbitrary website
+fetches are safe; those features do not exist yet. No payments, uploads, public
+ingress, admin routes, browser client or CORS surface was added.
 
 ## 10. Unverified items that can change the design
 

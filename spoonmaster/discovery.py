@@ -74,6 +74,7 @@ def fetch_candidates(latitude: float, longitude: float, radius_m: float = 1600) 
                 chunks.append(chunk)
         payload = json.loads(b"".join(chunks))
     except HTTPError as error:
+        error.close()
         if error.code == 429:
             raise DiscoveryError("source_rate_limited") from None
         raise DiscoveryError("source_http_error") from None
