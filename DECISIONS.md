@@ -85,3 +85,19 @@ when to revisit. Agent recommendations are noted as such.
 
 - Decision: build a Telegram-specific behavior only when it lowers effort, always with a
   portable fallback. When unsure, present the owner's options.
+
+## D-013: Progressive verification and call fallback (2026-11-08)
+
+- Decision: attempt hours verification for every displayed finalist, up to three.
+  Preserve source and retrieval time and distinguish confirmed, unknown and conflicting
+  evidence. Refresh the selected venue when evidence is missing, conflicting or stale.
+- Why: the owner approved focusing verification effort on actionable options after
+  the OSM-only probe showed sparse hours coverage.
+- If selected-venue hours remain unavailable, state that clearly and encourage calling.
+  Provide a sourced phone number as a `tel:` hyperlink, with the visible number as a
+  portable fallback. Never invent a number or place the call automatically.
+- Alternatives: hours for most discovered venues (superseded T1 acceptance); checking
+  hours only after selection (too late to help choose among the finalists).
+- Limits: published hours do not guarantee availability or dietary safety. Arrival-time
+  math remains T4. If a phone number is missing, unsafe or ambiguous, say so explicitly.
+- Revisit: real source coverage, latency and channel link behavior provide new evidence.

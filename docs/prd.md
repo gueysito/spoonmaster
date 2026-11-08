@@ -77,6 +77,10 @@ The ladders are the core asset. Detail in [source-ladders.md](source-ladders.md)
 ### F3. Candidate discovery and evidence
 
 - Discovery and verification are separate steps.
+- Attempt hours verification for every displayed finalist, up to three. Preserve
+  source URLs and retrieval times; distinguish confirmed published hours, unknown
+  hours and conflicting evidence. Refresh the selected venue directly when evidence
+  is missing, conflicting or stale; reuse sufficiently fresh confirmed evidence.
 - Baseline discovery: OpenStreetMap (no key). Optional: free API tiers and ladder sources.
 - Evidence record per venue: identity and coordinates, source and URL, retrieval time,
   what the source actually supports, rating with its own scale and review count, recent
@@ -126,6 +130,10 @@ Every candidate passes the same visible checks. Each returns pass, fail or **unk
   - Friction: wait, reservation, cash or card, dress code (often unknown; inference is
     labeled as inference).
   - One caveat and the supporting links.
+- If selected-venue hours remain unavailable or conflicting, explicitly encourage
+  calling before leaving. Show a sourced phone number as a tappable `tel:` link and
+  as readable text. Never invent a number, guess its country or initiate the call.
+  When no usable number is found, state that and retain the venue/source link.
 - Cards are rendered by code from the evidence record, so required fields cannot be
   skipped the way a prompt can skip them.
 

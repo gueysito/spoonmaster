@@ -9,6 +9,42 @@ through the author's Hermes agent; Korea was used in the field without a written
 Ladders will ship as data files. Access status is planned unless marked. Nothing here
 grants permission to scrape: every source goes through the tiers in section 3.
 
+## Progressive hours adapter (T1 pilot)
+
+The verification core attempts the OSM-linked venue page for each of up to three
+finalists. Selection refreshes missing, conflicting or older-than-15-minute evidence;
+fresh confirmed evidence retains its original retrieval time. Public venue records
+expire after 30 minutes, are capped at 200 per process, and are never written to disk.
+
+- `confirmed`: matching name and coordinates within 100 metres in structured page data,
+  with fully parsed weekly hours and no detected disagreement with parseable OSM hours.
+- `unknown`: inaccessible, missing, unparseable, unmatched or non-comparable evidence.
+  Bounded text excerpts remain available for host review. This does not mean the venue
+  publishes no hours. Unsupported holiday exceptions remain unknown.
+- `conflicting`: comparable source schedules differ. Neither schedule silently wins.
+
+These labels describe published evidence, never an open-at-arrival verdict. T4 owns
+arrival, time zones and exceptional closures. The agent must show uncertainty on cards.
+On selection, unresolved hours produce advice to call before leaving. A sourced number
+is rendered as a `tel:` link and a visible number. Local numbers require an explicitly
+known venue country (JP, TH, ID or KR in this pilot); no inferred country, dial commands,
+extensions or ambiguous multiple numbers. A unique phone from the named OSM-linked
+page is a source claim, not independently verified branch ownership or service.
+
+The adapter reads only public HTTPS on port 443, validates every DNS answer and pins
+the chosen IP while checking TLS for the hostname. Private, multicast and transition
+addresses, redirects, proxy credentials, compressed responses and unsupported content
+are refused. Each response is capped at 512 KiB with an eight-second socket timeout
+and elapsed read checks; DNS and blocked reads are not a strict total deadline.
+`robots.txt` denial or unavailability fails closed (404/410 permits the page); declared
+pacing rules defer to host review. No cookies, login, retries or bot-protection bypass.
+Known restricted review/social domains remain disabled. The OSM link itself does not
+establish a site's terms; production source admission remains T9/T13.
+
+One verification call runs at a time, with a 10-second cooldown per stage. The separate
+selected stage permits an immediate second pass after the finalist check. Failed
+refreshes retain a previously sourced phone with its original retrieval timestamp.
+
 ## 1. Global baseline (every place)
 
 | Role | Source | Access | Key | Free |
