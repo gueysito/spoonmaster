@@ -1,0 +1,4 @@
+#!/bin/sh
+# standards-kit: preserve previous hook, then enforce adopted rules
+# Weight: commit-msg: <100ms normally; up to 1s for named-automation proof; preserved hooks add their existing cost.
+exec python3 "$(git rev-parse --show-toplevel)/.standards/standards.py" hook commit-msg "$@"

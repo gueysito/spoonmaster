@@ -1,0 +1,9 @@
+
+Why:
+
+Changed:
+
+Verified:
+
+# Optional: Limits, Origin / authority, Recovery, Follow-up (work and tracker).
+# Docs-only work requires Why and Changed; remove Verified only for docs-only.

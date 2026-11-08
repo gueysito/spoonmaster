@@ -1,0 +1,4 @@
+#!/bin/sh
+# standards-kit: preserve previous hook, then enforce adopted rules
+# Weight: pre-commit: 0.5-3s plus file volume, formatter/linter startup; preserved hooks add their existing cost.
+exec python3 "$(git rev-parse --show-toplevel)/.standards/standards.py" hook pre-commit "$@"

@@ -1,0 +1,17 @@
+{
+  "scope": "Source fingerprints for the named automation exceptions.",
+  "source_fingerprints": [
+    {
+      "path": "~/.hermes/scripts/biggie-hq-idle-push.sh",
+      "sha256": "9616918ae1be53dcfce2988acef75082d2ab206e5dad9b68c2cccabd254ba8c2"
+    },
+    {
+      "path": "~/rufus-canon/scripts/sync-canon.sh",
+      "sha256": "278e664daffbb085d59102f28235eb445274c6d4dd091feeaad643575a38b09f"
+    },
+    {
+      "path": "~/yuki-canon/scripts/sync-canon.sh",
+      "sha256": "4fd8b1a9180175d6fc518afc04d4b016ded759084c98d5a3d32396b965000c1d"
+    }
+  ]
+}
