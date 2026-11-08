@@ -24,7 +24,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T4 | Gates and reject ledger | Every gate returns pass/fail/unknown with reason; `/why` lists eliminations | 3 | next | Consume T1 evidence without treating published hours as open-at-arrival; preserve unknown/conflicting outcomes. |
+| T4 | Gates and reject ledger | Every gate returns pass/fail/unknown with reason; `/why` lists eliminations | 3 | next | Gate engine and conversation-scoped expiring ledger core implemented; 18 focused tests cover outcomes, midnight/DST, isolation, expiry and complete paging. Tool/command wiring and isolated Hermes validation are next. |
 | T5 | Card renderer and pick/runner-up/wildcard | All required fields or explicit unknowns; no padded slots | 2 | planned | |
 | T6 | Taste store, scopes, feedback, diff | Diff accurate; unrelated prefs unchanged; view/correct/delete work | 3 | planned | |
 | T7 | Optional onboarding with pairwise picks | First conversation offers onboarding or immediate search; skipping never blocks search; one brief reminder after the first venue choice offers later onboarding; 5 to 8 picks seed the profile; text fallback works | 2 | planned | Owner specified the two-path first-use flow and later reminder on 2026-11-08; copy and entry points in PRD F8. Implementation remains scheduled after T6. |

@@ -93,6 +93,31 @@ an enforced renderer gate. Verification accepts only IDs discovered in this proc
 never caller-supplied URLs, schedules or freshness timestamps. Exact source/status,
 cache and transport semantics live in the [source ladder](source-ladders.md).
 
+### Gate and ledger core (T4)
+
+The gate engine evaluates every returned candidate against all ten F4 gates. Explicit
+failures are `excluded`; candidates with any unknown check are `unresolved`; only all
+passes are `eligible`. None of these labels means a recommendation has been selected.
+Counts distinguish returned/evaluated candidates from other discovered venues omitted
+by the result limit. Radius is recomputed for the original search, never reused from
+another origin. A bounding-box center cannot establish an exact entrance distance.
+
+Arrival math uses an explicitly supplied offset-aware arrival and IANA venue time zone,
+including the preceding day's overnight service and exclusive closing boundaries.
+The weekly schedule result is separate from actual availability, which remains unknown
+without date-specific evidence. Missing route, last-order, dietary, household, taste or
+friction evidence remains unknown. An explicit venue veto fails; an empty dietary list
+means the user explicitly reported no dietary restrictions, not an inferred absence.
+T6/T8 and later source adapters provide currently missing inputs without changing this
+three-state contract.
+
+Search snapshots and ledgers are process-local and keyed only by host-injected
+conversation ID. Missing identity fails closed; IDs in tool arguments cannot choose a
+different conversation. Each conversation keeps only its latest search, capped at 100
+conversations and expiring 30 minutes after discovery; reads do not extend retention.
+A new search invalidates the previous ledger and late evaluations cannot overwrite it.
+The complete ledger supports bounded pages without losing entries or evidence links.
+
 ## 5. Data model (sketch)
 
 ```text
