@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from spoonmaster import plugin
 from spoonmaster.discovery import DiscoveryError
+from spoonmaster.ledger import LedgerStore
 from spoonmaster.verification import Verifier
 from tests.test_discovery import normalized, venue
 
@@ -23,6 +24,9 @@ class PluginTests(unittest.TestCase):
         self.cooldown.start()
         self.addCleanup(self.clock.stop)
         self.addCleanup(self.cooldown.stop)
+        self.ledger_store = patch.object(plugin, "ledgers", LedgerStore())
+        self.ledger_store.start()
+        self.addCleanup(self.ledger_store.stop)
 
     def test_tool_returns_limited_evidence_and_accepts_host_context(self):
         with patch.object(
@@ -94,6 +98,65 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(finalists["venues"][0]["status"], "confirmed")
         self.assertTrue(selected["venues"][0]["cache_reused"])
 
+    def test_full_search_evaluation_why_and_context_isolation(self):
+        from tests.test_gates import venue as gate_venue
+
+        data = {
+            "status": "discovery_only",
+            "candidates": [gate_venue("osm:node:1"), gate_venue("osm:node:2")],
+        }
+        with patch.object(plugin, "fetch_candidates", return_value=data):
+            found = json.loads(
+                plugin.candidates({"latitude": 35, "longitude": 139}, session_id="chat-a")
+            )
+        args = {
+            "search_id": found["search_id"],
+            "origin_confirmed": True,
+            "excluded_venue_ids": ["osm:node:2"],
+        }
+        result = json.loads(plugin.evaluate_candidates(args, session_id="chat-a"))
+        self.assertEqual(result["evaluated"], 2)
+        self.assertEqual(result["counts"]["excluded"], 1)
+        self.assertEqual(result["pages"], 2)
+        self.assertIn("User explicitly excluded", plugin.why("", session_id="chat-a"))
+        second = json.loads(plugin.ledger({"page": 2}, session_id="chat-a"))
+        self.assertEqual(second["entries"][0]["venue_id"], "osm:node:2")
+        self.assertEqual(
+            json.loads(plugin.evaluate_candidates(args, session_id="chat-b"))["error"],
+            "search_not_available",
+        )
+        self.assertEqual(
+            json.loads(plugin.ledger({}, session_id="chat-b"))["error"], "no_current_ledger"
+        )
+        self.assertNotIn("Example Dining", plugin.why("", session_id="chat-b"))
+        plugin.forget_session(session_id="chat-a")
+        self.assertEqual(
+            json.loads(plugin.ledger({}, session_id="chat-a"))["error"], "no_current_ledger"
+        )
+
+    def test_ledger_inputs_cannot_supply_identity_or_verdicts(self):
+        args = {"search_id": "a" * 24, "origin_confirmed": True}
+        for extra in (
+            {"session_id": "another-chat"},
+            {"verdicts": {"diet": "pass"}},
+            {"origin_confirmed": "yes"},
+            {"dietary_restrictions": [True]},
+            {"excluded_venue_ids": "all"},
+            {"expected_arrival": "2026-11-08T10:00"},
+        ):
+            self.assertEqual(
+                json.loads(plugin.evaluate_candidates({**args, **extra}))["error"],
+                "invalid_arguments",
+            )
+        self.assertEqual(
+            json.loads(plugin.evaluate_candidates(args))["error"], "conversation_context_required"
+        )
+        self.assertEqual(json.loads(plugin.ledger({}))["error"], "conversation_context_required")
+        for args in ({"session_id": "another-chat"}, {"page": True}, {"page": 21}, []):
+            self.assertEqual(json.loads(plugin.ledger(args))["error"], "invalid_arguments")
+        for raw in ("0", "-1", "100", "١", "1 extra", "1\n2"):
+            self.assertEqual(plugin.why(raw, session_id="chat-a"), "Use /why or /why <page>.")
+
     def test_directory_entrypoint_registers_without_network_or_storage(self):
         root = Path(__file__).resolve().parents[1]
         # Load under another package name, as Hermes does, with no project on sys.path.
@@ -105,10 +168,20 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
     class Context:
         def register_tool(self, *, name, toolset, schema, handler):
             assert name == schema['name']
-            assert name in ('spoon_candidates', 'spoon_verify_hours')
+            assert name in ('spoon_candidates', 'spoon_verify_hours',
+                            'spoon_evaluate', 'spoon_ledger')
             assert toolset == 'spoonmaster'
-            assert json.loads(handler({})) == {'error': 'invalid_arguments'}
+            expected = ('conversation_context_required' if name == 'spoon_ledger'
+                        else 'invalid_arguments')
+            assert json.loads(handler({})) == {'error': expected}
             print(name)
+        def register_command(self, name, handler, description, args_hint):
+            assert name == 'why'
+            assert 'Conversation context is unavailable' in handler('')
+            print('/' + name)
+        def register_hook(self, name, handler):
+            assert name in ('on_session_reset', 'on_session_finalize')
+            handler(session_id='synthetic')
     fixture_plugin.register(Context())
 """
         with tempfile.TemporaryDirectory() as directory:
@@ -130,5 +203,8 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
             )
             after = sorted(str(path.relative_to(package)) for path in package.rglob("*"))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "spoon_candidates\nspoon_verify_hours")
+        self.assertEqual(
+            result.stdout.strip(),
+            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\n/why",
+        )
         self.assertEqual(before, after)

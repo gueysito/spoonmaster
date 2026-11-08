@@ -4,7 +4,7 @@ A Hermes Agent plugin that helps you decide where to eat right now. It learns yo
 taste, checks the right local sources for where you are, shows the reasoning behind
 its pick, and improves from what actually happened at the table.
 
-Status: pre-alpha. Evidence-only discovery and progressive hours checks work locally;
+Status: pre-alpha. Discovery, progressive hours checks and a reject ledger work locally;
 recommendations and taste learning are not implemented. The scaffold passed real-host
 doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
@@ -69,7 +69,7 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 42 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
+all 64 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
 deletion and removal of the copied files and temporary root were verified.
 
 `spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
@@ -89,6 +89,25 @@ returned as unverified excerpts for host review, not silently treated as a parse
 schedule. Repeat the live three-venue exercise with
 `.venv/bin/python -m spoonmaster.probe --live --verify-demo`; it also accepts `--input`
 with saved OSM JSON to avoid repeating discovery. The demo then makes live venue reads.
+
+`spoon_evaluate` checks every returned candidate from the latest search using its
+`search_id`, the user's `origin_confirmed` answer, optional explicitly stated
+`dietary_restrictions` and `excluded_venue_ids`. Optional `expected_arrival` (ISO timestamp
+with UTC offset) and `venue_timezone` (IANA name, such as `Asia/Tokyo`) enable weekly
+schedule math. No ETA or time zone is guessed. Weekly matching is not confirmation of
+date-specific availability; last order and other missing facts remain unknown.
+
+Each gate returns pass, fail or unknown with a reason and source links where evidence
+exists. Explicit failures exclude a venue; any unknown leaves it unresolved. The
+summary counts evaluated, excluded and unresolved venues separately and discloses
+discovered venues omitted by the result limit. This does not rank or recommend places.
+
+`/why` lists failures and unknowns, three venues per page (`/why 2` continues).
+`spoon_ledger` returns one complete venue per page with all ten checks and source links;
+follow `next_page` until null for the complete ledger. Both show the original evaluation
+time. Re-run `spoon_evaluate` after hours verification or changed outing constraints.
+These operations require Hermes's conversation context; a model-supplied session ID
+cannot select another conversation's records. Missing context fails closed.
 
 `scripts/check-hermes.py --source <checkout> --python <venv-python>` repeats that
 model-free test using an already installed Hermes runtime. It creates an isolated
@@ -117,11 +136,15 @@ cookies, login, automatic retry or protection bypass is used.
 
 The plugin uses no secrets, model calls, shell commands, telemetry, background jobs
 or persistent plugin storage. It caches up to 200 public venue records in memory for
-30 minutes, plus their verification evidence; origins and preferences are not cached.
+30 minutes, plus their verification evidence. Separately, each conversation retains
+its latest search origin, returned candidates and gate ledger in memory, capped at 100
+conversations. Those records expire 30 minutes after discovery; a new search replaces
+the previous one, and session-reset/finalize callbacks clear the reported conversation.
+Expired records are removed on subsequent store access. Raw dietary lists are not retained
+in this cache, but the ledger contains resulting verdicts and any supplied arrival time.
 The development host-test script invokes
 the existing Hermes CLI and removes only its own temporary test tree. Network proxy
-settings are not inherited. The plugin does not save the origin, but Hermes may
-retain tool arguments/results in its
+settings are not inherited. Hermes may retain tool arguments/results in its
 own transcript, and source services have their own logging policies. Website links are
 source claims about venue identity, not proof of ownership. Source text is untrusted data.
 

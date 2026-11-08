@@ -1,11 +1,15 @@
 name: spoonmaster
 version: "0.1.0"
-description: Evidence-only restaurant discovery; recommendations are not implemented yet
+description: Dining discovery, hours evidence and reject ledger; recommendations remain planned
 requires_hermes: ">=0.21.5"
 provides_tools:
   - spoon_candidates
   - spoon_verify_hours
-provides_hooks: []
+  - spoon_evaluate
+  - spoon_ledger
+provides_hooks:
+  - on_session_reset
+  - on_session_finalize
 capabilities: []
 requires_env: []
 python_dependencies: []

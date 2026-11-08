@@ -141,6 +141,17 @@ class VerificationTests(unittest.TestCase):
         self.assertEqual(fetch.call_args.args[0], "https://example.com/new")
         self.assertEqual(fetch.call_count, 2)
 
+    def test_snapshot_does_not_relabel_old_evidence_or_cross_venue_revisions(self):
+        verifier = self.make(Mock(return_value=page()))
+        first = verifier.verify(["1"], "finalists")["venues"][0]
+        snapshot = verifier.snapshot([venue()])
+        self.assertEqual(snapshot["1"]["checked_at"], first["checked_at"])
+        snapshot["1"]["status"] = "tampered"
+        self.assertEqual(verifier.snapshot([venue()])["1"]["status"], "confirmed")
+        self.assertEqual(verifier.snapshot([venue(website="https://example.com/other")]), {})
+        self.now += 1801
+        self.assertEqual(verifier.snapshot([venue()]), {})
+
     def test_named_page_phone_and_failed_selected_refresh_preserve_source(self):
         html = "<h1>Example Dining</h1><p>TEL: 03-1234-5678</p><p>営業時間 未定</p>"
         fetch = Mock(side_effect=[html, PageError("page_unavailable")])

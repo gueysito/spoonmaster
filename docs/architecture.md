@@ -1,9 +1,9 @@
 # Spoonmaster architecture
 
-Status: target design, 2026-11-08. Evidence-only `spoon_candidates` and
-`spoon_verify_hours`, bounded OSM/venue adapters, conservative weekly-hours normalization
-and a process-local public-evidence cache exist. Ranking, arrival gates, cards,
-persistent state and the other surfaces below remain planned.
+Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
+outcomes and a conversation-scoped reject ledger exist. Weekly arrival math is separate
+from unverified date-specific availability. Ranking, cards, persistent taste state and
+the other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -58,7 +58,8 @@ reused later. Hermes wiring is a thin layer.
 | `spoon_candidates` (implemented pilot) | Explicit origin and radius; returns distance-sorted OSM evidence only, with unknowns and no recommendation verdict |
 | `spoon_verify_hours` (implemented pilot) | Check up to three discovered finalists; refresh the selected venue when unresolved/stale; return sourced hours evidence and call guidance |
 | `spoon_recommend` | Origin, radius, ask, household; returns pick/runner-up/wildcard cards and a ledger id |
-| `spoon_ledger` / `/why` | Full reject ledger for the last recommendation |
+| `spoon_evaluate` (implemented pilot) | Evaluate every returned discovery candidate; keep failed and unresolved checks distinct |
+| `spoon_ledger` / `/why` (implemented pilot) | Full paginated gate details or a readable exclusion/unknown list for this conversation's latest evaluation |
 | `spoon_feedback` | Records feedback; returns the taste diff |
 | `spoon_profile` / `/spoon profile` | View, correct, remove, delete, export |
 | `/spoon start` | Onboarding with pairwise picks |
@@ -85,9 +86,9 @@ recommend(origin, radius, ask, household):
 Gates and ranking are code. The model interprets the ask, writes the one-sentence
 tradeoff and phrases the cards from the evidence record.
 
-The current pilot uses `spoon_candidates` → `spoon_verify_hours(stage=finalists)` →
-`spoon_verify_hours(stage=selected)`. Tool descriptions instruct the host to check
-every displayed finalist and relay uncertainty/call guidance. Until T4/T5 implement
+The current pilot uses `spoon_candidates` → `spoon_evaluate` → finalist verification →
+re-evaluation → selected-venue verification. Tool descriptions instruct the host to check
+every displayed finalist and relay uncertainty/call guidance. Until T5 implements
 the recommendation/card pipeline, this sequence depends on host tool use; it is not
 an enforced renderer gate. Verification accepts only IDs discovered in this process,
 never caller-supplied URLs, schedules or freshness timestamps. Exact source/status,
@@ -111,12 +112,21 @@ means the user explicitly reported no dietary restrictions, not an inferred abse
 T6/T8 and later source adapters provide currently missing inputs without changing this
 three-state contract.
 
-Search snapshots and ledgers are process-local and keyed only by host-injected
-conversation ID. Missing identity fails closed; IDs in tool arguments cannot choose a
+Search snapshots and ledgers are process-local, owned by each plugin registration,
+and keyed only by host-injected conversation ID. Separate registration scopes do not
+share private stores even if conversation IDs repeat. Missing identity fails closed;
+IDs in tool arguments cannot choose a
 different conversation. Each conversation keeps only its latest search, capped at 100
 conversations and expiring 30 minutes after discovery; reads do not extend retention.
 A new search invalidates the previous ledger and late evaluations cannot overwrite it.
 The complete ledger supports bounded pages without losing entries or evidence links.
+`/why` shows three venues per page; `spoon_ledger` exposes one complete entry per page
+to bound source-heavy tool output. Both retain evaluation time. Session reset/finalize
+hooks clear the supplied conversation ID; expired records are removed on store access.
+No state is written to disk. Re-evaluation reads only verification snapshots matching
+the venue identity/version in that search, without fetching or changing source times.
+The installed revision's [command dispatch contract](https://github.com/NousResearch/hermes-agent/blob/2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19/hermes_cli/plugin_command_dispatch.py)
+supplies `session_id` as host context; the plugin does not accept it in tool arguments.
 
 ## 5. Data model (sketch)
 
@@ -177,20 +187,28 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    the portable fallback.
 
 The current scaffold passed doctor, validate (including the install scanner) and
-42 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+64 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
 
 Security checks for this slice cover finite/range-checked inputs, fixed-host TLS
 requests, disabled redirects, bounded responses, safe error codes, HTTP-response
-closure, concurrency/cooldown, and no plugin storage or credential reads. The host's
+closure, concurrency/cooldown, and no persistent plugin storage or credential reads. The host's
 install scan reported safe. This is not evidence that future model-facing prompt
 injection defenses, sharing authorization or profile deletion are safe; those features
 do not exist yet. The T1 website boundary additionally tests all-answer public DNS
 validation, pinned-IP TLS, no redirects, robots denial, response caps, charset handling,
 safe phone rendering and unknown/conflicting/stale evidence behavior. No payments, uploads, public
 ingress, admin routes, browser client or CORS surface was added.
+
+T4 adds checks for conversation-ID injection, reused IDs across registration scopes,
+expiry without read-based extension, cross-conversation access, new-search races,
+source-version matching and bounded complete output. Its synthetic cross-registration
+test failed before private stores were bound per registration and passes afterward.
+The threat considered is access to another conversation's search/arrival context;
+the tool cannot accept identity or gate verdicts supplied as model arguments. This
+does not establish durable-profile sharing safety or end-to-end Telegram delivery.
 
 ## 10. Unverified items that can change the design
 

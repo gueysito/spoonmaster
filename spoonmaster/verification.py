@@ -267,6 +267,23 @@ class Verifier:
         finally:
             self.lock.release()
 
+    def snapshot(self, venues):
+        """Read public verification evidence without fetching or refreshing timestamps."""
+        with self.lock:
+            result = {}
+            for venue in venues:
+                key = venue["venue_id"]
+                current = self.venues.get(key)
+                identity = ("name", "latitude", "longitude", "website", "hours_raw")
+                if (
+                    current
+                    and key in self.results
+                    and self.clock() - current[0] <= VENUE_SECONDS
+                    and all(venue.get(field) == current[1].get(field) for field in identity)
+                ):
+                    result[key] = copy.deepcopy(self.results[key][1])
+            return result
+
     def _check(self, venue, country):
         stamp = datetime.now(timezone.utc).isoformat()
         result = {

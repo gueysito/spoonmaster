@@ -19,6 +19,12 @@ not broad hours-parsing coverage, recommendation quality, arrival checks or Tele
 
 ## Original coverage experiment
 
+T4 replay check (2026-11-08): evaluating the first 20 candidates from the saved public
+snapshot with one synthetic venue veto returned 1 excluded, 19 unresolved and 0 eligible.
+The summary explicitly reported 833 other discovered venues as not evaluated, and
+`/why` page 7 retained the final candidate's veto reason. No retrieval time was invented
+for the replay and no recommendation was inferred from missing evidence.
+
 T1 result, 2026-11-08: **the OSM-only hours criterion fails**. Discovery works,
 and two manually inspected venue pages supply additional facts. This is not yet
 an end-to-end recommendation or an automated website-enrichment result.
