@@ -1,8 +1,9 @@
 # Spoonmaster architecture
 
-Status: target design, 2026-11-08. Only the evidence-only `spoon_candidates` tool,
-bounded OSM adapter and conservative weekly-hours normalization exist. Ranking,
-arrival gates, cards, state and the other surfaces below remain planned.
+Status: target design, 2026-11-08. Evidence-only `spoon_candidates` and
+`spoon_verify_hours`, bounded OSM/venue adapters, conservative weekly-hours normalization
+and a process-local public-evidence cache exist. Ranking, arrival gates, cards,
+persistent state and the other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -55,6 +56,7 @@ reused later. Hermes wiring is a thin layer.
 | Tool / command | Purpose |
 |---|---|
 | `spoon_candidates` (implemented pilot) | Explicit origin and radius; returns distance-sorted OSM evidence only, with unknowns and no recommendation verdict |
+| `spoon_verify_hours` (implemented pilot) | Check up to three discovered finalists; refresh the selected venue when unresolved/stale; return sourced hours evidence and call guidance |
 | `spoon_recommend` | Origin, radius, ask, household; returns pick/runner-up/wildcard cards and a ledger id |
 | `spoon_ledger` / `/why` | Full reject ledger for the last recommendation |
 | `spoon_feedback` | Records feedback; returns the taste diff |
@@ -82,6 +84,14 @@ recommend(origin, radius, ask, household):
 
 Gates and ranking are code. The model interprets the ask, writes the one-sentence
 tradeoff and phrases the cards from the evidence record.
+
+The current pilot uses `spoon_candidates` → `spoon_verify_hours(stage=finalists)` →
+`spoon_verify_hours(stage=selected)`. Tool descriptions instruct the host to check
+every displayed finalist and relay uncertainty/call guidance. Until T4/T5 implement
+the recommendation/card pipeline, this sequence depends on host tool use; it is not
+an enforced renderer gate. Verification accepts only IDs discovered in this process,
+never caller-supplied URLs, schedules or freshness timestamps. Exact source/status,
+cache and transport semantics live in the [source ladder](source-ladders.md).
 
 ## 5. Data model (sketch)
 
@@ -142,7 +152,7 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    the portable fallback.
 
 The current scaffold passed doctor, validate (including the install scanner) and
-20 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+42 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
@@ -151,8 +161,10 @@ Security checks for this slice cover finite/range-checked inputs, fixed-host TLS
 requests, disabled redirects, bounded responses, safe error codes, HTTP-response
 closure, concurrency/cooldown, and no plugin storage or credential reads. The host's
 install scan reported safe. This is not evidence that future model-facing prompt
-injection defenses, sharing authorization, profile deletion or arbitrary website
-fetches are safe; those features do not exist yet. No payments, uploads, public
+injection defenses, sharing authorization or profile deletion are safe; those features
+do not exist yet. The T1 website boundary additionally tests all-answer public DNS
+validation, pinned-IP TLS, no redirects, robots denial, response caps, charset handling,
+safe phone rendering and unknown/conflicting/stale evidence behavior. No payments, uploads, public
 ingress, admin routes, browser client or CORS surface was added.
 
 ## 10. Unverified items that can change the design

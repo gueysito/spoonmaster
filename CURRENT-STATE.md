@@ -1,16 +1,16 @@
 # Current state
 
-Evidence-only discovery runs locally; recommendations and taste learning do not exist
-yet. The OSM-only data gate failed hours coverage. Updated 2026-11-08.
+Discovery and progressive hours verification run locally; recommendations and taste
+learning do not exist yet. T1's revised acceptance passes. Updated 2026-11-08.
 
 ## Works
 
 - Product spec, architecture, source ladders, demo spine, decisions, idea register.
 - Standards kit adopted; commit-message and pre-commit hooks active.
-- `spoon_candidates` scaffold, bounded OSM discovery, conservative weekly-hours parser.
-- 20 unit tests, including directory-package registration; Ruff 0.15.6 format/lint.
-- [Shibuya live probe](docs/data-gate.md): 853 candidates, 174 parsed hours, two venue-page checks.
-- Real Hermes doctor/validate and 20 tests pass in a throwaway profile; teardown verified.
+- `spoon_candidates` and `spoon_verify_hours`: finalist checks, selected refresh, sourced call links.
+- 42 tests pass on Python 3.11/3.13 and real Hermes Python 3.14.9; Ruff format/lint pass.
+- [Live probe](docs/data-gate.md): three venue attempts, two prose-hours extracts, selected recheck.
+- Real Hermes doctor/validate pass with two tools; profile, upload and temporary root removed.
 
 ## Known from the test host (2026-11-08)
 
@@ -19,18 +19,18 @@ yet. The OSM-only data gate failed hours coverage. Updated 2026-11-08.
 - Enabled toolsets: web, browser, vision, tts. Disabled: stt.
 - Bundled `a2a` agent-to-agent plugin present but not enabled.
 - Catalog search shows no dining or restaurant-recommendation plugin.
-- Runtime 2bd378ed1b8d, Python 3.14.9; isolated test registered one tool and zero hooks.
+- Runtime 2bd378ed1b8d, Python 3.14.9; isolated test registered two tools and zero hooks.
 
 ## Unverified (see TRACKER V-rows)
 
-- Telegram: plugin image sending, expandable quotes, `ask_choice` buttons in use.
+- Telegram: telephone-link taps, plugin images, expandable quotes, `ask_choice` buttons.
 - Free tiers for Google Places and HotPepper Gourmet; Tabelog terms.
 - Pristine minimum-version compatibility and Telegram delivery of the new tool.
 
 ## Next action
 
-T1: discuss source enrichment or an explicitly approved acceptance change; only 20.4%
-of candidates have parsed weekly hours. T2 and T3 pass. No release or catalog submission.
+T4: gates and reject ledger. Live prose hours remain unconfirmed; T4/T5 must enforce
+verification in the recommendation/card pipeline. No release or catalog submission.
 
 ## Deadline
 

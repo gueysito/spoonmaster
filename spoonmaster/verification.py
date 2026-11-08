@@ -159,10 +159,10 @@ def extract(html, venue, country):
     # of service or branch ownership. Multiple distinct numbers remain ambiguous.
     if not phones and named_page:
         candidates = list(page.phones)
-        for line in lines:
+        for i, line in enumerate(lines):
             match = re.search(
                 r"(?:TEL|電話番号|電話)\s*[:：]?\s*(\+?[0-9][0-9 ()-]{6,24})",
-                unicodedata.normalize("NFKC", line),
+                unicodedata.normalize("NFKC", " ".join(lines[i : i + 2])),
                 re.I,
             )
             if match:

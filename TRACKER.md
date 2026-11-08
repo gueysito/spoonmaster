@@ -16,7 +16,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T1 | Progressive hours verification | Attempt hours verification for every displayed finalist (up to three); retain source and retrieval time; distinguish confirmed/unknown/conflicting evidence; recheck the selected venue when missing, conflicting or stale. If hours remain unavailable, explain and encourage calling with a sourced tappable phone number when available. | 2 | next | Owner approved D-013. Verification core, bounded HTTPS adapter and sourced call fallback implemented; focused tests pass. Tool wiring and real-host checks are next. Original [coverage probe](docs/data-gate.md) remains historical evidence. |
+| T1 | Progressive hours verification | Attempt hours verification for every displayed finalist (up to three); retain source and retrieval time; distinguish confirmed/unknown/conflicting evidence; recheck the selected venue when missing, conflicting or stale. If hours remain unavailable, explain and encourage calling with a sourced tappable phone number when available. | 2 | done | D-013; `spoon_verify_hours`, 42 tests on Python 3.11/3.13 and Hermes 3.14.9, Ruff/standards, doctor/validate pass; cleanup verified. [Live three-venue probe](docs/data-gate.md) retains prose hours as unknown and produces a sourced selected-venue call link. Core checkpoint `2ecf786`; T4/T5 enforce the sequence in cards; Telegram taps remain V2. |
 | T2 | Plugin scaffold, Ruff, mock-ctx tests | `plugin.yaml` and `__init__.py` load; unit tests pass; Ruff clean | 2 | done | `spoon_candidates`, directory-entrypoint test, 20 unit tests and Ruff pass on Python 3.13/3.14. Real-host verification is recorded in T3. |
 | T3 | Throwaway profile scripts (up, down) | Profile created, plugin loads, `doctor` and `validate` pass, teardown leaves nothing (listed) | 1 | done | `scripts/check-hermes.py`: named isolated profile created, plugin enabled; doctor --ci, validate --install-deps and 20 tests pass on runtime 2bd378ed1b8d / Python 3.14.9. Profile, copied files, scratch roots, upload and aliases independently confirmed absent. |
 
@@ -24,7 +24,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T4 | Gates and reject ledger | Every gate returns pass/fail/unknown with reason; `/why` lists eliminations | 3 | planned | |
+| T4 | Gates and reject ledger | Every gate returns pass/fail/unknown with reason; `/why` lists eliminations | 3 | next | Consume T1 evidence without treating published hours as open-at-arrival; preserve unknown/conflicting outcomes. |
 | T5 | Card renderer and pick/runner-up/wildcard | All required fields or explicit unknowns; no padded slots | 2 | planned | |
 | T6 | Taste store, scopes, feedback, diff | Diff accurate; unrelated prefs unchanged; view/correct/delete work | 3 | planned | |
 | T7 | Onboarding with pairwise picks | 5 to 8 picks seed the profile; text fallback works | 2 | planned | |
@@ -48,7 +48,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 | ID | Question | How | Status |
 |---|---|---|---|
 | V1 | Can a plugin send images in Telegram? | Throwaway bot or final check | planned |
-| V2 | Do Telegram expandable quotes and `ask_choice` buttons render? | Same | planned |
+| V2 | Do Telegram expandable quotes, `ask_choice` buttons and `tel:` links work? | Channel check; visible phone number remains the portable fallback | planned |
 | V3 | SemVer value for `requires_hermes` | [v2026.9.24 package metadata](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/pyproject.toml): 0.21.5; manifest declares >=0.21.5. Installed-runtime compatibility passed T3; a pristine minimum-version matrix was not run. | done |
 | V4 | Free tiers for Google Places and HotPepper | Official pricing and terms pages | planned |
 | V5 | Tabelog terms on automated access | Official terms | planned |

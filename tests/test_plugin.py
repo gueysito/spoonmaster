@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from spoonmaster import plugin
 from spoonmaster.discovery import DiscoveryError
+from spoonmaster.verification import Verifier
 from tests.test_discovery import normalized, venue
 
 
@@ -76,6 +77,23 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(result["error"], "query_in_progress")
         fetch.assert_not_called()
 
+    def test_discovery_to_finalists_to_selected_tool_flow(self):
+        from tests.test_verification import page
+        from tests.test_verification import venue as verification_venue
+
+        data = {"status": "discovery_only", "candidates": [verification_venue()]}
+        verifier = Verifier(fetch=lambda url: page())
+        with (
+            patch.object(plugin, "fetch_candidates", return_value=data),
+            patch.object(plugin, "verifier", verifier),
+        ):
+            discovered = json.loads(plugin.candidates({"latitude": 35, "longitude": 139}))
+            ids = [v["venue_id"] for v in discovered["candidates"]]
+            finalists = json.loads(plugin.verify_hours({"venue_ids": ids, "stage": "finalists"}))
+            selected = json.loads(plugin.verify_hours({"venue_ids": ids, "stage": "selected"}))
+        self.assertEqual(finalists["venues"][0]["status"], "confirmed")
+        self.assertTrue(selected["venues"][0]["cache_reused"])
+
     def test_directory_entrypoint_registers_without_network_or_storage(self):
         root = Path(__file__).resolve().parents[1]
         # Load under another package name, as Hermes does, with no project on sys.path.
@@ -86,7 +104,8 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
     import fixture_plugin
     class Context:
         def register_tool(self, *, name, toolset, schema, handler):
-            assert name == schema['name'] == 'spoon_candidates'
+            assert name == schema['name']
+            assert name in ('spoon_candidates', 'spoon_verify_hours')
             assert toolset == 'spoonmaster'
             assert json.loads(handler({})) == {'error': 'invalid_arguments'}
             print(name)
@@ -111,5 +130,5 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
             )
             after = sorted(str(path.relative_to(package)) for path in package.rglob("*"))
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "spoon_candidates")
+        self.assertEqual(result.stdout.strip(), "spoon_candidates\nspoon_verify_hours")
         self.assertEqual(before, after)

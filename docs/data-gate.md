@@ -1,5 +1,24 @@
 # Shibuya data gate
 
+The result below preserves the original coverage experiment. D-013 superseded its
+majority-hours acceptance with progressive verification of the finalists and selection.
+
+## Progressive verification exercise (2026-11-08)
+
+`python -m spoonmaster.probe --input <saved-osm-json> --verify-demo` attempted all three
+public demo venues. Between 21:31:25 and 21:31:33 UTC, Miami Garden and Hakuhou returned
+Japanese hours excerpts; FATBURGER failed DNS resolution and stayed unknown. Selecting
+Miami Garden triggered a second direct pass, retained source/retrieval time and returned
+the page's phone as `tel:+81334612401` with advice to call. OSM replay timestamps remained
+null rather than being invented. The two pages are linked in the original evidence below.
+
+All three automatic hours verdicts remained unknown: the live pages did not satisfy
+the conservative structured-hours/branch-match contract. Retrieved prose is available
+for host review. This proves attempts, evidence retention and the selected call fallback,
+not broad hours-parsing coverage, recommendation quality, arrival checks or Telegram taps.
+
+## Original coverage experiment
+
 T1 result, 2026-11-08: **the OSM-only hours criterion fails**. Discovery works,
 and two manually inspected venue pages supply additional facts. This is not yet
 an end-to-end recommendation or an automated website-enrichment result.

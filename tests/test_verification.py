@@ -154,6 +154,8 @@ class VerificationTests(unittest.TestCase):
         self.assertIn("tel:+81312345678", selected["guidance"])
         ambiguous = html + "<p>TEL: 03-9876-5432</p>"
         self.assertIsNone(extract(ambiguous, venue(), "JP")["phone"])
+        labeled = "<h1>Example Dining</h1><div>電話番号</div><div>03-1234-5678</div>"
+        self.assertEqual(extract(labeled, venue(), "JP")["phone"]["uri"], "tel:+81312345678")
 
     def test_cooldown_and_concurrency_prevent_repeated_fetches(self):
         fetch = Mock(return_value=page())

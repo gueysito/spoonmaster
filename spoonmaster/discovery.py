@@ -84,6 +84,8 @@ def fetch_candidates(latitude: float, longitude: float, radius_m: float = 1600) 
         raise DiscoveryError("invalid_source_response") from None
     result = normalize_candidates(payload, latitude, longitude, radius_m)
     result["retrieved_at"] = datetime.now(timezone.utc).isoformat()
+    for candidate in result["candidates"]:
+        candidate["retrieved_at"] = result["retrieved_at"]
     return result
 
 
@@ -157,6 +159,9 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
     return {
         "venue_id": f"osm:{kind}:{identifier}",
         "name": _text(tags.get("name"), 200),
+        "alternate_names": [
+            name for key in ("name:en", "name:ja") if (name := _text(tags.get(key), 200))
+        ],
         "latitude": lat,
         "longitude": lon,
         "distance_m": distance_m(origin_lat, origin_lon, lat, lon),
@@ -167,6 +172,8 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
         "hours": parse_weekly_hours(raw_hours),
         "hours_checked_on": _text(tags.get("check_date:opening_hours"), 32),
         "website": _website(tags.get("website") or tags.get("contact:website")),
+        "phone_raw": _text(tags.get("phone") or tags.get("contact:phone"), 80),
+        "country_code": _text(tags.get("addr:country"), 2),
     }
 
 

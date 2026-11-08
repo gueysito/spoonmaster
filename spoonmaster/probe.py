@@ -4,6 +4,7 @@ import argparse
 import json
 
 from .discovery import DiscoveryError, fetch_candidates, normalize_candidates
+from .verification import Verifier
 
 # Public landmark used as a synthetic test origin, never a person's location.
 SHIBUYA = (35.6595, 139.7005)
@@ -23,7 +24,7 @@ def summarize(result: dict) -> dict:
         "hours_coverage_fraction": hours_parsed / total if total else 0,
         "website_links_present": sum(candidate["website"] is not None for candidate in candidates),
         "cuisine_present": sum(candidate["cuisine"] is not None for candidate in candidates),
-        "majority_hours_criterion_met": total > 0 and hours_parsed > total / 2,
+        "superseded_majority_hours_criterion_met": total > 0 and hours_parsed > total / 2,
         "website_evidence_verified": False,
         "note": "Website links are not website evidence; inspect permitted venue pages separately.",
     }
@@ -38,6 +39,11 @@ def main() -> int:
     mode.add_argument(
         "--input", type=argparse.FileType("r", encoding="utf-8"), help="Replay OSM JSON"
     )
+    parser.add_argument(
+        "--verify-demo",
+        action="store_true",
+        help="Fetch three public demo venue pages, then recheck the selected venue",
+    )
     args = parser.parse_args()
     try:
         if args.live:
@@ -50,6 +56,21 @@ def main() -> int:
                     raise DiscoveryError("response_too_large")
                 result = normalize_candidates(json.loads(raw), *SHIBUYA, RADIUS_M)
             result["retrieved_at"] = None
+        if args.verify_demo:
+            ids = ["osm:node:12332999987", "osm:node:1424672779", "osm:node:5763313579"]
+            verifier = Verifier()
+            verifier.remember([v for v in result["candidates"] if v["venue_id"] in ids])
+            print(
+                json.dumps(
+                    {
+                        "finalists": verifier.verify(ids, "finalists", "JP"),
+                        "selected": verifier.verify(ids[:1], "selected", "JP"),
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 0
         print(
             json.dumps(
                 {"summary": summarize(result), "result": result}, ensure_ascii=False, indent=2

@@ -4,6 +4,7 @@ description: Evidence-only restaurant discovery; recommendations are not impleme
 requires_hermes: ">=0.21.5"
 provides_tools:
   - spoon_candidates
+  - spoon_verify_hours
 provides_hooks: []
 capabilities: []
 requires_env: []

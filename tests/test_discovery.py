@@ -116,8 +116,8 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(summary["weekly_hours_parsed"], 1)
         self.assertEqual(summary["weekly_hours_unknown"], 2)
         self.assertAlmostEqual(summary["hours_coverage_fraction"], 1 / 3)
-        self.assertFalse(summary["majority_hours_criterion_met"])
-        self.assertFalse(summarize(normalized([]))["majority_hours_criterion_met"])
+        self.assertFalse(summary["superseded_majority_hours_criterion_met"])
+        self.assertFalse(summarize(normalized([]))["superseded_majority_hours_criterion_met"])
 
     def test_network_success_and_source_provenance(self):
         response = Response(json.dumps({"elements": [venue()]}).encode())

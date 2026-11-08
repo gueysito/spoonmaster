@@ -4,7 +4,7 @@ A Hermes Agent plugin that helps you decide where to eat right now. It learns yo
 taste, checks the right local sources for where you are, shows the reasoning behind
 its pick, and improves from what actually happened at the table.
 
-Status: pre-alpha. Evidence-only discovery and a Hermes plugin scaffold work locally;
+Status: pre-alpha. Evidence-only discovery and progressive hours checks work locally;
 recommendations and taste learning are not implemented. The scaffold passed real-host
 doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
@@ -69,8 +69,26 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 20 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
+all 42 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
 deletion and removal of the copied files and temporary root were verified.
+
+`spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
+one to three venues, `selected` for exactly one). Call it before showing finalists
+and when the user selects a venue. It attempts the linked venue page, retains source
+URLs and timestamps, and returns confirmed, unknown or conflicting evidence. Selection
+rechecks unresolved or stale evidence; fresh confirmed checks can be reused for
+15 minutes. There is no open-at-arrival guarantee. Known `country_code` values JP, TH,
+ID and KR allow local phone numbers to become international `tel:` links. Missing hours
+produce call advice; missing or ambiguous numbers remain explicit. The visible number
+is a fallback for channels that do not render telephone links. Telegram tap behavior
+has not been tested.
+
+The [source ladder](docs/source-ladders.md#progressive-hours-adapter-t1-pilot) defines
+the exact verification labels and network limits. Unstructured Japanese hours are
+returned as unverified excerpts for host review, not silently treated as a parsed
+schedule. Repeat the live three-venue exercise with
+`.venv/bin/python -m spoonmaster.probe --live --verify-demo`; it also accepts `--input`
+with saved OSM JSON to avoid repeating discovery. The demo then makes live venue reads.
 
 `scripts/check-hermes.py --source <checkout> --python <venv-python>` repeats that
 model-free test using an already installed Hermes runtime. It creates an isolated
@@ -90,14 +108,24 @@ with elapsed-time checks between reads. DNS and a blocked socket read are not a 
 whole-request deadline. The tool admits one query at a time per process and enforces
 a 10-second cooldown after each request. This is a pilot, not a public-service quota.
 
-The plugin uses no secrets, model calls, website fetches, shell commands, telemetry,
-background jobs or plugin-managed storage. The development host-test script invokes
+Hours verification additionally contacts the OSM-linked venue's HTTPS host, reading
+`robots.txt` and at most one page per pass. Each server receives the caller's IP and
+Spoonmaster user agent. Public-address validation, TLS hostname checks, IP pinning,
+no redirects, 512 KiB caps and eight-second socket timeouts bound this transport.
+One verification call runs at a time with a 10-second cooldown per stage. No browser,
+cookies, login, automatic retry or protection bypass is used.
+
+The plugin uses no secrets, model calls, shell commands, telemetry, background jobs
+or persistent plugin storage. It caches up to 200 public venue records in memory for
+30 minutes, plus their verification evidence; origins and preferences are not cached.
+The development host-test script invokes
 the existing Hermes CLI and removes only its own temporary test tree. Network proxy
 settings are not inherited. The plugin does not save the origin, but Hermes may
 retain tool arguments/results in its
-own transcript, and Overpass has its own logging policy. Website links are unverified
-source metadata, not approved fetch targets. Source text is untrusted data.
+own transcript, and source services have their own logging policies. Website links are
+source claims about venue identity, not proof of ownership. Source text is untrusted data.
 
 Data is attributed to [OpenStreetMap contributors under ODbL 1.0](https://www.openstreetmap.org/copyright).
-OSM-only hours coverage failed the initial data gate; see the linked results above.
-Open-Meteo, venue-site adapters, optional APIs and profile storage remain planned.
+OSM-only hours coverage failed the original data gate; D-013 replaced that acceptance
+with progressive checks of the finalists and selected venue. Open-Meteo, broader site
+parsers, optional APIs and profile storage remain planned.
