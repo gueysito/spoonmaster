@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 from spoonmaster.companions import CompanionService
 from spoonmaster.ledger import LedgerStore
+from spoonmaster.locales import LocaleService
 from spoonmaster.onboarding import Onboarding
 from spoonmaster.taste_service import TasteService
 from tests.test_taste import pref
@@ -76,6 +77,19 @@ class HermesTasteTests(unittest.TestCase):
                 json.loads(reconnected.tool({"action": "list"}, session_id="new"))["groups"],
                 ["coworkers"],
             )
+            # Installed public tool contract, inspected without making a provider call.
+            from tools.web_tools import WEB_SEARCH_SCHEMA
+
+            self.assertEqual(WEB_SEARCH_SCHEMA["name"], "web_search")
+            self.assertIn("query", WEB_SEARCH_SCHEMA["parameters"]["properties"])
+            self.assertIn("limit", WEB_SEARCH_SCHEMA["parameters"]["properties"])
+            locale = LocaleService(service)
+            loaded = json.loads(
+                locale.tool(
+                    {"action": "get", "country_code": "JP", "city": "Tokyo"}, session_id="new"
+                )
+            )
+            self.assertEqual(loaded["status"], "bundled")
             set_session_vars(
                 platform="telegram",
                 chat_type="group",
@@ -89,6 +103,14 @@ class HermesTasteTests(unittest.TestCase):
             )
             self.assertEqual(
                 json.loads(reconnected.tool({"action": "list"}, session_id="new"))["error"],
+                "private_context_required",
+            )
+            self.assertEqual(
+                json.loads(
+                    locale.tool(
+                        {"action": "get", "country_code": "JP", "city": "Tokyo"}, session_id="new"
+                    )
+                )["error"],
                 "private_context_required",
             )
         finally:

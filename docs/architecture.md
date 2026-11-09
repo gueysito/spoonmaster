@@ -3,7 +3,8 @@
 Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
 outcomes, provisional cards and a conversation-scoped reject ledger exist. Weekly arrival math is separate
 from unverified date-specific availability. Opt-in taste persistence and evidence-based preference ranking are implemented;
-optional onboarding and confirmed dining companions are implemented. Other surfaces below remain planned.
+optional onboarding, confirmed dining companions and locale ladders are implemented.
+Other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -42,7 +43,7 @@ reused later. Hermes wiring is a thin layer.
 | Who is asking | Command handlers receive `source.user_id`; profile-scoped state | docs |
 | Typed model calls (taste extraction, image reading) | `ctx.llm.complete_structured`, accepts image input, uses the user's active model | docs |
 | Durable state | `ctx.state` (profile-scoped, atomic, 10 MiB) or `plugin_db` SQLite under `<HERMES_HOME>/plugin-data/` | docs |
-| Borrow the host's web/browser tools | `ctx.dispatch_tool` (goes through normal approvals) | docs; tool names unverified |
+| Borrow the host's web/browser tools | `ctx.dispatch_tool` | docs; installed `web_search` schema verified; live provider call unverified |
 | Live progress to attached clients | `ctx.emit_to_session` events | docs; Telegram rendering unverified |
 | Settings | `config_schema` in `plugin.yaml`, `ctx.get_config` | docs |
 | Optional API keys | `requires_env` plus `agent.secret_scope.get_secret` | docs |
@@ -188,7 +189,7 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    the portable fallback.
 
 The current plugin passed doctor, validate (including the install scanner) and
-152 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+168 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
@@ -219,7 +220,7 @@ does not establish durable-profile sharing safety or end-to-end Telegram deliver
 | Telegram renders expandable quotes from Hermes | Ledger uses the one-line summary plus `/why` |
 | `ask_choice` buttons work in our flow | Numbered replies |
 | `a2a` works between two private installs | Shareable profile card |
-| Host web tools callable by name through `dispatch_tool` | Plugin uses only its own keyless HTTP adapters |
+| Live configured host search returns usable locale evidence | Explicit user-source proposals; no fabricated scout results |
 | Free tiers exist for Google Places and HotPepper | Those adapters are excluded |
 
 ### T5 recommendation cards
@@ -363,6 +364,9 @@ existing context hook asks the host agent to establish country/city and call the
 loader on onboarding/new areas; ambiguous origins require clarification. There is
 no new geocoding endpoint or source-specific review parser.
 
+The pre_llm_call addition checks private identity and appends a fixed planning notice.
+Expected weight: under 1 ms for local checks, with no search, database read or model call.
+
 Scouting calls only public `ctx.dispatch_tool("web_search", {query, limit: 5})`, at
 most twice per request, under D-016. The documented installed response envelope is
 `success/data/web`, containing title/url/description fields. Results are capped at
@@ -383,3 +387,13 @@ removes city rows. City lists do not contain exact coordinates or companion data
 Approving a list never changes enabled adapters. Existing OSM discovery and venue
 verification remain the executable baseline. Live provider scouting and model/channel
 orchestration remain unverified; tests inject the documented search envelope.
+
+T9 differential review starts from `de0c58b`, with core checkpoint `8d42640`.
+Checks cover fixed dispatch target/arguments, two-call limits, cooldown/in-flight
+guards, malformed/oversized/provider-error envelopes, unsafe link rejection,
+untrusted snippets, owner/profile/session isolation, human confirmation, stale
+review/replacement, reset during search and deletion. SQL is parameterized; no new
+credential, shell, ingress, upload, payment or direct source-fetch surface is added.
+Host-provider allowance/recovery is disclosed rather than assumed free. The installed
+host schema and actual plugin entrypoint are tested; live provider/model orchestration
+and broader public-release review remain outside this evidence.

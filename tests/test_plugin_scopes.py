@@ -227,3 +227,79 @@ class RegistrationScopeTests(unittest.TestCase):
             for key in list(sys.modules):
                 if key == name or key.startswith(name + "."):
                     sys.modules.pop(key)
+
+    def test_locale_loader_scout_review_cache_and_delete_through_entrypoint(self):
+        root = Path(__file__).resolve().parents[1]
+        name = "spoonmaster_locale_fixture"
+        spec = importlib.util.spec_from_file_location(
+            name, root / "__init__.py", submodule_search_locations=[str(root)]
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+            with tempfile.TemporaryDirectory() as temporary:
+                context = Context()
+                context.state = SimpleNamespace(data_dir=Path(temporary) / "data")
+                calls = []
+
+                def dispatch(tool, args):
+                    calls.append((tool, args))
+                    return json.dumps(
+                        {
+                            "success": True,
+                            "data": {
+                                "web": [
+                                    {
+                                        "title": "Synthetic local guide",
+                                        "url": "https://example.com/dining",
+                                        "description": "Local dining listings and hours.",
+                                    }
+                                ]
+                            },
+                        }
+                    )
+
+                context.dispatch_tool = dispatch
+                module.register(context)
+                hook = context.hooks["pre_llm_call"]
+                initial = hook(session_id="city", platform="cli", user_message="hello")
+                self.assertIn("spoon_locale", initial["context"])
+
+                def call(args, session="city"):
+                    return json.loads(context.tools["spoon_locale"](args, session_id=session))
+
+                japan = call({"action": "get", "country_code": "JP", "city": "Tokyo"})
+                self.assertEqual(japan["ladder"]["sources"][0]["name"], "Tabelog")
+                self.assertFalse(calls)
+                scout = call({"action": "scout", "country_code": "PT", "city": "Lisbon"})
+                self.assertEqual(len(calls), 2)
+                self.assertEqual({name for name, _ in calls}, {"web_search"})
+                self.assertFalse(context.state.data_dir.exists())
+                result = context.commands["spoon"](
+                    scout["confirmation"].removeprefix("/spoon "), platform="cli", session_id="city"
+                )
+                self.assertTrue(json.loads(result)["saved"])
+                context.hooks["on_session_finalize"](session_id="city")
+                hook(session_id="later", platform="cli", user_message="hello")
+                self.assertEqual(
+                    call({"action": "get", "country_code": "PT", "city": "Lisbon"}, "later")[
+                        "status"
+                    ],
+                    "confirmed",
+                )
+                result = context.commands["spoon"](
+                    "delete confirm", platform="cli", session_id="later"
+                )
+                self.assertTrue(json.loads(result)["deleted"])
+                hook(session_id="later", platform="cli", user_message="hello")
+                self.assertEqual(
+                    call({"action": "get", "country_code": "PT", "city": "Lisbon"}, "later")[
+                        "status"
+                    ],
+                    "scout_needed",
+                )
+        finally:
+            for key in list(sys.modules):
+                if key == name or key.startswith(name + "."):
+                    sys.modules.pop(key)

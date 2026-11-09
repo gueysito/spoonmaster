@@ -6,7 +6,8 @@ its pick, and improves from what actually happened at the table.
 
 Status: pre-alpha. Discovery, provisional recommendation cards, progressive hours checks and a reject
 ledger work locally. Optional onboarding, opt-in taste memory, feedback diffs and
-supported taste ranking and confirmed dining companions are implemented. The plugin passed real-host
+supported taste ranking, confirmed companions and locale source ladders are implemented.
+The plugin passed real-host
 doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
@@ -70,8 +71,8 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 152 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
-3.11/3.13 passes 151 tests and skips the one real-host identity test. Profile
+all 168 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
+3.11/3.13 passes 167 tests and skips the one real-host identity test. Profile
 deletion and removal of the copied files and temporary root were verified.
 
 `spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
@@ -288,7 +289,9 @@ no redirects, 512 KiB caps and eight-second socket timeouts bound this transport
 One verification call runs at a time with a 10-second cooldown per stage. No browser,
 cookies, login, automatic retry or protection bypass is used.
 
-The plugin uses no secrets, model calls, shell commands, telemetry or background jobs. It caches up to 200 public venue records in memory for
+Plugin code never reads credentials, invokes a model or shell, sends telemetry or
+runs background jobs. Delegated locale search uses the host's configured provider and
+credential handling. The plugin caches up to 200 public venue records in memory for
 30 minutes, plus their verification evidence. Separately, each conversation retains
 its latest search origin, returned candidates, gate ledger and displayed venue IDs
 with arrival/country/travel/currency options in memory, capped at 100
