@@ -220,3 +220,12 @@ does not establish durable-profile sharing safety or end-to-end Telegram deliver
 | `a2a` works between two private installs | Shareable profile card |
 | Host web tools callable by name through `dispatch_tool` | Plugin uses only its own keyless HTTP adapters |
 | Free tiers exist for Google Places and HotPepper | Those adapters are excluded |
+
+### T5 renderer core
+
+`cards.py` renders every required field or an explicit unknown. `shortlist.py` uses
+exact distance for the initial baseline, excludes failed gates, requires confirmed
+origin and fresh mapped points, and does not select weekly-predicted closures.
+Nearby matching names are deduplicated; a veto applies to duplicate representations.
+A wildcard requires a different listed cuisine. Missing slots remain empty. Taste
+ranking waits for T6. The core is not yet exposed by a recommendation tool.
