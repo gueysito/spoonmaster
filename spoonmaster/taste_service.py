@@ -15,7 +15,9 @@ HELP = (
     "profile; they may appear in your model's tool context. No raw meal diary or location history. "
     "Use /spoon profile to reconnect this private conversation, /spoon export, /spoon pause, "
     "/spoon confirm <id> for a lasting preference, /spoon correct <id> like|dislike|neutral, "
-    "/spoon remove <id>, or /spoon delete confirm. Health/allergy storage is not supported yet."
+    "/spoon remove <id>, or /spoon delete confirm. Saved companions use /spoon companions list; "
+    "dietary storage needs separate sensitive-data consent. "
+    "Profile deletion removes companions too."
 )
 
 

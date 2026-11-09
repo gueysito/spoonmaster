@@ -2,6 +2,7 @@
 
 from functools import partial
 
+from .spoonmaster.companions import COMPANIONS_SCHEMA, CompanionService
 from .spoonmaster.ledger import LedgerStore
 from .spoonmaster.onboarding import Onboarding
 from .spoonmaster.plugin import (
@@ -20,7 +21,7 @@ from .spoonmaster.plugin import (
     verify_hours,
     why,
 )
-from .spoonmaster.taste_service import FEEDBACK_SCHEMA, PROFILE_SCHEMA, TasteService
+from .spoonmaster.taste_service import FEEDBACK_SCHEMA, PROFILE_SCHEMA, TasteService, owner_key
 
 
 def register(ctx):
@@ -29,6 +30,7 @@ def register(ctx):
     store = LedgerStore()
     taste = TasteService(lambda: getattr(getattr(ctx, "state", None), "data_dir", None), store)
     onboarding = Onboarding(taste, getattr(ctx, "ask_choice", None))
+    companions = CompanionService(taste)
     ctx.register_tool(
         name="spoon_candidates",
         toolset="spoonmaster",
@@ -45,19 +47,22 @@ def register(ctx):
         name="spoon_evaluate",
         toolset="spoonmaster",
         schema=EVALUATE_SCHEMA,
-        handler=partial(evaluate_candidates, _ledger_store=store),
+        handler=partial(companions.wrap, partial(evaluate_candidates, _ledger_store=store)),
     )
     ctx.register_tool(
         name="spoon_ledger",
         toolset="spoonmaster",
         schema=LEDGER_SCHEMA,
-        handler=partial(ledger, _ledger_store=store, _taste_service=taste),
+        handler=partial(
+            companions.wrap, partial(ledger, _ledger_store=store, _taste_service=taste)
+        ),
     )
     for schema, handler in (
         (RECOMMEND_SCHEMA, recommend_candidates),
         (SELECT_SCHEMA, select_venue),
     ):
         bound = partial(handler, _ledger_store=store, _taste_service=taste)
+        bound = partial(companions.wrap, bound)
         if handler is select_venue:
             bound = partial(onboarding.selection_tool, bound)
         ctx.register_tool(
@@ -69,19 +74,33 @@ def register(ctx):
     for schema, handler in (
         (PROFILE_SCHEMA, taste.profile_tool),
         (FEEDBACK_SCHEMA, taste.feedback_tool),
+        (COMPANIONS_SCHEMA, companions.tool),
     ):
         ctx.register_tool(
             name=schema["name"], toolset="spoonmaster", schema=schema, handler=handler
         )
+
+    def command(raw_args, **kwargs):
+        if isinstance(raw_args, str) and raw_args.split()[:1] == ["companions"]:
+            return companions.command(raw_args, **kwargs)
+        result = onboarding.command(raw_args, **kwargs)
+        if isinstance(raw_args, str) and raw_args.split() == ["delete", "confirm"]:
+            if '"deleted": true' in result:
+                owner = owner_key(kwargs.get("source"), kwargs.get("platform"))
+                path = taste.state_directory() / "taste.sqlite3"
+                with companions.lock:
+                    companions._invalidate(owner, path)
+        return result
+
     ctx.register_command(
         "spoon",
-        handler=onboarding.command,
+        handler=command,
         description="Optional onboarding, immediate food search and private taste controls",
         args_hint="start|now|profile|help",
     )
     ctx.register_command(
         "why",
-        handler=partial(why, _ledger_store=store, _taste_service=taste),
+        handler=partial(companions.wrap, partial(why, _ledger_store=store, _taste_service=taste)),
         description="Show dining exclusions and unresolved checks",
         args_hint="[page]",
     )
@@ -90,12 +109,14 @@ def register(ctx):
         forget_session(session_id, _ledger_store=store)
         taste.forget(session_id)
         onboarding.forget(session_id)
+        companions.forget(session_id)
 
     def before_turn(**kwargs):
         # Establish CLI/private identity before the onboarding controller reads it.
         recalled = taste.before_turn(**kwargs)
         welcome = onboarding.before_turn(**kwargs)
-        contexts = [result["context"] for result in (welcome, recalled) if result]
+        party = companions.before_turn(**kwargs)
+        contexts = [result["context"] for result in (welcome, recalled, party) if result]
         return {"context": "\n".join(contexts)} if contexts else None
 
     ctx.register_hook("on_session_reset", clear_context)

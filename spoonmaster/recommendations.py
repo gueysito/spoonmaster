@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from .cards import ROLES, card_text, render_card
 from .gates import arrival_gate, build_ledger, fresh
 from .shortlist import admissible, shortlist
-from .taste_rank import apply_taste, taste_matches
+from .taste_rank import apply_taste, companion_matches, taste_matches
 
 
 def recommend(record, request, verifier, *, now=None, profile=None):
@@ -16,6 +16,7 @@ def recommend(record, request, verifier, *, now=None, profile=None):
     evidence = verifier.snapshot(venues)
     ledger = build_ledger(venues, search, evidence, request, now=now)
     taste = taste_matches(venues, profile, request.get("taste_context", {}))
+    companion_matches(venues, request.get("household", {}), taste)
     apply_taste(ledger, taste, venues)
     slots = shortlist(venues, search, ledger, taste)
     if request.get("mode") == "price_tiers":

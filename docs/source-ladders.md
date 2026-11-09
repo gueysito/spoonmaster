@@ -47,6 +47,13 @@ refreshes retain a previously sourced phone with its original retrieval timestam
 
 ## 1. Global baseline (every place)
 
+T8 also retains exact OSM `min_age`, `max_age`, `highchair` and supported `diet:*`
+values from the existing discovery response. Unknown or compound values are not parsed.
+These are community source claims, not current admission or food-safety guarantees.
+Definitions checked against the OSM [age](https://wiki.openstreetmap.org/wiki/Key:min_age),
+[highchair](https://wiki.openstreetmap.org/wiki/Key:highchair) and
+[diet](https://wiki.openstreetmap.org/wiki/Key:diet:*) documentation on 2026-11-08.
+
 | Role | Source | Access | Key | Free |
 |---|---|---|---|---|
 | Discovery | OpenStreetMap (Overpass, Nominatim) | Public APIs within usage policy | No | Yes |

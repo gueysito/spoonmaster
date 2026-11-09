@@ -102,6 +102,16 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         caveat = (
             "Dietary suitability and hours are unconfirmed. Call to confirm both before leaving."
         )
+    household_warnings = [
+        f"{r['rule']} ({r['strength']}): {r['reason']}"
+        for gate in ("diet_and_vetoes", "household", "travel")
+        for r in checks[gate].get("rules", [])
+        if r["result"] != "pass"
+    ]
+    if household_warnings:
+        caveat += " Household requirements remain unresolved; confirm them before proceeding."
+    if mode == "driving":
+        caveat += " Parking availability is unverified."
     if phone:
         caveat += f" [Call {phone['number']}]({phone['uri']})"
     else:
@@ -127,6 +137,7 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         "phone": phone,
         "distance_m": distance,
         "unknown_checks": list(entry["unknown_gates"]),
+        "household_warnings": household_warnings,
         "verification_attempted_at": verification.get("checked_at") if verification else None,
     }
     card["text"] = card_text(card)
@@ -152,6 +163,7 @@ def card_text(card):
             f"Order: {card['order']}",
             f"Why: {card['fit']}",
             f"Friction: {card['friction']}",
+            *[f"Household: {warning}" for warning in card.get("household_warnings", [])],
             f"Caveat: {card['caveat']}",
             f"[Venue source]({card['sources'][0]})",
         ]

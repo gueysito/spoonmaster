@@ -186,9 +186,53 @@ cron context and model-supplied identity are denied; group merging remains T10.
 - `/spoon delete confirm` deletes only that identity's plugin taste profile and clears
   its in-memory choices. It does not erase Hermes transcripts or external backups.
 
-Health/allergy storage is not implemented; tool instructions prohibit saving it in taste
-fields. Household restrictions and their separate consent remain T8. Profile controls
+Health/allergy information must not be saved in taste fields. Companion dietary details
+have separate consent controls below. Profile controls
 are portable text commands; Telegram delivery has not yet been exercised end to end.
+
+## Dining companions and outing rules
+
+Saved groups can represent family, coworkers, a friend or any recurring dining party.
+They belong to your private identity within the current Hermes profile, separate from
+your own taste preferences. Mentioning a group prompts the agent to confirm who is
+joining and which saved needs apply. A solo or unrelated outing does not automatically
+load a saved party. This conversational behavior still needs a live model/channel check.
+
+Ask the agent to prepare a group with numbered members, optional ages, dietary needs,
+cuisine likes/dislikes and explicit cuisine/venue vetoes. `spoon_companions` returns a
+before/after preview and a direct `/spoon companions save <token>` command. Any nonempty
+dietary field requires `/spoon companions save-sensitive <token>` instead. Nothing is
+persisted until that human command; tokens expire after 15 minutes and cannot cross
+conversations, identities or profiles. Do not put diagnoses into preference fields.
+
+- `/spoon companions list` views saved groups. The agent can view one named group.
+- Corrections use a new full replacement preview; unrelated groups remain unchanged.
+- `/spoon companions delete <label> confirm` removes one group; `/spoon delete confirm`
+  also removes all your companion groups along with your taste profile.
+- For a current search, the agent previews the selected member numbers and applicable
+  group rules. `/spoon companions use <token>` confirms that party for that search only.
+  It invalidates older cards. A new search, reset or expiry requires a new confirmation.
+- `/spoon companions solo` clears the current party and search, keeping saved groups.
+
+Typed outing rules support a highchair requirement, parking, maximum queue/travel
+minutes and an arrival-before deadline, each hard or soft. Arrival means reaching the
+venue, not finishing dinner or returning home. The user supplies the planned arrival;
+the plugin does not invent routes or ETA. Transport mode is carried into directions.
+Fresh explicit OSM age/diet/highchair conflicts trigger named ledger rules. Hard
+conflicts exclude; soft conflicts and unsupported facts remain visible warnings.
+Unknown requirements permit provisional cards with confirmation advice. Positive OSM
+tags never establish allergy safety, live availability or overall family suitability.
+Only attending companions' listed-cuisine likes/dislikes affect soft ranking; they
+never override hard vetoes. Unsupported tastes and missing route/menu/queue evidence
+remain unknown. Group sharing and cross-agent merging remain T10.
+
+Companion groups use the existing private SQLite file: up to 20 groups per identity,
+12 members and 20 rules per group, capped at 20 KB serialized per group and 100 owners.
+Stored groups include the exact approved fields and an opaque revision. Previews and
+active parties stay in memory for 15 minutes, capped at 100 conversations. Outing ledgers
+retain anonymous member/rule references and verdicts, not raw ages or dietary strings.
+Viewing/using records may put them in Hermes transcripts and the configured model
+provider. Deletion does not erase those transcripts or backups.
 
 ## Data and privacy
 

@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .discovery import distance_m
 from .hours import DAYS
+from .household import aggregate, constraints
 from .verification import FRESH_SECONDS
 
 GATES = (
@@ -134,23 +135,36 @@ def evaluate(venue, search, verification, request, now):
             source,
             distance_m=round(distance, 1),
         )
-    excluded = request.get("excluded_venue_ids", [])
-    if venue["venue_id"] in excluded:
-        diet = verdict("diet_and_vetoes", "fail", "User explicitly excluded this venue.")
-    elif request.get("dietary_restrictions") == []:
-        diet = verdict(
-            "diet_and_vetoes",
-            "pass",
-            "No dietary restrictions were stated for this outing; "
-            "no explicit venue exclusion matches.",
-        )
-    else:
-        diet = verdict(
-            "diet_and_vetoes",
-            "unknown",
-            "Dietary suitability is unverified; confirm with the venue.",
-            source,
-        )
+    diet_rules, family_rules, travel_rules = constraints(
+        venue, request, fresh(venue.get("retrieved_at"), now)
+    )
+    members = request.get("household", {}).get("members", [])
+    no_diet = request.get("dietary_restrictions") == [] and all(
+        m.get("dietary_restrictions") == [] for m in members
+    )
+    diet = aggregate(
+        "diet_and_vetoes",
+        diet_rules,
+        "No stated dietary restrictions or matching venue veto."
+        if no_diet
+        else "Dietary suitability is unverified; confirm with the venue.",
+        empty_pass=no_diet,
+    )
+    family = aggregate(
+        "household",
+        family_rules,
+        "Stated household rules checked; other family needs are unverified.",
+        empty_pass=request.get("household") == {"members": []},
+    )
+    mode = request.get("travel_mode", "unconfirmed")
+    travel = aggregate(
+        "travel",
+        travel_rules,
+        f"Mode: {mode}; no route or travel-time evidence is available; distance is not ETA.",
+    )
+    travel["mode"] = mode
+    if mode == "driving":
+        travel["reason"] += " Parking availability is unverified."
     evidence = verdict(
         "evidence",
         "pass" if fresh(venue.get("retrieved_at"), now) else "unknown",
@@ -164,15 +178,9 @@ def evaluate(venue, search, verification, request, now):
         radius,
         arrival_gate(verification, request, now),
         verdict("last_order", "unknown", "Kitchen last-order time has not been verified.", source),
-        verdict(
-            "travel",
-            "unknown",
-            "No route or travel-time evidence is available; distance is not ETA.",
-        ),
+        travel,
         diet,
-        verdict(
-            "household", "unknown", "Household constraints and venue fit are not evaluated yet."
-        ),
+        family,
         verdict("taste", "unknown", "No supported taste match is attached to this evaluation."),
         verdict(
             "friction",

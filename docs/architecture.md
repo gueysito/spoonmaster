@@ -3,7 +3,7 @@
 Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
 outcomes, provisional cards and a conversation-scoped reject ledger exist. Weekly arrival math is separate
 from unverified date-specific availability. Opt-in taste persistence and evidence-based preference ranking are implemented;
-optional onboarding is implemented. Household rules and the other surfaces below remain planned.
+optional onboarding and confirmed dining companions are implemented. Other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -237,7 +237,7 @@ Private records carry a revision counter: a network result can save only if its
 search and revision still match. New recommendation requests clear prior choices
 before verification, including cooldown/error paths. Re-evaluation also clears
 choices. Selection retains original outing age; hours refresh never extends consent.
-No raw dietary list is retained. All private state stays registration/conversation
+No raw dietary list is retained in the ledger. All private state stays registration/conversation
 scoped and uses the existing expiry/reset/finalize behavior.
 
 T5 review covers strict arguments, ID swaps, registration isolation, rendered source
@@ -313,3 +313,35 @@ atomic seeding rollback and reminder claims, plus the actual registered flow fro
 skip through selection to later onboarding and a new session. Shared contexts remain
 denied. The host-only test exercises markers and completion through the real Hermes
 identity/data APIs. Live Telegram buttons and model-rendered offers remain unverified.
+
+### T8 dining companions and household rules
+
+`household.py` validates bounded member inputs and hard/soft outing rules. Discovery
+retains only exact supported OSM age, diet and highchair tags; code evaluates conflicts
+without interpreting source prose. Rule IDs identify anonymous members and rule positions.
+Fresh hard conflicts exclude a venue. Unknowns remain provisional with explicit card
+warnings, as approved; positive tags cannot establish dietary safety or live availability.
+Companion cuisine preferences contribute only soft ranking and cannot bypass gates.
+
+`companions.py` reuses the private SQLite transaction boundary, with an additive
+owner/label-keyed table and random revisions. Model tools can view records and prepare
+previews, but only direct human commands can save or activate them. Nonempty dietary
+fields require the sensitive-save variant. Replacements compare revisions and return
+exact before/after values. Deletion also works on corrupt payloads. Whole-profile
+deletion removes companion rows in the same transaction as tastes and onboarding.
+
+Groups can represent family, coworkers or friends. The existing context hook exposes
+only available labels and asks the agent to confirm attendance when a group is referenced.
+Per-search activation uses a member subset and optional rule subset, with the full
+effective party previewed before human confirmation. Nothing activates merely by
+mentioning a label, viewing a profile or starting a new session. These are the owner's
+private records, not imported profiles or implied consent from another agent (T10).
+
+Previews/active parties are registration/session/owner/profile scoped and bounded to
+15 minutes and 100 conversations. Activation invalidates previous cards; a new search
+does not inherit it. Wrapped evaluate/recommend/select/ledger commands validate the
+saved revision before and after execution. Changes/deletion/expiry clear affected
+outings, including changes made by another process. No raw ages/diets enter the ledger.
+The pre_llm_call addition performs bounded local reads only, typically milliseconds
+with the existing 2-second SQLite contention timeout; no extra hook/network/model call.
+Live model recognition and Telegram confirmation delivery remain unverified.

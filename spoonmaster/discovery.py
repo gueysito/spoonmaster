@@ -10,6 +10,7 @@ from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 from .hours import parse_weekly_hours
+from .household import source_claims
 
 ENDPOINT = "https://overpass-api.de/api/interpreter"
 USER_AGENT = "Spoonmaster/0.1.0 (https://github.com/gueysito/spoonmaster)"
@@ -174,6 +175,7 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
         "website": _website(tags.get("website") or tags.get("contact:website")),
         "phone_raw": _text(tags.get("phone") or tags.get("contact:phone"), 80),
         "country_code": _text(tags.get("addr:country"), 2),
+        "household_claims": source_claims(tags),
     }
 
 

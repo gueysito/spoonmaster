@@ -110,3 +110,14 @@ when to revisit. Agent recommendations are noted as such.
   venue under D-013, retain unknown gate results, and never pad missing slots.
 - Alternative: require confirmed hours before filling recommendation slots.
 - Revisit: when better venue evidence changes practical coverage.
+
+## D-015: Reusable companions with outing-specific application (2026-11-08)
+
+- Decision: remember explicitly saved family, coworker and friend needs separately
+  from the owner's tastes; confirm who is joining and which needs apply when referenced.
+  Do not apply those records to every outing. Sensitive dietary saving requires consent.
+- Why: the owner distinguished remembering companions from including them tonight.
+- Decision: unverified household requirements may remain provisional with clear
+  warnings; known hard conflicts exclude. Soft preferences do not become hard vetoes.
+- Alternative: outing-only household data, which loses useful context between sessions.
+- Limits: private local groups only; cross-agent sharing and merging remain T10.

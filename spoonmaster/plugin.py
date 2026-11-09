@@ -6,6 +6,7 @@ import time
 
 from .discovery import DiscoveryError, fetch_candidates, validate_origin
 from .gates import build_ledger, timestamp
+from .household import HOUSEHOLD_SCHEMA, TRAVEL_MODES, valid_household
 from .ledger import LedgerStore, ledger_page, render_ledger, session_key
 from .taste import CONTEXT_KEYS, TasteError, text
 from .verification import Verifier
@@ -129,7 +130,11 @@ EVALUATE_SCHEMA = {
         "supply a user-planned expected_arrival with UTC offset and the known venue IANA timezone; "
         "do not guess an ETA or timezone. Dietary restrictions are user-stated; omit if unknown, "
         "and send [] only if the user explicitly states none. Excluded venue IDs are explicit "
-        "user vetoes. Unknown checks remain unresolved, never fully verified or eligible. "
+        "user vetoes. household contains only explicitly supplied members and hard/soft outing "
+        "rules; omit unknown ages/diets, never infer restrictions or save health data as tastes. "
+        "Use anonymous member order, no names. Rules apply to the whole outing; arrive_before "
+        "means venue arrival, not meal completion or return home. Transport is per outing. "
+        "Unknown checks remain unresolved, never fully verified or eligible. "
         "Returns the first page of the source-linked ledger; /why lists exclusions, "
         "and spoon_ledger retrieves all complete entries by page. "
         "Re-evaluate after finalist hours checks; no network requests are made here."
@@ -141,6 +146,8 @@ EVALUATE_SCHEMA = {
             "origin_confirmed": {"type": "boolean"},
             "expected_arrival": {"type": "string", "maxLength": 64},
             "venue_timezone": {"type": "string", "maxLength": 100},
+            "household": HOUSEHOLD_SCHEMA,
+            "travel_mode": {"type": "string", "enum": TRAVEL_MODES},
             "dietary_restrictions": {
                 "type": "array",
                 "maxItems": 20,
@@ -179,6 +186,10 @@ def _evaluation_arguments(args):
     if not isinstance(args.get("search_id"), str) or len(args["search_id"]) != 24:
         return False
     if type(args.get("origin_confirmed")) is not bool:
+        return False
+    if "household" in args and not valid_household(args["household"]):
+        return False
+    if "travel_mode" in args and args["travel_mode"] not in TRAVEL_MODES:
         return False
     for key in ("dietary_restrictions", "excluded_venue_ids"):
         if key in args:
@@ -289,10 +300,6 @@ RECOMMEND_SCHEMA = {
         "properties": {
             **EVALUATE_SCHEMA["parameters"]["properties"],
             "country_code": {"type": "string", "enum": ["JP", "TH", "ID", "KR"]},
-            "travel_mode": {
-                "type": "string",
-                "enum": ["walking", "driving", "transit", "bicycling"],
-            },
             "home_currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
             "taste_context": {
                 "type": "object",
