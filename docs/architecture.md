@@ -64,7 +64,7 @@ reused later. Hermes wiring is a thin layer.
 | `spoon_feedback` (implemented pilot) | Saves bounded user-reported tastes with revision check; returns exact diff |
 | `spoon_profile` / `/spoon` (implemented pilot) | View/export plus direct enable, pause, confirm, correct, remove and delete commands |
 | `/spoon start` / `/spoon now` (implemented pilot) | Optional six-choice onboarding or immediate food search |
-| `spoon_locale` | Run or refresh the locale scout; show and confirm the ladder |
+| `spoon_locale` (implemented pilot) | Load bundled priorities or propose/review a city ladder |
 | `spoon_order_card` | Top dishes and local-language order text for a venue |
 | `spoon_merge` / `/spoon merge` | Combine profiles for one decision |
 
@@ -354,3 +354,32 @@ isolation regression test fail. Entry-point tests cover confirmation, partial at
 hard age exclusions, cuisine ranking and whole-profile deletion. Errors use fixed codes;
 source text never executes and no new URLs, dependencies, ingress, uploads, payments or
 credential surfaces were added. This is a local-pilot review, not the T14 public audit.
+
+### T9 locale source ladders
+
+`data/ladders.json` owns the Japan/Thailand/Indonesia source ordering, roles, reasons
+and access limits. `locales.py` loads it independently of model reasoning. The
+existing context hook asks the host agent to establish country/city and call the
+loader on onboarding/new areas; ambiguous origins require clarification. There is
+no new geocoding endpoint or source-specific review parser.
+
+Scouting calls only public `ctx.dispatch_tool("web_search", {query, limit: 5})`, at
+most twice per request, under D-016. The documented installed response envelope is
+`success/data/web`, containing title/url/description fields. Results are capped at
+100 KB per response, five hits per query and eight distinct hostnames per proposal.
+Titles/snippets remain untrusted data. Roles follow query purpose and local trust is
+explicitly unverified. One in-flight scout and a 60-second start cooldown bound calls;
+provider timeouts/caching/recovery remain host-owned, not a plugin wall-clock guarantee.
+
+Unknown-city proposals support explicit edits via attributed source inputs. Model
+tools cannot save them: a direct private command confirms the exact preview token.
+Cache rows use the existing transactional SQLite store, owner/city keys, 30-day
+reviews, at most 20 cities per owner and 100 owners. Review and known search-retrieval
+times are separate. Pending tokens are private/session/profile scoped, expire after
+15 minutes and are capped at 100. Concurrent replacement/deletion rejects stale
+confirmation; reset/deletion during search discards the result. Profile deletion
+removes city rows. City lists do not contain exact coordinates or companion data.
+
+Approving a list never changes enabled adapters. Existing OSM discovery and venue
+verification remain the executable baseline. Live provider scouting and model/channel
+orchestration remain unverified; tests inject the documented search envelope.

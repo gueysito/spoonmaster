@@ -170,7 +170,7 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
             assert name == schema['name']
             assert name in ('spoon_candidates', 'spoon_verify_hours',
                             'spoon_evaluate', 'spoon_ledger', 'spoon_recommend', 'spoon_select',
-                            'spoon_profile', 'spoon_feedback', 'spoon_companions')
+                            'spoon_profile', 'spoon_feedback', 'spoon_companions', 'spoon_locale')
             assert toolset == 'spoonmaster'
             expected = ('conversation_context_required' if name == 'spoon_ledger'
                         else 'invalid_arguments')
@@ -208,6 +208,6 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             result.stdout.strip(),
-            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_recommend\nspoon_select\nspoon_profile\nspoon_feedback\nspoon_companions\n/spoon\n/why",
+            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_recommend\nspoon_select\nspoon_profile\nspoon_feedback\nspoon_companions\nspoon_locale\n/spoon\n/why",
         )
         self.assertEqual(before, after)

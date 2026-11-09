@@ -12,6 +12,7 @@ provides_tools:
   - spoon_profile
   - spoon_feedback
   - spoon_companions
+  - spoon_locale
 provides_hooks:
   - on_session_reset
   - on_session_finalize

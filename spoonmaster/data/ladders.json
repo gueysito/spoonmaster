@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "reviewed_on": "2026-11-08",
+  "basis": "docs/source-ladders.md approved field ladders; not independent source-quality certification",
+  "baseline": [
+    {
+      "name": "OpenStreetMap",
+      "roles": [
+        "discovery"
+      ],
+      "domains": [
+        "openstreetmap.org"
+      ],
+      "access": "existing_adapter",
+      "reason": "Keyless nearby discovery; community claims need verification."
+    },
+    {
+      "name": "Venue website",
+      "roles": [
+        "current_facts",
+        "booking"
+      ],
+      "domains": [],
+      "access": "existing_adapter",
+      "reason": "Existing bounded linked-venue checks; identity, robots and network safety still apply."
+    },
+    {
+      "name": "Google Maps",
+      "roles": [
+        "navigation"
+      ],
+      "domains": [
+        "google.com"
+      ],
+      "access": "link_only",
+      "reason": "Directions links; no Places API or inferred travel time."
+    }
+  ],
+  "countries": {
+    "JP": {
+      "name": "Japan (Tokyo pilot)",
+      "sources": [
+        {
+          "name": "Tabelog",
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "domains": [
+            "tabelog.com"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Local dining signal; retain original score scale and review count. Direct access remains disabled until terms review."
+        },
+        {
+          "name": "Google Maps",
+          "roles": [
+            "navigation",
+            "current_facts"
+          ],
+          "domains": [
+            "google.com"
+          ],
+          "access": "link_only",
+          "reason": "Use tappable links and only observed facts; do not infer current status from a link."
+        },
+        {
+          "name": "Venue website",
+          "roles": [
+            "current_facts",
+            "booking"
+          ],
+          "domains": [],
+          "access": "existing_adapter",
+          "reason": "Prioritize venue-published hours and booking facts; apply the existing verification safeguards."
+        },
+        {
+          "name": "TableCheck, Gurunavi and NAVITIME",
+          "roles": [
+            "current_facts",
+            "booking"
+          ],
+          "domains": [
+            "tablecheck.com",
+            "gurunavi.com",
+            "navitime.co.jp"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Corroborate observed hours, menu and booking information; direct adapters are not enabled."
+        },
+        {
+          "name": "HotPepper Gourmet",
+          "roles": [
+            "discovery",
+            "booking"
+          ],
+          "domains": [
+            "hotpepper.jp"
+          ],
+          "access": "disabled",
+          "reason": "Account/free-tier eligibility has not been verified."
+        }
+      ],
+      "notes": [
+        "No automatic chain, cafe or family-restaurant exclusion. That requires an explicit user preference."
+      ]
+    },
+    "TH": {
+      "name": "Thailand (Bangkok field ladder)",
+      "sources": [
+        {
+          "name": "Wongnai and LINE MAN",
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "domains": [
+            "wongnai.com"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Local dining signal from the approved field ladder; direct adapters are not enabled."
+        },
+        {
+          "name": "Google Maps",
+          "roles": [
+            "navigation"
+          ],
+          "domains": [
+            "google.com"
+          ],
+          "access": "link_only",
+          "reason": "Directions links only."
+        },
+        {
+          "name": "Michelin Guide",
+          "roles": [
+            "quality"
+          ],
+          "domains": [
+            "guide.michelin.com"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Guide signal where a venue is actually listed; no inferred coverage."
+        },
+        {
+          "name": "Venue website",
+          "roles": [
+            "current_facts",
+            "booking"
+          ],
+          "domains": [],
+          "access": "existing_adapter",
+          "reason": "Verify hours and menu through the existing linked-venue adapter."
+        },
+        {
+          "name": "Chope and Grab Dine Out",
+          "roles": [
+            "booking"
+          ],
+          "domains": [
+            "chope.co",
+            "grab.com"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Booking leads only; no account or direct adapter enabled."
+        }
+      ],
+      "notes": [
+        "Confirm transport, queue tolerance and seating needs; do not invent traffic estimates."
+      ]
+    },
+    "ID": {
+      "name": "Indonesia (Bali field ladder)",
+      "sources": [
+        {
+          "name": "Google Maps",
+          "roles": [
+            "navigation"
+          ],
+          "domains": [
+            "google.com"
+          ],
+          "access": "link_only",
+          "reason": "Directions links only."
+        },
+        {
+          "name": "Chope and Grab Dine Out",
+          "roles": [
+            "booking"
+          ],
+          "domains": [
+            "chope.co",
+            "grab.com"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Booking leads; availability and direct access remain unverified."
+        },
+        {
+          "name": "Venue website",
+          "roles": [
+            "current_facts",
+            "booking"
+          ],
+          "domains": [],
+          "access": "existing_adapter",
+          "reason": "Verify hours and published facts through the existing linked-venue adapter."
+        },
+        {
+          "name": "Local guides",
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "domains": [],
+          "access": "search_or_user_content",
+          "reason": "Use attributed guide evidence and cross-check venue identity; no bundled guide endorsement."
+        },
+        {
+          "name": "TripAdvisor",
+          "roles": [
+            "quality"
+          ],
+          "domains": [
+            "tripadvisor.com"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Tourist-signal cross-check only, not the primary quality ranking."
+        }
+      ],
+      "notes": [
+        "Confirm transport and family needs; traffic, heat and rain require actual evidence."
+      ]
+    }
+  }
+}

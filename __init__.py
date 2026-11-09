@@ -4,6 +4,7 @@ from functools import partial
 
 from .spoonmaster.companions import COMPANIONS_SCHEMA, CompanionService
 from .spoonmaster.ledger import LedgerStore
+from .spoonmaster.locales import LOCALE_SCHEMA, LocaleService
 from .spoonmaster.onboarding import Onboarding
 from .spoonmaster.plugin import (
     CANDIDATES_SCHEMA,
@@ -31,6 +32,7 @@ def register(ctx):
     taste = TasteService(lambda: getattr(getattr(ctx, "state", None), "data_dir", None), store)
     onboarding = Onboarding(taste, getattr(ctx, "ask_choice", None))
     companions = CompanionService(taste)
+    locales = LocaleService(taste, getattr(ctx, "dispatch_tool", None))
     ctx.register_tool(
         name="spoon_candidates",
         toolset="spoonmaster",
@@ -75,12 +77,15 @@ def register(ctx):
         (PROFILE_SCHEMA, taste.profile_tool),
         (FEEDBACK_SCHEMA, taste.feedback_tool),
         (COMPANIONS_SCHEMA, companions.tool),
+        (LOCALE_SCHEMA, locales.tool),
     ):
         ctx.register_tool(
             name=schema["name"], toolset="spoonmaster", schema=schema, handler=handler
         )
 
     def command(raw_args, **kwargs):
+        if isinstance(raw_args, str) and raw_args.split()[:1] == ["locale"]:
+            return locales.command(raw_args, **kwargs)
         if isinstance(raw_args, str) and raw_args.split()[:1] == ["companions"]:
             return companions.command(raw_args, **kwargs)
         result = onboarding.command(raw_args, **kwargs)
@@ -90,6 +95,7 @@ def register(ctx):
                 path = taste.state_directory() / "taste.sqlite3"
                 with companions.lock:
                     companions._invalidate(owner, path)
+                locales.invalidate(owner, path)
         return result
 
     ctx.register_command(
@@ -110,13 +116,15 @@ def register(ctx):
         taste.forget(session_id)
         onboarding.forget(session_id)
         companions.forget(session_id)
+        locales.forget(session_id)
 
     def before_turn(**kwargs):
         # Establish CLI/private identity before the onboarding controller reads it.
         recalled = taste.before_turn(**kwargs)
         welcome = onboarding.before_turn(**kwargs)
         party = companions.before_turn(**kwargs)
-        contexts = [result["context"] for result in (welcome, recalled, party) if result]
+        locale = locales.before_turn(**kwargs)
+        contexts = [result["context"] for result in (welcome, recalled, party, locale) if result]
         return {"context": "\n".join(contexts)} if contexts else None
 
     ctx.register_hook("on_session_reset", clear_context)

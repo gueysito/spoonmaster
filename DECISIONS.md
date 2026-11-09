@@ -121,3 +121,12 @@ when to revisit. Agent recommendations are noted as such.
   warnings; known hard conflicts exclude. Soft preferences do not become hard vetoes.
 - Alternative: outing-only household data, which loses useful context between sessions.
 - Limits: private local groups only; cross-agent sharing and merging remain T10.
+
+## D-016: Bounded locale scout through existing host search (2026-11-08)
+
+- Decision: use the already-configured Hermes search for at most two searches per
+  locale scout request, including its existing provider allowance if applicable.
+- Why: T9 needs attributed local-source discovery without adding an account or provider.
+- Alternative: manual proposals using only user-supplied source evidence.
+- Limits: city/country queries only; no new subscription, key, provider configuration,
+  source-page fetch or paid venue API. Confirmation saves guidance, not access rights.

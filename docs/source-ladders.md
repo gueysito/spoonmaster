@@ -6,7 +6,9 @@ Choosing the right sources for the place is the core of good recommendations. Th
 ladders below come from field use in Japan, Thailand and Indonesia during summer 2026
 through the author's Hermes agent; Korea was used in the field without a written ladder.
 
-Ladders will ship as data files. Access status is planned unless marked. Nothing here
+Ladders ship in `spoonmaster/data/ladders.json` for Japan, Thailand and Indonesia.
+`spoon_locale` loads them or stages an unknown-city proposal for review.
+Access status is planned unless marked. Nothing here
 grants permission to scrape: every source goes through the tiers in section 3.
 
 ## Progressive hours adapter (T1 pilot)
@@ -129,7 +131,8 @@ private credentials.
 
 For a place with no ladder:
 
-1. Reverse-geocode the origin to country, city and neighborhood.
+1. Establish country, city and neighborhood from explicit user input or attributed
+   host location evidence. Ask when ambiguous; the plugin adds no geocoding endpoint.
 2. Use the host's web search to find what locals use: review platforms, food editors and
    critics, guide lists, food writers, video channels, social accounts, delivery apps
    that carry ratings.
@@ -139,6 +142,14 @@ For a place with no ladder:
    edits. Cache it with a review date.
 5. Social and video sources are roadmap and only through permitted routes (official
    APIs, links the user shares).
+
+The T9 scout makes at most two existing-host `web_search` calls, with five results
+requested per query. It proposes deduplicated source links, roles by query purpose
+and attributed snippets; it does not certify local trust or read pages. The human
+reviews/edits before a direct confirmation saves an owner-private city list with
+review and retrieval dates. Reviews expire after 30 days. Host-search allowance use
+was explicitly approved in D-016; no new provider/account is installed. Source
+permissions and disabled adapters remain unchanged after confirmation.
 
 ## 5. Field lessons that shaped the rules
 

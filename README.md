@@ -234,6 +234,43 @@ retain anonymous member/rule references and verdicts, not raw ages or dietary st
 Viewing/using records may put them in Hermes transcripts and the configured model
 provider. Deletion does not erase those transcripts or backups.
 
+## Locale source ladders
+
+`spoon_locale get` loads source priorities from bundled JSON for Japan (Tokyo pilot),
+Thailand and Indonesia. Use an explicitly established country code and city; if the
+place is ambiguous, the agent asks. Location resolution stays with the user or the
+host's existing tools; this plugin adds no reverse-geocoding endpoint.
+
+For an unfamiliar city, `spoon_locale scout` makes at most two `web_search` calls
+through the existing Hermes dispatcher, requesting five results each. It sends only
+city/country and fixed dining-source queries, not coordinates, tastes or companion data.
+The existing provider may consume its configured allowance; no provider, account or
+subscription is added or reconfigured. One scout runs per registration at a time,
+with 60 seconds between starts. Provider timeouts, caching and fallback remain host-owned.
+Only bounded titles, public HTTPS links and snippets are used; no candidate page is fetched.
+
+The result is a proposed source list, with provisional roles and reasons to review.
+Search position is not proof of quality or local trust. The agent can use
+`spoon_locale propose` to submit an edited list of attributed sources, including
+user-supplied sources when host search is unavailable. No fabricated fallback list is
+returned after failed searches. Direct `/spoon locale confirm <token>` saves the
+displayed list for 30 days; stale or future-dated reviews require renewed review.
+`/spoon locale forget <country> <city>` removes one saved list; profile deletion removes
+all of that identity's city lists. Pending confirmations expire after 15 minutes.
+
+City lists are owner-private in the existing SQLite file, capped at 20 cities per
+identity and 100 owners. They store city/country, up to eight source names/URLs/roles/
+reasons, review time and search retrieval time when known. This is coarse city context,
+not coordinate history. Tools can expose it to Hermes transcripts/model providers.
+Source URLs with credentials, queries, fragments or non-public-looking hosts are refused.
+These are links only; source access is never authorized merely by approving a ladder.
+
+Bundled Tabelog and similar entries allow permitted snippets or user-provided content;
+direct scraping remains disabled. HotPepper and Places APIs remain disabled pending
+their separate account/free-tier checks. Source ladders guide the agent; automated
+venue discovery and hours checks still use the existing OSM/linked-venue adapters.
+Live provider scouting and end-to-end model/Telegram presentation remain unverified.
+
 ## Data and privacy
 
 This slice sends coordinates, radius and a restaurant query to
