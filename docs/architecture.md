@@ -245,3 +245,15 @@ T5 review covers strict arguments, ID swaps, registration isolation, rendered so
 text, bounded public-page reads, cooldown failures and concurrent state changes.
 No new dependencies, credentials, paid APIs, ingress, uploads or payment surfaces.
 Telegram rendering and a broad release security review remain tracker work.
+
+### T6 storage core
+
+`taste.py` stores bounded structured preferences in a versioned SQLite file beneath
+the plugin data directory. Reads before opt-in create nothing. Transactions pair
+revision checks, mutation and the returned diff; a failed batch rolls back entirely.
+Tentative, situational and durable items retain provenance and confidence. Model
+feedback cannot promote an item to durable or overwrite a directly confirmed item.
+User controls confirm/correct/remove items, pause learning or delete their profile.
+Deletion uses SQLite secure deletion; Hermes transcripts and external backups are
+separate. Raw feedback transcripts and exact location history are not stored.
+The core is tested independently; host identity and tool wiring remain next.
