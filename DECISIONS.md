@@ -101,3 +101,12 @@ when to revisit. Agent recommendations are noted as such.
 - Limits: published hours do not guarantee availability or dietary safety. Arrival-time
   math remains T4. If a phone number is missing, unsafe or ambiguous, say so explicitly.
 - Revisit: real source coverage, latency and channel link behavior provide new evidence.
+
+## D-014: Provisional picks when hours are unknown (2026-11-08)
+
+- Decision: show provisional picks with explicit uncertainty and call advice.
+- Why: the owner chose this over leaving every slot empty until hours are confirmed.
+- Limits: attempt verification before each displayed finalist, refresh the selected
+  venue under D-013, retain unknown gate results, and never pad missing slots.
+- Alternative: require confirmed hours before filling recommendation slots.
+- Revisit: when better venue evidence changes practical coverage.

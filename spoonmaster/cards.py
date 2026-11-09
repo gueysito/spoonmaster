@@ -61,7 +61,18 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         if verification["status"] == "conflicting":
             hours = "Conflicting published schedules"
         elif verification["status"] == "confirmed" and fresh(verification["checked_at"], now):
-            hours = "Published weekly hours found; date-specific availability unconfirmed"
+            published = [
+                plain(schedule.get("raw"), 120)
+                for evidence in verification["evidence"]
+                if evidence["kind"] == "venue_page"
+                for schedule in evidence.get("schedules", [])
+                if schedule["parsed"]["status"] == "parsed_weekly"
+            ]
+            hours = (
+                "Published weekly hours: "
+                + "; ".join(published[:2])
+                + "; date-specific availability unconfirmed"
+            )
         elif not fresh(verification["checked_at"], now):
             hours = "Stale check; current hours unconfirmed"
         candidate = verification.get("phone")
@@ -81,10 +92,13 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         "pick": "Nearest shortlisted option; taste fit is not established yet.",
         "runner_up": "Next nearest shortlisted alternative; taste fit is not established yet.",
         "wildcard": "A different listed cuisine; taste fit is not established yet.",
+        "selected": "Your selected venue; unresolved checks still need confirmation.",
     }[role]
     caveat = "Hours and other suitability checks remain unconfirmed. Call before heading there."
     if checks["diet_and_vetoes"]["result"] == "unknown":
-        caveat = "Dietary suitability and hours are unconfirmed. Confirm both with the venue."
+        caveat = (
+            "Dietary suitability and hours are unconfirmed. Call to confirm both before leaving."
+        )
     if phone:
         caveat += f" [Call {phone['number']}]({phone['uri']})"
     else:
@@ -117,7 +131,12 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
 
 
 def card_text(card):
-    label = {"pick": "Pick", "runner_up": "Runner-up", "wildcard": "Wildcard"}[card["role"]]
+    label = {
+        "pick": "Pick",
+        "runner_up": "Runner-up",
+        "wildcard": "Wildcard",
+        "selected": "Selected",
+    }[card["role"]]
     return "\n".join(
         [
             f"{label} (provisional): {card['name']} · {card['cuisine']}",

@@ -50,6 +50,15 @@ class RegistrationScopeTests(unittest.TestCase):
                 )
             args = {"search_id": found["search_id"], "origin_confirmed": True}
             first.tools["spoon_evaluate"](args, session_id="reused-session")
+            denied = json.loads(second.tools["spoon_recommend"](args, session_id="reused-session"))
+            self.assertEqual(denied["error"], "search_not_available")
+            denied = json.loads(
+                second.tools["spoon_select"](
+                    {"search_id": found["search_id"], "venue_id": "osm:node:1"},
+                    session_id="reused-session",
+                )
+            )
+            self.assertEqual(denied["error"], "search_not_available")
             other = json.loads(second.tools["spoon_ledger"]({}, session_id="reused-session"))
             self.assertEqual(other, {"error": "no_current_ledger"})
             second.hooks["on_session_reset"](session_id="reused-session")

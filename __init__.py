@@ -7,11 +7,15 @@ from .spoonmaster.plugin import (
     CANDIDATES_SCHEMA,
     EVALUATE_SCHEMA,
     LEDGER_SCHEMA,
+    RECOMMEND_SCHEMA,
+    SELECT_SCHEMA,
     VERIFY_SCHEMA,
     candidates,
     evaluate_candidates,
     forget_session,
     ledger,
+    recommend_candidates,
+    select_venue,
     verify_hours,
     why,
 )
@@ -45,6 +49,16 @@ def register(ctx):
         schema=LEDGER_SCHEMA,
         handler=partial(ledger, _ledger_store=store),
     )
+    for schema, handler in (
+        (RECOMMEND_SCHEMA, recommend_candidates),
+        (SELECT_SCHEMA, select_venue),
+    ):
+        ctx.register_tool(
+            name=schema["name"],
+            toolset="spoonmaster",
+            schema=schema,
+            handler=partial(handler, _ledger_store=store),
+        )
     ctx.register_command(
         "why",
         handler=partial(why, _ledger_store=store),

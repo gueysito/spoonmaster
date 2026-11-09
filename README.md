@@ -4,8 +4,8 @@ A Hermes Agent plugin that helps you decide where to eat right now. It learns yo
 taste, checks the right local sources for where you are, shows the reasoning behind
 its pick, and improves from what actually happened at the table.
 
-Status: pre-alpha. Discovery, progressive hours checks and a reject ledger work locally;
-recommendations and taste learning are not implemented. The scaffold passed real-host
+Status: pre-alpha. Discovery, provisional recommendation cards, progressive hours checks and a reject
+ledger work locally; taste learning is not implemented. The scaffold passed real-host
 doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
@@ -69,12 +69,12 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 64 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
+all 84 tests passed on an existing Hermes runtime with Python 3.14.9. Profile
 deletion and removal of the copied files and temporary root were verified.
 
 `spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
-one to three venues, `selected` for exactly one). Call it before showing finalists
-and when the user selects a venue. It attempts the linked venue page, retains source
+one to three venues, `selected` for exactly one). The card tools below enforce this sequence;
+use this lower-level tool for additional evidence inspection. It attempts the linked venue page, retains source
 URLs and timestamps, and returns confirmed, unknown or conflicting evidence. Selection
 rechecks unresolved or stale evidence; fresh confirmed checks can be reused for
 15 minutes. There is no open-at-arrival guarantee. Known `country_code` values JP, TH,
@@ -106,6 +106,21 @@ discovered venues omitted by the result limit. This does not rank or recommend p
 `spoon_ledger` returns one complete venue per page with all ten checks and source links;
 follow `next_page` until null for the complete ledger. Both show the original evaluation
 time. Re-run `spoon_evaluate` after hours verification or changed outing constraints.
+`spoon_recommend` accepts the same outing inputs, plus optional `country_code`,
+`travel_mode` and three-letter `home_currency`. It attempts hours verification for
+up to three finalists and returns complete provisional cards with explicit unknowns.
+The baseline favors distance and a distinct listed cuisine for the wildcard; it does
+not yet rank personal taste or restaurant quality. Known failures, duplicate venues
+and weekly-predicted closures cannot fill slots. Missing prices leave requested
+`mode: price_tiers` slots empty rather than inventing spend estimates.
+
+After the user chooses, call `spoon_select` with `search_id` and a displayed `venue_id`.
+It rechecks missing, conflicting or stale hours, retains sourced call links and warns
+against proceeding when a weekly schedule predicts closure. The user initiates any
+call. New recommendation requests invalidate old choices even when verification is
+unavailable; new searches and re-evaluation also invalidate old choices. Outings older
+than 15 minutes require reconfirmation before selection.
+
 These operations require Hermes's conversation context; a model-supplied session ID
 cannot select another conversation's records. Missing context fails closed.
 
@@ -137,7 +152,8 @@ cookies, login, automatic retry or protection bypass is used.
 The plugin uses no secrets, model calls, shell commands, telemetry, background jobs
 or persistent plugin storage. It caches up to 200 public venue records in memory for
 30 minutes, plus their verification evidence. Separately, each conversation retains
-its latest search origin, returned candidates and gate ledger in memory, capped at 100
+its latest search origin, returned candidates, gate ledger and displayed venue IDs
+with arrival/country/travel/currency options in memory, capped at 100
 conversations. Those records expire 30 minutes after discovery; a new search replaces
 the previous one, and session-reset/finalize callbacks clear the reported conversation.
 Expired records are removed on subsequent store access. Raw dietary lists are not retained
@@ -147,6 +163,11 @@ the existing Hermes CLI and removes only its own temporary test tree. Network pr
 settings are not inherited. Hermes may retain tool arguments/results in its
 own transcript, and source services have their own logging policies. Website links are
 source claims about venue identity, not proof of ownership. Source text is untrusted data.
+
+Map and directions links are built from mapped coordinates using
+[Google Maps URLs](https://developers.google.com/maps/documentation/urls/get-started).
+Generating a link makes no Google request. Opening directions shares the origin and
+destination with Google; no travel time is inferred from straight-line distance.
 
 Data is attributed to [OpenStreetMap contributors under ODbL 1.0](https://www.openstreetmap.org/copyright).
 OSM-only hours coverage failed the original data gate; D-013 replaced that acceptance

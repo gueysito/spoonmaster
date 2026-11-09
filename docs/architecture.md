@@ -1,8 +1,8 @@
 # Spoonmaster architecture
 
 Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
-outcomes and a conversation-scoped reject ledger exist. Weekly arrival math is separate
-from unverified date-specific availability. Ranking, cards, persistent taste state and
+outcomes, provisional cards and a conversation-scoped reject ledger exist. Weekly arrival math is separate
+from unverified date-specific availability. Personal taste ranking, persistent taste state and
 the other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
@@ -57,7 +57,8 @@ reused later. Hermes wiring is a thin layer.
 |---|---|
 | `spoon_candidates` (implemented pilot) | Explicit origin and radius; returns distance-sorted OSM evidence only, with unknowns and no recommendation verdict |
 | `spoon_verify_hours` (implemented pilot) | Check up to three discovered finalists; refresh the selected venue when unresolved/stale; return sourced hours evidence and call guidance |
-| `spoon_recommend` | Origin, radius, ask, household; returns pick/runner-up/wildcard cards and a ledger id |
+| `spoon_recommend` (implemented pilot) | Latest search and explicit outing constraints; verifies and renders provisional pick/runner-up/wildcard cards |
+| `spoon_select` (implemented pilot) | Selected displayed venue; refreshes hours and renders uncertainty/call guidance |
 | `spoon_evaluate` (implemented pilot) | Evaluate every returned discovery candidate; keep failed and unresolved checks distinct |
 | `spoon_ledger` / `/why` (implemented pilot) | Full paginated gate details or a readable exclusion/unknown list for this conversation's latest evaluation |
 | `spoon_feedback` | Records feedback; returns the taste diff |
@@ -83,15 +84,15 @@ recommend(origin, radius, ask, household):
   return render_cards(slots), save_ledger(cands)
 ```
 
-Gates and ranking are code. The model interprets the ask, writes the one-sentence
-tradeoff and phrases the cards from the evidence record.
+Gates, baseline ranking and card rendering are code. The model interprets the ask
+and relays the generated tradeoff, cards and uncertainty without dropping fields.
 
-The current pilot uses `spoon_candidates` → `spoon_evaluate` → finalist verification →
-re-evaluation → selected-venue verification. Tool descriptions instruct the host to check
-every displayed finalist and relay uncertainty/call guidance. Until T5 implements
-the recommendation/card pipeline, this sequence depends on host tool use; it is not
-an enforced renderer gate. Verification accepts only IDs discovered in this process,
-never caller-supplied URLs, schedules or freshness timestamps. Exact source/status,
+The current pilot uses `spoon_candidates` → `spoon_recommend` → `spoon_select`.
+The recommendation tool evaluates all returned candidates, verifies up to three
+finalists, reapplies gates and renders cards. Selection refreshes unresolved or stale
+hours. `spoon_evaluate` remains available for inspection without recommendations.
+Verification accepts only IDs discovered in this process, never caller-supplied
+URLs, schedules or freshness timestamps. Exact source/status,
 cache and transport semantics live in the [source ladder](source-ladders.md).
 
 ### Gate and ledger core (T4)
@@ -187,7 +188,7 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    the portable fallback.
 
 The current scaffold passed doctor, validate (including the install scanner) and
-64 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+84 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
@@ -221,11 +222,26 @@ does not establish durable-profile sharing safety or end-to-end Telegram deliver
 | Host web tools callable by name through `dispatch_tool` | Plugin uses only its own keyless HTTP adapters |
 | Free tiers exist for Google Places and HotPepper | Those adapters are excluded |
 
-### T5 renderer core
+### T5 recommendation cards
 
 `cards.py` renders every required field or an explicit unknown. `shortlist.py` uses
 exact distance for the initial baseline, excludes failed gates, requires confirmed
 origin and fresh mapped points, and does not select weekly-predicted closures.
 Nearby matching names are deduplicated; a veto applies to duplicate representations.
 A wildcard requires a different listed cuisine. Missing slots remain empty. Taste
-ranking waits for T6. The core is not yet exposed by a recommendation tool.
+ranking waits for T6. `spoon_recommend` verifies at most three proposed finalists before rendering any
+cards, then reapplies gates without replacing newly excluded slots with unchecked
+venues. `spoon_select` permits only the latest displayed IDs and refreshes evidence
+under D-013. D-014 permits provisional picks without upgrading unknown gates.
+
+Private records carry a revision counter: a network result can save only if its
+search and revision still match. New recommendation requests clear prior choices
+before verification, including cooldown/error paths. Re-evaluation also clears
+choices. Selection retains original outing age; hours refresh never extends consent.
+No raw dietary list is retained. All private state stays registration/conversation
+scoped and uses the existing expiry/reset/finalize behavior.
+
+T5 review covers strict arguments, ID swaps, registration isolation, rendered source
+text, bounded public-page reads, cooldown failures and concurrent state changes.
+No new dependencies, credentials, paid APIs, ingress, uploads or payment surfaces.
+Telegram rendering and a broad release security review remain tracker work.

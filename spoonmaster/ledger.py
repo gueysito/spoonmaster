@@ -48,6 +48,8 @@ class LedgerStore:
                 },
                 "venues": copy.deepcopy(result["candidates"]),
                 "ledger": None,
+                "revision": 0,
+                "presentation": None,
             }
             while len(self.records) > MAX_SESSIONS:
                 self.records.pop(next(iter(self.records)))
@@ -61,13 +63,17 @@ class LedgerStore:
                 return None
             return copy.deepcopy(record)
 
-    def save(self, session, identifier, ledger):
+    def save(self, session, identifier, ledger, *, expected_revision=None, presentation=None):
         with self.lock:
             self._prune()
             record = self.records.get(session) if session_key(session) else None
             if not record or record["search_id"] != identifier:
                 return False
+            if expected_revision is not None and record["revision"] != expected_revision:
+                return False
             record["ledger"] = copy.deepcopy(ledger)
+            record["revision"] += 1
+            record["presentation"] = copy.deepcopy(presentation)
             return True
 
     def latest(self, session):

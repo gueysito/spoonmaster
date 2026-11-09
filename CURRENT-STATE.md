@@ -1,7 +1,7 @@
 # Current state
 
-Discovery, progressive hours checks and the reject ledger run locally; recommendation
-cards and taste learning remain planned. T4 passes. Updated 2026-11-08.
+Discovery, provisional recommendation cards, selected-venue rechecks and the reject
+ledger run locally; taste learning remains planned. T5 passes. Updated 2026-11-08.
 
 ## Works
 
@@ -9,9 +9,10 @@ cards and taste learning remain planned. T4 passes. Updated 2026-11-08.
 - Standards kit adopted; commit-message and pre-commit hooks active.
 - `spoon_candidates` and `spoon_verify_hours`: finalist checks, selected refresh, sourced call links.
 - `spoon_evaluate`, `spoon_ledger` and `/why`: all ten gates, explicit failures/unknowns, full paging.
-- 64 tests pass on Python 3.11/3.13 and real Hermes Python 3.14.9; Ruff format/lint pass.
+- 84 tests pass on Python 3.11/3.13 and real Hermes Python 3.14.9; Ruff format/lint pass.
 - [Live probe](docs/data-gate.md): three venue attempts, two prose-hours extracts, selected recheck.
-- Real Hermes doctor/validate pass with four tools/two hooks; profiles, upload and roots removed.
+- Real Hermes doctor/validate pass with six tools/two hooks; profiles, upload and roots removed.
+- `spoon_recommend` / `spoon_select`: provisional cards, call guidance, empty slots and stale-choice guards.
 - Private search/ledger memory is registration- and conversation-scoped, bounded and expiring.
 
 ## Known from the test host (2026-11-08)
@@ -21,7 +22,7 @@ cards and taste learning remain planned. T4 passes. Updated 2026-11-08.
 - Enabled toolsets: web, browser, vision, tts. Disabled: stt.
 - Bundled `a2a` agent-to-agent plugin present but not enabled.
 - Catalog search shows no dining or restaurant-recommendation plugin.
-- Runtime 2bd378ed1b8d, Python 3.14.9; isolated test registered four tools and two hooks.
+- Runtime 2bd378ed1b8d, Python 3.14.9; isolated test registered six tools and two hooks.
 
 ## Unverified (see TRACKER V-rows)
 
@@ -31,8 +32,8 @@ cards and taste learning remain planned. T4 passes. Updated 2026-11-08.
 
 ## Next action
 
-T5: recommendation cards and pick/runner-up/wildcard. Source gaps, including date-specific
-availability, remain unknown. No release or catalog submission.
+T6: taste store, preference scopes and feedback diffs with view/correct/delete controls.
+Ranking currently uses distance and cuisine variety. No release or catalog submission.
 
 ## Deadline
 

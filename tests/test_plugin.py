@@ -169,7 +169,7 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
         def register_tool(self, *, name, toolset, schema, handler):
             assert name == schema['name']
             assert name in ('spoon_candidates', 'spoon_verify_hours',
-                            'spoon_evaluate', 'spoon_ledger')
+                            'spoon_evaluate', 'spoon_ledger', 'spoon_recommend', 'spoon_select')
             assert toolset == 'spoonmaster'
             expected = ('conversation_context_required' if name == 'spoon_ledger'
                         else 'invalid_arguments')
@@ -205,6 +205,6 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             result.stdout.strip(),
-            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\n/why",
+            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_recommend\nspoon_select\n/why",
         )
         self.assertEqual(before, after)
