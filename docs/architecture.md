@@ -283,3 +283,15 @@ abuse controls and end-to-end Telegram delivery are not established by this revi
 Host contracts inspected at `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`:
 [plugin state facade](https://github.com/NousResearch/hermes-agent/blob/2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19/hermes_cli/plugins_state.py),
 [session context](https://github.com/NousResearch/hermes-agent/blob/2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19/gateway/session_context.py).
+
+### T7 onboarding core
+
+`onboarding.py` offers personalization or immediate search, with six optional pairs
+and numbered text commands. Choice and reminder markers are stored separately from
+tastes in an additive `onboarding` table after the user chooses a path. First-offer
+reads create no files. Answers stay in bounded, two-hour memory until all six replies
+are complete; a single transaction saves tentative likes and the completion marker.
+No unchosen option becomes a dislike. Existing tastes are preserved; a concurrent
+profile change or deletion rejects a stale completion. Profile deletion also removes
+onboarding markers. Interrupted drafts can be restarted; partial tastes are not saved.
+The core is tested; entrypoint wiring and the host check remain next.

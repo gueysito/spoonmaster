@@ -162,6 +162,10 @@ class TasteStore:
             if action == "delete":
                 if db is not None:
                     db.execute("DELETE FROM profiles WHERE owner=?", (owner,))
+                    if db.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='onboarding'"
+                    ).fetchone():
+                        db.execute("DELETE FROM onboarding WHERE owner=?", (owner,))
                 return {
                     "deleted": True,
                     "note": "Hermes transcripts and external backups are separate.",
