@@ -93,7 +93,7 @@ class Onboarding:
         self.forget(session)
         owner, _, store, scope = self._access(session)
         with self.lock:
-            self.offered[scope] = {"time": self.clock()}
+            self.offered[scope] = {"time": self.clock(), "offered": True}
             self._prune()
         try:
             store.skip(owner)
@@ -149,7 +149,7 @@ class Onboarding:
             state = store.status(owner)
             with self.lock:
                 self._prune()
-                offered = scope in self.offered
+                offered = self.offered.get(scope, {}).get("offered", False)
             if state is None and offered:
                 store.skip(owner)
             return REMINDER if store.claim_reminder(owner) else None
@@ -164,10 +164,8 @@ class Onboarding:
             message = user_message.strip().casefold()
             if message == "find food now":
                 response = self.skip(session_id)
-            elif message == "personalize my picks":
+            elif message in ("personalize my picks", "get me onboarded"):
                 response = self.start(session_id)
-            elif message == "get me onboarded":
-                response = INTRO
             else:
                 with self.lock:
                     self._prune()
@@ -189,20 +187,27 @@ class Onboarding:
                         draft["paused"] = True
                     if scope in self.offered:
                         return None
-                    self.offered[scope] = {"time": self.clock()}
+                    self.offered[scope] = {"time": self.clock(), "offered": False}
                     self._prune()
                 if store.status(owner) is not None or self.taste.read(session_id) is not None:
                     return None
                 response = INTRO
             with self.lock:
-                self.offered[scope] = {"time": self.clock()}
+                self.offered[scope] = {"time": self.clock(), "offered": True}
                 self._prune()
             return {
                 "context": "Relay this Spoonmaster onboarding response. Do not block an "
                 "explicit food search or repeat a supplied location. " + response
             }
-        except TasteError:
-            return None
+        except TasteError as error:
+            if str(error) == "private_context_required":
+                return None
+            return {
+                "context": "Spoonmaster couldn't save onboarding preferences: "
+                + str(error)
+                + ". Do not claim completion. Food search remains available; "
+                "use /spoon start to restart or /spoon now to skip."
+            }
 
     def _ask(self, question, choices):
         try:
@@ -211,6 +216,10 @@ class Onboarding:
             return None
 
     def _interactive(self, session):
+        _, _, _, scope = self._access(session)
+        with self.lock:
+            self.offered[scope] = {"time": self.clock(), "offered": True}
+            self._prune()
         if not self.ask_choice:
             return INTRO
         choice = self._ask(
@@ -249,9 +258,10 @@ class Onboarding:
             )
             if parts == ["delete", "confirm"] and '"deleted": true' in result:
                 owner = owner_key(source, platform)
+                path = self.taste.state_directory() / "taste.sqlite3"
                 with self.lock:
                     for key in list(self.drafts):
-                        if self.drafts[key]["owner"] == owner:
+                        if (self.drafts[key]["owner"], self.drafts[key]["path"]) == (owner, path):
                             del self.drafts[key]
             return result
         owner = owner_key(source, platform)

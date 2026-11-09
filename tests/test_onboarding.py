@@ -111,7 +111,8 @@ class OnboardingTests(unittest.TestCase):
 
     def test_direct_phrase_and_plain_answers_work_without_buttons(self):
         intro = self.flow.before_turn(session_id="chat", user_message="get me onboarded")
-        self.assertIn(INTRO, intro["context"])
+        self.assertIn("1/6", intro["context"])
+        self.assertIn("save tastes locally", intro["context"])
         self.assertIsNone(self.store.read("local-cli"))
         result = self.flow.before_turn(session_id="chat", user_message="personalize my picks")
         self.assertIn("1/6", result["context"])
@@ -174,3 +175,53 @@ class OnboardingTests(unittest.TestCase):
         with patch.object(OnboardingStore, "skip", side_effect=TasteError("storage_unavailable")):
             self.assertIn("searching still works", self.command("now"))
         self.assertIsNone(self.store.read("local-cli"))
+
+    def test_final_hook_save_failure_is_explicit(self):
+        from unittest.mock import patch
+
+        self.command("personalize")
+        for step in range(1, 6):
+            self.command(f"pick {step} 1")
+        with patch.object(OnboardingStore, "finish", side_effect=TasteError("storage_unavailable")):
+            result = self.flow.before_turn(session_id="chat", user_message="1")
+        self.assertIsNotNone(result)
+        self.assertIn("couldn't save", result["context"])
+        self.assertIsNone(self.store.read("local-cli"))
+
+    def test_existing_profile_without_an_offer_is_not_nagged(self):
+        self.taste.command("enable", platform="cli", session_id="chat")
+        self.assertIsNone(self.flow.before_turn(session_id="chat", user_message="hello"))
+        self.assertIsNone(self.flow.selected("chat"))
+
+    def test_final_write_failure_rolls_back_tastes_and_completion_together(self):
+        import sqlite3
+        from unittest.mock import patch
+
+        self.command("personalize")
+        for step in range(1, 6):
+            self.command(f"pick {step} 1")
+        with patch.object(
+            OnboardingStore, "_write_state", side_effect=sqlite3.OperationalError("fixture")
+        ):
+            result = self.command("pick 6 1")
+        self.assertIn("Nothing new was saved", result)
+        self.assertIsNone(self.store.read("local-cli"))
+        self.assertEqual(self.store.status("local-cli")["status"], "active")
+        self.assertIn("You're set", self.command("pick 6 1"))
+
+    def test_optional_skips_never_invent_preferences(self):
+        self.command("personalize")
+        for step in range(1, 7):
+            result = self.command(f"pick {step} skip")
+        self.assertIn("no new preferences", result)
+        self.assertEqual(self.store.read("local-cli")["prefs"], [])
+
+    def test_deleting_one_profile_keeps_another_profiles_draft(self):
+        self.command("personalize")
+        original = self.path
+        self.taste.state_directory = lambda: original / "second-profile"
+        self.taste.bind("second", "local-cli")
+        self.flow.start("second")
+        self.taste.state_directory = lambda: original
+        self.command("delete confirm")
+        self.assertIn("second", self.flow.drafts)

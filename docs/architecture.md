@@ -3,7 +3,7 @@
 Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
 outcomes, provisional cards and a conversation-scoped reject ledger exist. Weekly arrival math is separate
 from unverified date-specific availability. Opt-in taste persistence and evidence-based preference ranking are implemented;
-onboarding, household rules and the other surfaces below remain planned.
+optional onboarding is implemented. Household rules and the other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -63,7 +63,7 @@ reused later. Hermes wiring is a thin layer.
 | `spoon_ledger` / `/why` (implemented pilot) | Full paginated gate details or a readable exclusion/unknown list for this conversation's latest evaluation |
 | `spoon_feedback` (implemented pilot) | Saves bounded user-reported tastes with revision check; returns exact diff |
 | `spoon_profile` / `/spoon` (implemented pilot) | View/export plus direct enable, pause, confirm, correct, remove and delete commands |
-| `/spoon start` | Onboarding with pairwise picks |
+| `/spoon start` / `/spoon now` (implemented pilot) | Optional six-choice onboarding or immediate food search |
 | `spoon_locale` | Run or refresh the locale scout; show and confirm the ladder |
 | `spoon_order_card` | Top dishes and local-language order text for a venue |
 | `spoon_merge` / `/spoon merge` | Combine profiles for one decision |
@@ -188,7 +188,7 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    the portable fallback.
 
 The current scaffold passed doctor, validate (including the install scanner) and
-104 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+124 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
@@ -294,4 +294,22 @@ are complete; a single transaction saves tentative likes and the completion mark
 No unchosen option becomes a dislike. Existing tastes are preserved; a concurrent
 profile change or deletion rejects a stale completion. Profile deletion also removes
 onboarding markers. Interrupted drafts can be restarted; partial tastes are not saved.
-The core is tested; entrypoint wiring and the host check remain next.
+The existing `pre_llm_call` hook adds the first-use offer and recognizes direct
+onboarding phrases/answers. It does not block the user's food search or infer missing
+location. A direct command can call public `ctx.ask_choice`; unsupported channels get
+numbered text commands. No extra hook, network call or model call was introduced.
+Additional hook weight is normally a few local SQLite reads (roughly 1-10 ms; each
+contended transaction has the existing 2-second timeout).
+
+`spoon_select` appends the brief reminder only after a successful selection; errors
+and predicted closures do not consume it. An atomic marker claim prevents duplicate
+reminders across instances. First-offer memory distinguishes an offer actually shown
+from an existing profile merely inspected. Failures while saving the final answer
+produce explicit failure context rather than allowing a completion claim.
+
+T7 review/tests cover skip without tastes, first-read privacy, button/text fallback,
+stale questions and attempts, changed/deleted profiles, profile-scoped draft cleanup,
+atomic seeding rollback and reminder claims, plus the actual registered flow from
+skip through selection to later onboarding and a new session. Shared contexts remain
+denied. The host-only test exercises markers and completion through the real Hermes
+identity/data APIs. Live Telegram buttons and model-rendered offers remain unverified.

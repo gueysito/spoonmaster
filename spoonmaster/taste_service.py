@@ -10,6 +10,7 @@ from .ledger import session_key
 from .taste import CONTEXT_KEYS, KINDS, SCOPES, TasteError, TasteStore, text
 
 HELP = (
+    "Use /spoon start for optional onboarding or /spoon now to find food immediately. "
     "Taste memory is optional. /spoon enable stores structured tastes locally in this Hermes "
     "profile; they may appear in your model's tool context. No raw meal diary or location history. "
     "Use /spoon profile to reconnect this private conversation, /spoon export, /spoon pause, "

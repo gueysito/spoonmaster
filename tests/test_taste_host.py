@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from spoonmaster.ledger import LedgerStore
+from spoonmaster.onboarding import Onboarding
 from spoonmaster.taste_service import TasteService
 from tests.test_taste import pref
 
@@ -41,6 +42,15 @@ class HermesTasteTests(unittest.TestCase):
             profile = json.loads(service.profile_tool({}, session_id="new"))["profile"]
             self.assertEqual(profile["prefs"][0]["item"], "ramen")
             self.assertIn("context", service.before_turn(session_id="new", platform="telegram"))
+            onboarding = Onboarding(service)
+            onboarding.command("now", source=source, session_id="new")
+            self.assertIsNotNone(onboarding.selected("new"))
+            self.assertIsNone(Onboarding(service).selected("new"))
+            onboarding.command("personalize", source=source, session_id="new")
+            for step in range(1, 7):
+                completed = onboarding.command(f"pick {step} 1", source=source, session_id="new")
+            self.assertIn("You're set", completed)
+            self.assertEqual(len(service.read("new")["prefs"]), 6)
             set_session_vars(
                 platform="telegram",
                 chat_type="group",

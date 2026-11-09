@@ -309,7 +309,8 @@ SELECT_SCHEMA = {
         "After the user chooses a displayed venue, recheck its hours and return its selected "
         "card. Requires search_id and venue_id from this conversation's latest cards. "
         "Relay unknown hours and encourage calling with the sourced telephone link. "
-        "Never initiate a call. A predicted closure returns proceed false."
+        "Never initiate a call. A predicted closure returns proceed false. "
+        "If onboarding_reminder is returned, include it once after the selected venue."
     ),
     "parameters": {
         "type": "object",

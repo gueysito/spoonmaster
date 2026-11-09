@@ -5,7 +5,8 @@ taste, checks the right local sources for where you are, shows the reasoning beh
 its pick, and improves from what actually happened at the table.
 
 Status: pre-alpha. Discovery, provisional recommendation cards, progressive hours checks and a reject
-ledger work locally. Opt-in taste memory, feedback diffs and supported taste ranking are implemented. The scaffold passed real-host
+ledger work locally. Optional onboarding, opt-in taste memory, feedback diffs and
+supported taste ranking are implemented. The scaffold passed real-host
 doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
@@ -69,8 +70,8 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 104 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
-3.11/3.13 passes 103 tests and skips the one real-host identity test. Profile
+all 124 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
+3.11/3.13 passes 123 tests and skips the one real-host identity test. Profile
 deletion and removal of the copied files and temporary root were verified.
 
 `spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
@@ -135,6 +136,31 @@ and root even on failure. Child processes receive an explicit environment allowl
 without inherited credentials. Hermes may prepare dependencies inside that temporary
 root; this can take several minutes. Remote execution still needs named authorization.
 
+## First use and onboarding
+
+The first supported private conversation offers **Personalize my picks** or **Find
+food now**. Finding food never requires completing a questionnaire. `/spoon start`
+uses Hermes choice buttons where the synchronous command surface supports them;
+otherwise it returns numbered text choices. Automatic first-turn offers use text
+through the documented context hook. End-to-end model/Telegram delivery remains unverified.
+
+- `/spoon now` skips onboarding and continues toward a food search. Only missing
+  outing details are needed; existing locations should not be asked for again.
+- `/spoon personalize`, or saying **“get me onboarded”**, starts six short optional
+  choices about dishes, cuisine, texture, flavor, atmosphere and familiarity.
+- Answer 1, 2 or skip. `/spoon pick <question> 1|2|skip` is the explicit text fallback.
+  An unrelated message pauses natural-answer handling; use those commands to continue
+  or `/spoon start` to restart. `/spoon now` exits without saving partial tastes.
+- Completing all six answers saves selected options as tentative likes in one
+  transaction. Unchosen options never become dislikes; existing tastes stay intact.
+  Individual skips add nothing. Dietary restrictions are asked only optionally for
+  the outing; health details are not stored by onboarding.
+
+After the first successful venue choice following skipped onboarding, the selected
+card includes one brief reminder about later personalization. A persisted marker
+prevents repeated reminders across sessions and restarts. Completing onboarding
+suppresses it. Storage/reminder failures never block a selected venue.
+
 ## Optional taste memory
 
 In a private chat or local CLI, `/spoon enable` opts into local structured taste storage.
@@ -191,10 +217,15 @@ Expired records are removed on subsequent store access. Raw dietary lists are no
 in this cache, but the ledger contains resulting verdicts and any supplied arrival time.
 Taste memory is the separate opt-in persistent store: `taste.sqlite3` in the public
 `ctx.state.data_dir` under the current Hermes profile's plugin data root, never the
-installation tree. The file is created with mode 0600 and stores up to 100 identities
+installation tree. The file is created with mode 0600 and stores up to 100 taste identities
 with 100 preferences each: item, kind, polarity, scope, confidence, provenance category,
 context tags and update time. Identity keys hash platform/scope/user IDs; CLI uses a
 separate local key. This is access-controlled local storage, not encryption at rest.
+Before taste opt-in, choosing an onboarding path stores only a status, an opaque
+attempt token while active, and whether the reminder was issued, with at most 100
+identity markers. The welcome read itself creates no file. Draft answers stay in
+memory for at most two hours, capped at 100 conversations, and are cleared on reset
+or finalization. Profile deletion removes its onboarding markers and drafts too.
 No raw feedback transcript or exact location history is written to this database.
 SQLite transactions and revision checks prevent partial/stale writes; corrupt data
 fails closed. Secure deletion clears removed database records; storage media and

@@ -51,6 +51,7 @@ class OnboardingStore(TasteStore):
 
     def begin(self, owner):
         with self.transaction(create=True) as db:
+            self._state(db, owner)
             profile = self._get(db, owner)
             state = {"status": "active", "attempt": secrets.token_hex(12), "reminded": False}
             self._write_state(db, owner, state)
