@@ -276,3 +276,14 @@ class CompanionTests(unittest.TestCase):
             self.store.read("local-cli")
         self.command("companions delete family confirm")
         self.assertEqual(self.store.read("local-cli"), {})
+
+    def test_saved_groups_and_deletion_are_owner_isolated(self):
+        self.save()
+        self.taste.bind("intruder", "other-owner")
+        self.assertEqual(self.tool({"action": "list"}, "intruder")["groups"], [])
+        self.assertIsNone(self.tool({"action": "view", "label": "family"}, "intruder")["group"])
+        self.store.save_group("other-owner", "family", {"members": [{"age": 99}]}, None)
+        self.store.delete_group("local-cli", "family")
+        self.assertEqual(
+            self.store.read("other-owner")["family"]["household"], {"members": [{"age": 99}]}
+        )

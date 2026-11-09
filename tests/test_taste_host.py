@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
+from spoonmaster.companions import CompanionService
 from spoonmaster.ledger import LedgerStore
 from spoonmaster.onboarding import Onboarding
 from spoonmaster.taste_service import TasteService
@@ -51,6 +52,30 @@ class HermesTasteTests(unittest.TestCase):
                 completed = onboarding.command(f"pick {step} 1", source=source, session_id="new")
             self.assertIn("You're set", completed)
             self.assertEqual(len(service.read("new")["prefs"]), 6)
+            companions = CompanionService(service)
+            preview = json.loads(
+                companions.tool(
+                    {
+                        "action": "prepare",
+                        "label": "coworkers",
+                        "household": {"members": [{"dietary_restrictions": ["vegan"]}]},
+                    },
+                    session_id="new",
+                )
+            )
+            saved = json.loads(
+                companions.command(
+                    preview["confirmation"].removeprefix("/spoon "),
+                    source=source,
+                    session_id="new",
+                )
+            )
+            self.assertTrue(saved["saved"])
+            reconnected = CompanionService(service)
+            self.assertEqual(
+                json.loads(reconnected.tool({"action": "list"}, session_id="new"))["groups"],
+                ["coworkers"],
+            )
             set_session_vars(
                 platform="telegram",
                 chat_type="group",
@@ -60,6 +85,10 @@ class HermesTasteTests(unittest.TestCase):
             )
             self.assertEqual(
                 json.loads(service.profile_tool({}, session_id="new"))["error"],
+                "private_context_required",
+            )
+            self.assertEqual(
+                json.loads(reconnected.tool({"action": "list"}, session_id="new"))["error"],
                 "private_context_required",
             )
         finally:

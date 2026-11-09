@@ -141,3 +141,89 @@ class RegistrationScopeTests(unittest.TestCase):
             for key in list(sys.modules):
                 if key == name or key.startswith(name + "."):
                     sys.modules.pop(key)
+
+    def test_companion_consent_partial_party_and_delete_through_entrypoint(self):
+        root = Path(__file__).resolve().parents[1]
+        name = "spoonmaster_companion_fixture"
+        spec = importlib.util.spec_from_file_location(
+            name, root / "__init__.py", submodule_search_locations=[str(root)]
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+            with tempfile.TemporaryDirectory() as temporary:
+                context = Context()
+                context.state = SimpleNamespace(data_dir=Path(temporary) / "data")
+                module.register(context)
+                hook = context.hooks["pre_llm_call"]
+                hook(session_id="party", platform="cli", user_message="hello")
+
+                def tool(name, args):
+                    return json.loads(context.tools[name](args, session_id="party"))
+
+                def command(value):
+                    return context.commands["spoon"](value, session_id="party", platform="cli")
+
+                group = {"members": [{"age": 8}, {"age": 35, "liked_cuisines": ["sushi"]}]}
+                preview = tool(
+                    "spoon_companions", {"action": "prepare", "label": "family", "household": group}
+                )
+                self.assertFalse(context.state.data_dir.exists())
+                self.assertTrue(
+                    json.loads(command(preview["confirmation"].removeprefix("/spoon ")))["saved"]
+                )
+                implementation = sys.modules[name + ".spoonmaster.plugin"]
+                items = [
+                    venue(
+                        f"osm:node:{n}",
+                        name=f"Synthetic dining {n}",
+                        cuisine=cuisine,
+                        latitude=35 + n / 10000,
+                        website=None,
+                        household_claims={"min_age": 18},
+                        retrieved_at=datetime.now(timezone.utc).isoformat(),
+                    )
+                    for n, cuisine in enumerate(("ramen", "sushi"), 1)
+                ]
+                with patch.object(
+                    implementation, "fetch_candidates", return_value={"candidates": items}
+                ):
+                    found = tool("spoon_candidates", {"latitude": 35, "longitude": 139})
+                search = {"search_id": found["search_id"], "origin_confirmed": True}
+                preview = tool(
+                    "spoon_companions",
+                    {
+                        "action": "recall",
+                        "label": "family",
+                        "members": [1, 2],
+                        "search_id": found["search_id"],
+                    },
+                )
+                command(preview["confirmation"].removeprefix("/spoon "))
+                result = tool("spoon_recommend", search)
+                self.assertEqual(result["cards"], [])
+                self.assertIn("member_1.age", context.commands["why"]("", session_id="party"))
+                preview = tool(
+                    "spoon_companions",
+                    {
+                        "action": "recall",
+                        "label": "family",
+                        "members": [2],
+                        "search_id": found["search_id"],
+                    },
+                )
+                command(preview["confirmation"].removeprefix("/spoon "))
+                result = tool("spoon_recommend", search)
+                self.assertEqual(result["cards"][0]["venue_id"], "osm:node:2")
+                self.assertIn("Companion 1 likes sushi", result["cards"][0]["fit"])
+                chosen = {"search_id": found["search_id"], "venue_id": "osm:node:2"}
+                self.assertTrue(tool("spoon_select", chosen)["proceed"])
+                self.assertTrue(json.loads(command("delete confirm"))["deleted"])
+                self.assertEqual(tool("spoon_select", chosen)["error"], "search_not_available")
+                hook(session_id="party", platform="cli", user_message="hello")
+                self.assertEqual(tool("spoon_companions", {"action": "list"})["groups"], [])
+        finally:
+            for key in list(sys.modules):
+                if key == name or key.startswith(name + "."):
+                    sys.modules.pop(key)

@@ -187,18 +187,18 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
 3. **Channel checks:** Telegram-only behavior verified once near the end, or replaced by
    the portable fallback.
 
-The current scaffold passed doctor, validate (including the install scanner) and
-124 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+The current plugin passed doctor, validate (including the install scanner) and
+152 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
 
-Security checks for this slice cover finite/range-checked inputs, fixed-host TLS
+Discovery security checks cover finite/range-checked inputs, fixed-host TLS
 requests, disabled redirects, bounded responses, safe error codes, HTTP-response
-closure, concurrency/cooldown, and no persistent plugin storage or credential reads. The host's
-install scan reported safe. This is not evidence that future model-facing prompt
-injection defenses, sharing authorization or profile deletion are safe; those features
-do not exist yet. The T1 website boundary additionally tests all-answer public DNS
+closure, concurrency/cooldown, and no credential reads. Persistence, private access
+and deletion checks are detailed under T6-T8 below. The host's install scan reported
+safe; it does not establish end-to-end prompt-injection resistance or future sharing
+authorization. The T1 website boundary additionally tests all-answer public DNS
 validation, pinned-IP TLS, no redirects, robots denial, response caps, charset handling,
 safe phone rendering and unknown/conflicting/stale evidence behavior. No payments, uploads, public
 ingress, admin routes, browser client or CORS surface was added.
@@ -345,3 +345,12 @@ outings, including changes made by another process. No raw ages/diets enter the 
 The pre_llm_call addition performs bounded local reads only, typically milliseconds
 with the existing 2-second SQLite contention timeout; no extra hook/network/model call.
 Live model recognition and Telegram confirmation delivery remain unverified.
+
+T8 differential review starts from `475ce35`, with core checkpoint `bc05b45`.
+Checks cover human-only save/use consent, per-owner SQL access, group/member/rule bounds,
+cross-profile tokens, corrupt data deletion, sensitive-field previews, new-search/solo
+isolation and concurrent revision changes. A deliberate owner-scope bypass makes the
+isolation regression test fail. Entry-point tests cover confirmation, partial attendance,
+hard age exclusions, cuisine ranking and whole-profile deletion. Errors use fixed codes;
+source text never executes and no new URLs, dependencies, ingress, uploads, payments or
+credential surfaces were added. This is a local-pilot review, not the T14 public audit.

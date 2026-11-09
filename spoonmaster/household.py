@@ -1,4 +1,4 @@
-"""Bounded outing rules and source claims. No household records are written to disk."""
+"""Pure outing validation and source checks; companion persistence lives separately."""
 
 import json
 import re

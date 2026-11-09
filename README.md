@@ -6,7 +6,7 @@ its pick, and improves from what actually happened at the table.
 
 Status: pre-alpha. Discovery, provisional recommendation cards, progressive hours checks and a reject
 ledger work locally. Optional onboarding, opt-in taste memory, feedback diffs and
-supported taste ranking are implemented. The scaffold passed real-host
+supported taste ranking and confirmed dining companions are implemented. The plugin passed real-host
 doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
@@ -70,8 +70,8 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 124 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
-3.11/3.13 passes 123 tests and skips the one real-host identity test. Profile
+all 152 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
+3.11/3.13 passes 151 tests and skips the one real-host identity test. Profile
 deletion and removal of the copied files and temporary root were verified.
 
 `spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
