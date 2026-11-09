@@ -94,6 +94,9 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         "wildcard": "A different listed cuisine; taste fit is not established yet.",
         "selected": "Your selected venue; unresolved checks still need confirmation.",
     }[role]
+    matched = checks["taste"].get("matched_preferences")
+    if matched:
+        fit = "; ".join(matched) + ". Based on listed cuisine/venue identity."
     caveat = "Hours and other suitability checks remain unconfirmed. Call before heading there."
     if checks["diet_and_vetoes"]["result"] == "unknown":
         caveat = (

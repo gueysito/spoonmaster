@@ -173,7 +173,7 @@ def evaluate(venue, search, verification, request, now):
         verdict(
             "household", "unknown", "Household constraints and venue fit are not evaluated yet."
         ),
-        verdict("taste", "unknown", "Taste profile and ranking are not implemented yet."),
+        verdict("taste", "unknown", "No supported taste match is attached to this evaluation."),
         verdict(
             "friction",
             "unknown",

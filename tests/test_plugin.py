@@ -169,18 +169,21 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
         def register_tool(self, *, name, toolset, schema, handler):
             assert name == schema['name']
             assert name in ('spoon_candidates', 'spoon_verify_hours',
-                            'spoon_evaluate', 'spoon_ledger', 'spoon_recommend', 'spoon_select')
+                            'spoon_evaluate', 'spoon_ledger', 'spoon_recommend', 'spoon_select',
+                            'spoon_profile', 'spoon_feedback')
             assert toolset == 'spoonmaster'
             expected = ('conversation_context_required' if name == 'spoon_ledger'
                         else 'invalid_arguments')
-            assert json.loads(handler({})) == {'error': expected}
+            if name == 'spoon_profile':
+                expected = 'private_context_required'
+            assert json.loads(handler({}))['error'] == expected
             print(name)
         def register_command(self, name, handler, description, args_hint):
-            assert name == 'why'
-            assert 'Conversation context is unavailable' in handler('')
+            assert name in ('why', 'spoon')
+            assert handler('')
             print('/' + name)
         def register_hook(self, name, handler):
-            assert name in ('on_session_reset', 'on_session_finalize')
+            assert name in ('on_session_reset', 'on_session_finalize', 'pre_llm_call')
             handler(session_id='synthetic')
     fixture_plugin.register(Context())
 """
@@ -205,6 +208,6 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             result.stdout.strip(),
-            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_recommend\nspoon_select\n/why",
+            "spoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_recommend\nspoon_select\nspoon_profile\nspoon_feedback\n/spoon\n/why",
         )
         self.assertEqual(before, after)

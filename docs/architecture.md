@@ -2,8 +2,8 @@
 
 Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
 outcomes, provisional cards and a conversation-scoped reject ledger exist. Weekly arrival math is separate
-from unverified date-specific availability. Personal taste ranking, persistent taste state and
-the other surfaces below remain planned.
+from unverified date-specific availability. Opt-in taste persistence and evidence-based preference ranking are implemented;
+onboarding, household rules and the other surfaces below remain planned.
 
 Evidence labels: **docs** = stated in the Hermes developer guide (read 2026-11-08);
 **host** = observed read-only on a Hermes 2026.9.24 install; **unverified** = assumed,
@@ -61,8 +61,8 @@ reused later. Hermes wiring is a thin layer.
 | `spoon_select` (implemented pilot) | Selected displayed venue; refreshes hours and renders uncertainty/call guidance |
 | `spoon_evaluate` (implemented pilot) | Evaluate every returned discovery candidate; keep failed and unresolved checks distinct |
 | `spoon_ledger` / `/why` (implemented pilot) | Full paginated gate details or a readable exclusion/unknown list for this conversation's latest evaluation |
-| `spoon_feedback` | Records feedback; returns the taste diff |
-| `spoon_profile` / `/spoon profile` | View, correct, remove, delete, export |
+| `spoon_feedback` (implemented pilot) | Saves bounded user-reported tastes with revision check; returns exact diff |
+| `spoon_profile` / `/spoon` (implemented pilot) | View/export plus direct enable, pause, confirm, correct, remove and delete commands |
 | `/spoon start` | Onboarding with pairwise picks |
 | `spoon_locale` | Run or refresh the locale scout; show and confirm the ladder |
 | `spoon_order_card` | Top dishes and local-language order text for a venue |
@@ -188,7 +188,7 @@ need, free status, rate limit, cache time, attribution, terms status, and enable
    the portable fallback.
 
 The current scaffold passed doctor, validate (including the install scanner) and
-84 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
+104 model-free tests on installed revision `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`,
 Python 3.14.9. That source tree has local modifications, so this is evidence for
 the installed host, not a pristine upstream release. `scripts/check-hermes.py`
 provides the isolated lifecycle; cleanup was verified on both failure and success.
@@ -228,8 +228,7 @@ does not establish durable-profile sharing safety or end-to-end Telegram deliver
 exact distance for the initial baseline, excludes failed gates, requires confirmed
 origin and fresh mapped points, and does not select weekly-predicted closures.
 Nearby matching names are deduplicated; a veto applies to duplicate representations.
-A wildcard requires a different listed cuisine. Missing slots remain empty. Taste
-ranking waits for T6. `spoon_recommend` verifies at most three proposed finalists before rendering any
+A wildcard requires a different listed cuisine. Missing slots remain empty. T6 adds supported cuisine/venue preference matches before distance ordering. `spoon_recommend` verifies at most three proposed finalists before rendering any
 cards, then reapplies gates without replacing newly excluded slots with unchecked
 venues. `spoon_select` permits only the latest displayed IDs and refreshes evidence
 under D-013. D-014 permits provisional picks without upgrading unknown gates.
@@ -256,4 +255,31 @@ feedback cannot promote an item to durable or overwrite a directly confirmed ite
 User controls confirm/correct/remove items, pause learning or delete their profile.
 Deletion uses SQLite secure deletion; Hermes transcripts and external backups are
 separate. Raw feedback transcripts and exact location history are not stored.
-The core is tested independently; host identity and tool wiring remain next.
+`TasteService` resolves identity from human command context or the documented
+`gateway.session_context` API, never model arguments. Private sender keys include
+platform and scope; local CLI is separate. Unidentified or shared contexts cannot
+read/write tastes. Reset/finalize clears access bindings and outing context, not saved
+tastes. New private sessions reconnect automatically when host context is available.
+The fallback is `/spoon profile`. Profiles never merge across channels implicitly.
+Cached taste explanations carry an owner scope and profile revision. Changes/deletion
+clear those results even after identity-binding eviction, and ledger reads check for
+changes made by another process. The underlying venue search remains available.
+
+`pre_llm_call` checks availability once per turn and injects only a short tool-use
+notice, not the whole profile. Expected weight: roughly 1-10 ms local SQLite read;
+contention may wait up to the bounded 2-second database timeout. No network or model
+call runs in the hook. Recommendation tools read current preferences, rank only exact
+cuisine/venue matches and expose matching reasons in both cards and the gate ledger.
+Tentative tastes have half the weight of confirmed/situational matches. Context tags
+must match explicit outing input; no inferred season, company or health claims.
+
+T6 review covers per-person and per-registration access, strict mutation inputs,
+parameterized SQL, opt-in, rollback, concurrent revisions, targeted deletion, corrupt
+state, source text and supported ranking. Disabling owner separation makes the
+isolation test fail. The host-context reconnection test runs only inside the owned
+throwaway profile. Broader host-tool permissions, encrypted backups, public-service
+abuse controls and end-to-end Telegram delivery are not established by this review.
+
+Host contracts inspected at `2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19`:
+[plugin state facade](https://github.com/NousResearch/hermes-agent/blob/2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19/hermes_cli/plugins_state.py),
+[session context](https://github.com/NousResearch/hermes-agent/blob/2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19/gateway/session_context.py).

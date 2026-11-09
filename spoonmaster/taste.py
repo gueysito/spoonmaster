@@ -61,6 +61,7 @@ def validate_profile(value):
     if (
         not isinstance(value, dict)
         or set(value) != {"version", "revision", "enabled", "prefs"}
+        or type(value["version"]) is not int
         or value["version"] != 1
         or type(value["revision"]) is not int
         or value["revision"] < 0
@@ -133,7 +134,7 @@ class TasteStore:
                 connection.execute("PRAGMA user_version=1")
             yield connection
             connection.commit()
-        except (sqlite3.Error, OSError, ValueError, TypeError, KeyError) as error:
+        except (sqlite3.Error, OSError, ValueError, TypeError, KeyError, RecursionError) as error:
             raise TasteError("storage_unavailable") from error
         finally:
             if connection is not None:
@@ -143,6 +144,8 @@ class TasteStore:
         if db is None:
             return None
         row = db.execute("SELECT data FROM profiles WHERE owner=?", (owner,)).fetchone()
+        if row and len(row[0]) > 100_000:
+            raise TasteError("corrupt_profile")
         return validate_profile(json.loads(row[0])) if row else None
 
     def read(self, owner):
@@ -167,6 +170,8 @@ class TasteStore:
             if profile is None:
                 if action != "enable":
                     raise TasteError("storage_not_enabled")
+                if db.execute("SELECT count(*) FROM profiles").fetchone()[0] >= 100:
+                    raise TasteError("store_full")
                 profile = {"version": 1, "revision": 0, "enabled": True, "prefs": []}
             before = json.loads(json.dumps(profile))
             if action in ("enable", "pause"):

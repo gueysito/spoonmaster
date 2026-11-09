@@ -35,11 +35,13 @@ def admissible(entry):
     )
 
 
-def shortlist(venues, search, ledger):
+def shortlist(venues, search, ledger, taste=None):
+    taste = taste or {}
     entries = {entry["venue_id"]: entry for entry in ledger["entries"]}
     ordered = sorted(
         venues,
         key=lambda v: (
+            -taste.get(v["venue_id"], {}).get("score", 0),
             distance_m(search["latitude"], search["longitude"], v["latitude"], v["longitude"]),
             v["venue_id"],
         ),

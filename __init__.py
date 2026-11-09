@@ -19,12 +19,14 @@ from .spoonmaster.plugin import (
     verify_hours,
     why,
 )
+from .spoonmaster.taste_service import FEEDBACK_SCHEMA, PROFILE_SCHEMA, TasteService
 
 
 def register(ctx):
     # Different registration/profile scopes never share private search context,
     # even when the host supplies identical conversation IDs in those scopes.
     store = LedgerStore()
+    taste = TasteService(lambda: getattr(getattr(ctx, "state", None), "data_dir", None), store)
     ctx.register_tool(
         name="spoon_candidates",
         toolset="spoonmaster",
@@ -47,7 +49,7 @@ def register(ctx):
         name="spoon_ledger",
         toolset="spoonmaster",
         schema=LEDGER_SCHEMA,
-        handler=partial(ledger, _ledger_store=store),
+        handler=partial(ledger, _ledger_store=store, _taste_service=taste),
     )
     for schema, handler in (
         (RECOMMEND_SCHEMA, recommend_candidates),
@@ -57,13 +59,32 @@ def register(ctx):
             name=schema["name"],
             toolset="spoonmaster",
             schema=schema,
-            handler=partial(handler, _ledger_store=store),
+            handler=partial(handler, _ledger_store=store, _taste_service=taste),
+        )
+    for schema, handler in (
+        (PROFILE_SCHEMA, taste.profile_tool),
+        (FEEDBACK_SCHEMA, taste.feedback_tool),
+    ):
+        ctx.register_tool(
+            name=schema["name"], toolset="spoonmaster", schema=schema, handler=handler
         )
     ctx.register_command(
+        "spoon",
+        handler=taste.command,
+        description="Optional taste memory and private profile controls",
+        args_hint="profile|enable|help",
+    )
+    ctx.register_command(
         "why",
-        handler=partial(why, _ledger_store=store),
+        handler=partial(why, _ledger_store=store, _taste_service=taste),
         description="Show dining exclusions and unresolved checks",
         args_hint="[page]",
     )
-    ctx.register_hook("on_session_reset", partial(forget_session, _ledger_store=store))
-    ctx.register_hook("on_session_finalize", partial(forget_session, _ledger_store=store))
+
+    def clear_context(session_id=None, **kwargs):
+        forget_session(session_id, _ledger_store=store)
+        taste.forget(session_id)
+
+    ctx.register_hook("on_session_reset", clear_context)
+    ctx.register_hook("on_session_finalize", clear_context)
+    ctx.register_hook("pre_llm_call", taste.before_turn)

@@ -5,6 +5,7 @@ import sqlite3
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
 
 from spoonmaster.taste import TasteError, TasteStore
@@ -108,10 +109,11 @@ class TasteTests(unittest.TestCase):
 
     def test_corrupt_profile_is_not_overwritten_but_can_be_deleted(self):
         self.enable()
-        with sqlite3.connect(self.path) as db:
+        with closing(sqlite3.connect(self.path)) as db:
             db.execute(
                 "UPDATE profiles SET data=? WHERE owner=?", (json.dumps({"bad": True}), "one")
             )
+            db.commit()
         with self.assertRaises(TasteError):
             self.store.read("one")
         with self.assertRaises(TasteError):

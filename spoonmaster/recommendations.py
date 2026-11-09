@@ -6,15 +6,18 @@ from datetime import datetime, timezone
 from .cards import ROLES, card_text, render_card
 from .gates import arrival_gate, build_ledger, fresh
 from .shortlist import admissible, shortlist
+from .taste_rank import apply_taste, taste_matches
 
 
-def recommend(record, request, verifier, *, now=None):
+def recommend(record, request, verifier, *, now=None, profile=None):
     live_clock = now is None
     now = now or datetime.now(timezone.utc)
     venues, search = record["venues"], record["search"]
     evidence = verifier.snapshot(venues)
     ledger = build_ledger(venues, search, evidence, request, now=now)
-    slots = shortlist(venues, search, ledger)
+    taste = taste_matches(venues, profile, request.get("taste_context", {}))
+    apply_taste(ledger, taste, venues)
+    slots = shortlist(venues, search, ledger, taste)
     if request.get("mode") == "price_tiers":
         return (
             {
@@ -38,6 +41,7 @@ def recommend(record, request, verifier, *, now=None):
         if any(v["venue_id"] not in evidence for v in slots.values()):
             return {"error": "venue_evidence_changed", "action": "Run a new search."}, None, None
         ledger = build_ledger(venues, search, evidence, request, now=now)
+        apply_taste(ledger, taste, venues)
     entries = {e["venue_id"]: e for e in ledger["entries"]}
     cards = [
         render_card(
@@ -53,6 +57,16 @@ def recommend(record, request, verifier, *, now=None):
         for role, venue in slots.items()
         if admissible(entries[venue["venue_id"]])
     ]
+    for card in cards:
+        matched = taste.get(card["venue_id"])
+        if matched:
+            card["fit"] = (
+                "; ".join(matched["reasons"]) + ". Based on listed cuisine/venue identity."
+            )
+            card["text"] = card_text(card)
+        elif taste:
+            card["fit"] = "Distance is the fallback; no supported taste match for this venue."
+            card["text"] = card_text(card)
     roles = {card["role"] for card in cards}
     ledger["summary"] = ledger["summary"].replace(
         "No recommendations selected yet.",
@@ -76,7 +90,11 @@ def recommend(record, request, verifier, *, now=None):
         {
             "cards": cards,
             "empty_slots": [role for role in ROLES if role not in roles],
-            "tradeoff": "Distance first, with cuisine variety where supported; taste fit unknown.",
+            "tradeoff": (
+                "Supported taste matches first, then distance; cuisine variety for the wildcard."
+                if taste
+                else "Distance first; no supported taste matches for this search."
+            ),
             "note": "Empty slots had no qualifying distinct option after bounded verification.",
             "map_privacy": "Opening directions shares origin and destination with Google.",
         },

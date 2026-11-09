@@ -63,7 +63,17 @@ class LedgerStore:
                 return None
             return copy.deepcopy(record)
 
-    def save(self, session, identifier, ledger, *, expected_revision=None, presentation=None):
+    def save(
+        self,
+        session,
+        identifier,
+        ledger,
+        *,
+        expected_revision=None,
+        presentation=None,
+        taste_scope=None,
+        taste_revision=None,
+    ):
         with self.lock:
             self._prune()
             record = self.records.get(session) if session_key(session) else None
@@ -74,7 +84,24 @@ class LedgerStore:
             record["ledger"] = copy.deepcopy(ledger)
             record["revision"] += 1
             record["presentation"] = copy.deepcopy(presentation)
+            record["taste_scope"] = taste_scope
+            record["taste_revision"] = taste_revision
             return True
+
+    def current(self, session):
+        with self.lock:
+            self._prune()
+            return copy.deepcopy(self.records.get(session)) if session_key(session) else None
+
+    def clear_taste(self, scope, sessions=()):
+        with self.lock:
+            self._prune()
+            for session, record in self.records.items():
+                if session in sessions or (scope and record.get("taste_scope") == scope):
+                    record.update(
+                        ledger=None, presentation=None, taste_scope=None, taste_revision=None
+                    )
+                    record["revision"] += 1
 
     def latest(self, session):
         with self.lock:

@@ -9,9 +9,12 @@ provides_tools:
   - spoon_ledger
   - spoon_recommend
   - spoon_select
+  - spoon_profile
+  - spoon_feedback
 provides_hooks:
   - on_session_reset
   - on_session_finalize
+  - pre_llm_call
 capabilities: []
 requires_env: []
 python_dependencies: []
