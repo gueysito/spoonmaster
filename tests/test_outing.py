@@ -9,7 +9,7 @@ from spoonmaster import plugin
 from spoonmaster.cards import render_card
 from spoonmaster.gates import arrival_gate, build_ledger
 from spoonmaster.ledger import LedgerStore
-from spoonmaster.outing import CITY_ZONES, dining_context, with_timezone
+from spoonmaster.outing import CITY_ZONES, dining_context, location_clarification, with_timezone
 from spoonmaster.recommendations import recommend, select
 from tests.test_gates import NOW, SEARCH, checks, venue, verified
 
@@ -29,6 +29,12 @@ class Evidence:
 
 
 class OutingTests(unittest.TestCase):
+    def test_city_only_reply_asks_for_neighborhood_without_searching(self):
+        for value in ("Tokyo", "I am in New York", "SF"):
+            self.assertEqual(location_clarification(value)["action"], "block")
+        for value in ("Shibuya, Tokyo", "Find noodles near Shinjuku Station", "1", "sushi"):
+            self.assertIsNone(location_clarification(value))
+
     def test_current_clock_uses_destination_not_machine_time(self):
         for country, city, offset in (
             ("JP", "Tokyo", "+09:00"),

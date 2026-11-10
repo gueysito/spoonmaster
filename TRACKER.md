@@ -55,6 +55,12 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 
 ## Verification rows
 
+T12 owner retest correction (2026-11-10): raw `/spoon profile` output now has a human
+summary while export/tool data remain unchanged. City-only origins are rejected;
+Photon English-name selection fixes reproduced Japanese-name mapping failures, and
+map waits are reduced. Local suite: 222 tests, one host-only skip. Isolated host
+verification and adoption in the owner's existing temporary profile are next.
+
 | ID | Question | How | Status |
 |---|---|---|---|
 | V1 | Can a plugin send images in Telegram? | Throwaway bot or final check | planned |

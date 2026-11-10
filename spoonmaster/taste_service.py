@@ -7,6 +7,7 @@ import time
 from types import SimpleNamespace
 
 from .ledger import session_key
+from .profile_view import render_profile
 from .taste import CONTEXT_KEYS, KINDS, SCOPES, TasteError, TasteStore, text
 
 HELP = (
@@ -203,6 +204,8 @@ class TasteService:
                     for session in list(self.bindings):
                         if self.bindings[session][:2] == (owner, path):
                             del self.bindings[session]
+            if action == "profile":
+                return render_profile(profile)
             return json.dumps(result, ensure_ascii=False)
         except (TasteError, OSError, RuntimeError) as error:
             code = str(error) if isinstance(error, TasteError) else "storage_unavailable"

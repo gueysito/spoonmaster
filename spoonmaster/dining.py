@@ -10,7 +10,7 @@ from .cards import plain
 from .discovery import validate_origin
 from .ledger import LedgerStore, session_key
 from .locales import place
-from .outing import LOCATION_PROMPT
+from .outing import LOCATION_PROMPT, broad_origin
 from .taste import TasteError, text
 
 DINE_SCHEMA = {
@@ -40,7 +40,12 @@ DINE_SCHEMA = {
                 for k, v in plugin.CANDIDATES_SCHEMA["parameters"]["properties"].items()
                 if k != "limit"
             },
-            "area": {"type": "string", "maxLength": 120},
+            "area": {
+                "type": "string",
+                "maxLength": 120,
+                "description": "User-stated neighborhood or public landmark only. "
+                "No city-center guesses, explanatory sentences or position disclaimers.",
+            },
         },
         "required": [
             "latitude",
@@ -79,6 +84,14 @@ class Dining:
             place(args.get("country_code"), args.get("city"))
             if not text(args.get("area"), 120) or not text(args.get("meal"), 80):
                 raise ValueError
+            if broad_origin(args["area"], args["city"]):
+                return json.dumps(
+                    {
+                        "error": "location_required",
+                        "text": "Which neighborhood or nearby landmark should I use? "
+                        "A city alone is too broad for a nearby search.",
+                    }
+                )
             options = {
                 k: v
                 for k, v in args.items()
@@ -236,6 +249,7 @@ def presentation(result, request):
         reasons = {
             "source_http_error": "The map discovery service returned an HTTP error.",
             "source_unavailable": "The map discovery service did not respond successfully.",
+            "source_timeout": "The map discovery service timed out.",
             "query_cooldown": "Map discovery is cooling down; it was not retried.",
             "no_additional_grounded_mapped_matches": (
                 "Web research found no additional food-matched, mapped venue inside the radius."
@@ -249,7 +263,10 @@ def presentation(result, request):
         lines.append(f"{role.replace('_', ' ').title()}: no additional distinct, supported match.")
     if not result.get("cards"):
         lines.append(
-            "No supported shortlist within this radius. I can widen the radius if you ask."
+            "I couldn't verify nearby options from the available sources. "
+            "This does not mean there are no restaurants nearby."
+            if any(code.startswith("source_") for code in result.get("discovery_gaps", []))
+            else "No supported shortlist within this radius. I can widen the radius if you ask."
         )
     if result.get("error"):
         lines.append("Check unavailable: " + result["error"])

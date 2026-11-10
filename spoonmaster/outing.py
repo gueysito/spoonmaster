@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from .meal import words
+
 LOCATION_PROMPT = (
     "Where should I look? Tell me a city and area, address, or nearby landmark, "
     "or drop a location pin if your chat app supports it."
@@ -24,6 +26,31 @@ CITY_ZONES = {
     ("US", "sf"): "America/Los_Angeles",
     ("US", "el paso"): "America/Denver",
 }
+
+
+def broad_origin(area, city):
+    area, city = words(area), words(city)
+    return area == city or any(
+        phrase in area for phrase in ("city center", "city centre", "approximate city")
+    )
+
+
+def location_clarification(message):
+    if not isinstance(message, str):
+        return None
+    value = words(message)
+    for prefix in ("i am in ", "i m in ", "im in "):
+        if value.startswith(prefix):
+            value = value[len(prefix) :]
+            break
+    if value in {city for _, city in CITY_ZONES}:
+        return {
+            "action": "block",
+            "message": "Which neighborhood or nearby landmark should I use, and what would "
+            "you like to eat? A city alone is too broad for a nearby search. "
+            "You can also share a location pin if your chat app supports it.",
+        }
+    return None
 
 
 def valid_zone(value):
@@ -72,6 +99,9 @@ def dining_context(*, now=None):
             "or previous outings. If missing or ambiguous, ask: "
             + LOCATION_PROMPT
             + " An area/landmark is a search anchor, not a claim of exact user position. "
+            "A city alone is not an origin: ask for a neighborhood or landmark; never "
+            "look up a generic city-center coordinate. Keep area to the plain place name, "
+            "without explanations or disclaimers. "
             "Do not request a pin on a terminal; offer the typed alternatives. "
             "Do not ask for location for unrelated questions or personalization."
         )

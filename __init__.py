@@ -7,7 +7,7 @@ from .spoonmaster.dining import DINE_SCHEMA, Dining
 from .spoonmaster.ledger import LedgerStore
 from .spoonmaster.locales import LOCALE_SCHEMA, LocaleService
 from .spoonmaster.onboarding import ONBOARD_SCHEMA, Onboarding
-from .spoonmaster.outing import dining_context
+from .spoonmaster.outing import dining_context, location_clarification
 from .spoonmaster.plugin import (
     CANDIDATES_SCHEMA,
     EVALUATE_SCHEMA,
@@ -153,6 +153,9 @@ def register(ctx):
         welcome = onboarding.before_turn(**kwargs)
         if welcome and welcome.get("action") == "block":
             return welcome
+        location = location_clarification(kwargs.get("user_message"))
+        if location:
+            return location
         party = companions.before_turn(**kwargs)
         locale = locales.before_turn(**kwargs)
         contexts = [

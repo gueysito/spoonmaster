@@ -16,7 +16,7 @@ ENDPOINT = "https://overpass-api.de/api/interpreter"
 USER_AGENT = "Spoonmaster/0.1.0 (https://github.com/gueysito/spoonmaster)"
 MAX_BYTES = 2 * 1024 * 1024
 MAX_ELEMENTS = 5000
-TIMEOUT_SECONDS = 35
+TIMEOUT_SECONDS = 15
 
 
 class DiscoveryError(Exception):
@@ -48,7 +48,7 @@ def fetch_candidates(latitude: float, longitude: float, radius_m: float = 1600) 
     """Make one fixed-host request. Never retry, redirect, or fetch venue URLs."""
     validate_origin(latitude, longitude, radius_m)
     query = (
-        "[out:json][timeout:25][maxsize:10485760];"
+        "[out:json][timeout:10][maxsize:10485760];"
         f"nwr[amenity=restaurant](around:{radius_m},{latitude},{longitude});out body bb;"
     )
     request = Request(

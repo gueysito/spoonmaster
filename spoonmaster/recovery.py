@@ -70,7 +70,9 @@ class Geocoder:
             if now < self.next_at:
                 time.sleep(min(1.0, self.next_at - now))
             request = Request(
-                PHOTON + "?" + urlencode({"q": query, "countrycode": country, "limit": 3}),
+                PHOTON
+                + "?"
+                + urlencode({"q": query, "countrycode": country, "lang": "en", "limit": 3}),
                 headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
             )
             try:

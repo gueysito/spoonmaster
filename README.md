@@ -25,6 +25,11 @@ onboarded” use `spoon_onboard` with the native `clarify` tool, so enable the `
 toolset alongside `web` and `spoonmaster`. Each question offers consistent 1/2 choices,
 Skip, Back and Find food now. Unsupported surfaces retain a short typed fallback.
 
+`/spoon profile` shows a readable summary grouped by food, flavors/textures and
+atmosphere, including tentative preferences and paused status. `/spoon export`
+retains the complete JSON data. City-only replies ask for a neighborhood or landmark
+instead of inventing a city-center origin.
+
 The recovery path adds the public Photon geocoder and one bounded host-model
 extraction when needed. No additional account or paid API is required; the existing
 host model/search provider allowance still applies. Public area/food and venue names
@@ -369,7 +374,7 @@ Live provider scouting and end-to-end model/Telegram presentation remain unverif
 This slice sends coordinates, radius and a restaurant query to
 `https://overpass-api.de/api/interpreter`, plus an identifying Spoonmaster user agent.
 The service receives the caller's IP address. Requests use TLS, one fixed endpoint,
-no redirects, no automatic retries, a 2 MiB response cap and 35-second socket timeout
+no redirects, no automatic retries, a 2 MiB response cap and 15-second socket timeout
 with elapsed-time checks between reads. DNS and a blocked socket read are not a strict
 whole-request deadline. The tool admits one query at a time per process and enforces
 a 10-second cooldown after each request. This is a pilot, not a public-service quota.

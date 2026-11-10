@@ -99,7 +99,8 @@ class DiningFlowTests(unittest.TestCase):
             result = json.loads(self.flow.tool(request(meal="bbq"), session_id="test"))
         self.assertFalse(result["cards"])
         self.assertEqual(self.store.latest("test")["evaluated"], 0)
-        self.assertIn("No supported shortlist", result["text"])
+        self.assertIn("couldn't verify nearby options", result["text"])
+        self.assertNotIn("widen the radius", result["text"])
         self.assertNotIn("Would you like me to switch", result["text"])
 
     def test_same_brand_branches_are_not_multiple_choices(self):
@@ -144,6 +145,8 @@ class DiningFlowTests(unittest.TestCase):
                 ({}, "location_required"),
                 (request(latitude=True), "invalid_arguments"),
                 (request(session_id="other"), "invalid_arguments"),
+                (request(area="Tokyo"), "location_required"),
+                (request(area="Tokyo approximate city-center search anchor"), "location_required"),
             ):
                 self.assertEqual(
                     json.loads(self.flow.tool(args, session_id="test"))["error"], error
@@ -191,6 +194,7 @@ class RecoveryTests(unittest.TestCase):
         call = opener.open.call_args
         self.assertTrue(call.args[0].full_url.startswith("https://photon.komoot.io/api/?"))
         self.assertNotIn("latitude", call.args[0].full_url)
+        self.assertIn("lang=en", call.args[0].full_url)
         self.assertEqual(call.kwargs["timeout"], 8)
         response.read.assert_called_once_with(131073)
 

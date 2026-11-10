@@ -7,7 +7,6 @@ from difflib import get_close_matches
 
 from .cards import plain
 from .onboarding_store import OnboardingStore
-from .outing import LOCATION_PROMPT
 from .taste import TasteError
 from .taste_service import owner_key
 
@@ -22,7 +21,8 @@ INTRO = (
 )
 FIND_NOW = (
     "Let's find food. I'll use the current time unless you specify another time. "
-    "If you haven't already supplied a location for this outing: " + LOCATION_PROMPT
+    "Tell me your neighborhood or a nearby landmark, the city, and what you'd like to eat. "
+    "A city alone is too broad for a nearby search."
 )
 REMINDER = (
     "Want more personal picks? Say ‘get me onboarded’ anytime. "

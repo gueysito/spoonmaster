@@ -214,6 +214,11 @@ serializes requests, spaces uncached requests by one second, caches up to 100 pu
 queries for 30 minutes, makes no automatic retries, refuses redirects/proxies, and
 bounds response size/time. Returned map identity/country/radius must corroborate the
 venue. This is an additional discovery dependency, not a public-launch capacity plan.
+Photon requests English result names (`lang=en`) to match English search excerpts;
+missing translations still remain unverified, rather than accepting unrelated names.
+This follows the [documented language parameter](https://github.com/komoot/photon/blob/master/docs/api-v1.md#adjust-language).
+Map discovery uses a 10-second server execution allowance and 15-second socket timeout;
+host search/model calls retain their own timing. No total-response-time guarantee is made.
 OpenStreetMap attribution remains visible. Public Nominatim is not integrated.
 
 Unknown cities receive the same branch-matched TripAdvisor/Yelp search-evidence path

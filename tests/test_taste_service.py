@@ -66,6 +66,38 @@ class TasteServiceTests(unittest.TestCase):
         self.assertEqual(result["profile"]["prefs"], saved["diff"]["added"])
         self.assertIn("taste memory", restarted.before_turn(session_id="new-session")["context"])
 
+    def test_profile_is_readable_while_export_and_tool_preserve_data(self):
+        self.assertIn("haven't saved any tastes", self.command("profile"))
+        self.command("enable")
+        self.feedback(
+            [
+                pref("burger", kind="dish"),
+                pref("sushi"),
+                pref("crispy", kind="attribute"),
+                pref("lively", kind="vibe"),
+            ]
+        )
+        before = json.loads(self.command("export"))["profile"]
+        shown = self.command("profile")
+        self.assertIn("Your food profile", shown)
+        self.assertIn("Food\n- Like: burger", shown)
+        self.assertIn("Atmosphere\n- Like: lively", shown)
+        self.assertIn("starting preferences", shown)
+        for field in ("updated_at", "revision", "reported_once", before["prefs"][0]["id"]):
+            self.assertNotIn(field, shown)
+        self.assertEqual(json.loads(self.command("export"))["profile"], before)
+        self.assertEqual(
+            json.loads(self.service.profile_tool({}, session_id="first"))["profile"], before
+        )
+
+    def test_profile_preserves_dislike_context_and_paused_status(self):
+        self.command("enable")
+        self.feedback([pref("ramen", polarity=-1, scope="situational", context={"time": "lunch"})])
+        self.command("pause")
+        shown = self.command("profile")
+        self.assertIn("Taste memory is paused", shown)
+        self.assertIn("Prefer to avoid: ramen (time: lunch)", shown)
+
     def test_identity_swap_shared_chat_and_model_supplied_owner_fail_closed(self):
         self.command("enable")
         self.feedback([pref()])
