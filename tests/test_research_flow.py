@@ -3,6 +3,7 @@
 import json
 import unittest
 from types import SimpleNamespace
+from unittest.mock import Mock
 from urllib.parse import parse_qs, urlsplit
 
 from spoonmaster.research_flow import ResearchFlow
@@ -208,3 +209,70 @@ class ResearchFlowTests(unittest.TestCase):
             self.present([self.candidate()])["error"],
             "preferences_changed_restart_with_current_context",
         )
+
+    def test_source_whitespace_escaped_newlines_and_short_japanese_quotes(self):
+        self.body = {"url": "https://example.com/noodles", "text": "料理メニュー\nロース\n2,400円"}
+        self.research()
+        for quote in (
+            "料理メニュー\nロース\n2,400円",
+            "料理メニュー\\nロース\\n2,400円",
+            "2,400円",
+        ):
+            candidate = self.candidate()
+            candidate["evidence"][0]["quote"] = quote
+            self.assertIn("text", self.present([candidate]))
+
+    def test_bad_citation_identifies_exact_repair_without_discarding_work(self):
+        self.research()
+        candidate = self.candidate()
+        candidate["evidence"][0]["quote"] = "Not in the retrieved page"
+        result = self.present([self.candidate(), candidate])
+        self.assertEqual(result["candidate_index"], 1)
+        self.assertEqual(result["citation_index"], 0)
+        self.assertIn("Quotation missing", result["repair"])
+
+    def test_received_steering_or_cancel_invalidates_unfinished_research(self):
+        self.flow.observe(session_id="owner", user_message="Find noodles")
+        self.research()
+        self.flow.observe(session_id="owner", user_message="Actually we are in Bali now")
+        self.assertEqual(self.present([self.candidate()])["error"], "request_changed_or_expired")
+
+    def test_progress_reports_actual_stage_and_stops_on_completion(self):
+        record = self.flow.requests["owner"]
+        record["done"] = Mock()
+        record["done"].wait.side_effect = [False, True]
+        self.flow.post = Mock(return_value=SimpleNamespace(ok=True))
+        self.flow._progress("owner", record)
+        self.assertIn("0 research steps completed", self.flow.post.call_args.args[0])
+        self.assertIn("Comparing the gathered evidence", self.flow.post.call_args.args[0])
+        self.flow.post.reset_mock()
+        record["done"].wait.side_effect = [False]
+        record["result"] = {}
+        self.flow._progress("owner", record)
+        self.flow.post.assert_not_called()
+
+    def test_country_ride_links_only_with_supported_distance(self):
+        self.request = json.loads(
+            self.flow.start(
+                {"location": "Canggu Bali", "meal": "noodles", "country_code": "ID"},
+                session_id="owner",
+            )
+        )["request_id"]
+        self.research()
+        self.assertNotIn("Ride options", self.present([self.candidate()])["text"])
+        result = self.present([self.candidate(distance_m=1000)])["text"]
+        self.assertIn("Grab", result)
+        self.assertIn("Gojek", result)
+        self.assertIn("no fare, pickup or booking", result)
+
+    def test_cited_public_http_and_parenthesized_paths_are_not_fetch_restrictions(self):
+        for url in ("http://example.com/review", "https://example.com/review_(restaurant)"):
+            self.body = {
+                "url": url,
+                "text": "Noodle House serves hand-pulled noodles in the Marina.",
+            }
+            self.research()
+            item = self.candidate()
+            item["evidence"][0]["evidence_id"] = "e" + str(len(self.calls))
+            item["evidence"][0]["url"] = url
+            self.assertIn("text", self.present([item]))

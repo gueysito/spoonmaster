@@ -33,7 +33,9 @@ must occur in retained tool output. The host model remains responsible for sourc
 meaning, branch identity, hard-constraint interpretation and honest ranking; quote
 matching is not a guarantee of truth. Known closure/conflict cannot fill a slot.
 
-The agent explains what it is checking between calls. Received new context cancels
+The agent explains what it is checking between calls. During longer work a task-scoped
+status message reports the actual waiting/comparison phase every 20 seconds, for up
+to three minutes, stopping on completion or replacement where host posting works. Received new context cancels
 unfinished work and starts a replacement request. Host delivery of interruptions
 may be queued. A research round allows up to 12 calls and stops initiating work
 when its 75-second budget is exhausted; an in-flight call uses host-owned timeouts.

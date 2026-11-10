@@ -1,5 +1,6 @@
 """Hermes entrypoint. Registration performs no network or storage operations."""
 
+import json
 from functools import partial
 
 from .spoonmaster.companions import COMPANIONS_SCHEMA, CompanionService
@@ -40,7 +41,9 @@ def register(ctx):
     locales = LocaleService(taste, getattr(ctx, "dispatch_tool", None))
     reviews = ReviewSearch(locales)
 
-    dining = ResearchFlow(getattr(ctx, "dispatch_tool", None), taste)
+    dining = ResearchFlow(
+        getattr(ctx, "dispatch_tool", None), taste, post=getattr(ctx, "post_message", None)
+    )
     for research_schema, handler in (
         (START, dining.start),
         (RESEARCH, dining.research),
@@ -70,13 +73,18 @@ def register(ctx):
         schema=EVALUATE_SCHEMA,
         handler=partial(companions.wrap, partial(evaluate_candidates, _ledger_store=store)),
     )
+
+    def current_ledger(args, **kwargs):
+        explanation = dining.why(session_id=kwargs.get("session_id"))
+        if explanation:
+            return json.dumps({"text": explanation, "basis": "source-led comparison"})
+        return ledger(args, _ledger_store=store, _taste_service=taste, **kwargs)
+
     ctx.register_tool(
         name="spoon_ledger",
         toolset="spoonmaster",
         schema=LEDGER_SCHEMA,
-        handler=partial(
-            companions.wrap, partial(ledger, _ledger_store=store, _taste_service=taste)
-        ),
+        handler=current_ledger,
     )
     for schema, handler in (
         (ONBOARD_SCHEMA, onboarding.tool),
@@ -113,6 +121,7 @@ def register(ctx):
         result = onboarding.command(raw_args, **kwargs)
         if isinstance(raw_args, str) and raw_args.split() == ["delete", "confirm"]:
             if result == "Your saved taste profile and companions have been deleted.":
+                dining.forget(kwargs.get("session_id"))
                 owner = owner_key(kwargs.get("source"), kwargs.get("platform"))
                 path = taste.state_directory() / "taste.sqlite3"
                 with companions.lock:

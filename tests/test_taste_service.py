@@ -253,3 +253,13 @@ class TasteServiceTests(unittest.TestCase):
             )
         )
         self.assertEqual(result["error"], "no_current_ledger")
+
+    def test_memory_controls_explain_effect_without_json_and_enable_is_idempotent(self):
+        self.assertIn("Taste memory is now on", self.command("enable"))
+        before = self.service.read("first")
+        response = self.command("enable")
+        self.assertIn("already on", response)
+        self.assertIn("does not turn restaurant search on or off", response)
+        self.assertEqual(before, self.service.read("first"))
+        self.assertIn("Food search still works", self.command("pause"))
+        self.assertFalse(self.service.read("first")["enabled"])

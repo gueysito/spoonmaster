@@ -4,6 +4,7 @@ The host model judges source meaning and branch identity. Code owns session isol
 retained quotations, limits, stale-work rejection and portable output, not restaurant truth.
 """
 
+import contextvars
 import copy
 import json
 import secrets
@@ -12,7 +13,7 @@ import time
 from datetime import datetime, timezone
 from urllib.parse import urlencode, urlsplit
 
-from .cards import plain
+from .cards import plain, ride_links
 from .ledger import session_key
 from .locales import DATA, source_url
 from .taste import TasteError, text
@@ -44,7 +45,13 @@ START = schema(
         "the request; never finish old work after steering. Use only user-stated location. "
         "Do not put private addresses, names, allergies or other sensitive facts in public queries."
     ),
-    {"location": STRING, "meal": STRING, "constraints": STRING, "requested_time": STRING},
+    {
+        "location": STRING,
+        "meal": STRING,
+        "constraints": STRING,
+        "requested_time": STRING,
+        "country_code": {"type": "string", "pattern": "^[A-Z]{2}$"},
+    },
     ["location", "meal"],
 )
 RESEARCH = schema(
@@ -96,6 +103,13 @@ CANDIDATE = {
         "open_status": {"type": "string", "enum": ["published_open", "closed", "unknown"]},
         "constraint_fit": {"type": "string", "enum": ["supported", "conflict", "unknown"]},
         "evidence": {"type": "array", "items": EVIDENCE, "minItems": 1, "maxItems": 6},
+        "distance_m": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "Optional source-supported distance from stated origin; "
+            "omit without evidence. Never guess from area name.",
+        },
     },
     "required": [
         "name",
@@ -117,6 +131,7 @@ PRESENT = schema(
     (
         "Save the ACTUAL candidate comparison and return complete "
         "readable text for the final reply. "
+        "Keep each field concise (one or two short sentences); quotes should be short excerpts. "
         "Candidates are in research-ranked order, including rejected places and reasons. Aim to "
         "compare 5-8 real possibilities and show 3 distinct businesses; never pad weak results. "
         "Every factual field must be supported by cited retained quotations; unknown fields say "
@@ -145,13 +160,18 @@ def public_url(url):
         return False
     try:
         parts = urlsplit(url)
-        return source_url(parts._replace(query="", fragment="").geturl()) and len(url) <= 2048
+        return (
+            parts.scheme in ("http", "https")
+            and not any(c.isspace() or ord(c) < 32 for c in url)
+            and len(url) <= 2048
+            and source_url(parts._replace(scheme="https", path="", query="", fragment="").geturl())
+        )
     except ValueError:
         return False
 
 
 def normal(value):
-    return " ".join(value.casefold().split())
+    return " ".join(value.replace("\\n", "\n").replace("\\t", "\t").casefold().split())
 
 
 def flatten(value):
@@ -163,15 +183,18 @@ def flatten(value):
 
 
 class ResearchFlow:
-    def __init__(self, dispatch, taste, clock=time.monotonic):
+    def __init__(self, dispatch, taste, clock=time.monotonic, post=None):
         self.dispatch, self.taste, self.clock = dispatch, taste, clock
+        self.post = post
         self.requests = {}
         self.messages = {}
         self.lock = threading.RLock()
 
     def forget(self, session_id=None, **kwargs):
         with self.lock:
-            self.requests.pop(session_id, None)
+            old = self.requests.pop(session_id, None)
+            if old:
+                old["done"].set()
             self.messages.pop(session_id, None)
 
     def observe(self, session_id=None, user_message="", **kwargs):
@@ -185,6 +208,7 @@ class ResearchFlow:
             record = self.requests.get(session_id)
             if record and record["result"] is None and previous and previous != user_message:
                 self.requests.pop(session_id, None)
+                record["done"].set()
 
     def _get(self, session, identifier=None):
         for key in list(self.requests):
@@ -226,11 +250,22 @@ class ResearchFlow:
                 "result": None,
                 "profile": profile,
                 "inflight": False,
+                "done": threading.Event(),
             }
-            self.requests.pop(session_id, None)
+            old = self.requests.pop(session_id, None)
+            if old:
+                old["done"].set()
             self.requests[session_id] = record
             while len(self.requests) > 100:
                 self.requests.pop(next(iter(self.requests)))
+        if self.post is not None:
+            context = contextvars.copy_context()
+            threading.Thread(
+                target=context.run,
+                args=(self._progress, session_id, record),
+                daemon=True,
+                name="spoon-dining-progress",
+            ).start()
         # Public source priorities are guidance, never an access grant or membership gate.
         ladders = json.loads(DATA.read_text())
         return json.dumps(
@@ -265,6 +300,34 @@ class ResearchFlow:
             },
             ensure_ascii=False,
         )
+
+    def _progress(self, session, record):
+        # Only the initiating call's copied host context can route these messages.
+        # This worker has no network/search authority and never starts another model turn.
+        for _ in range(9):
+            if record["done"].wait(20):
+                return
+            with self.lock:
+                if self.requests.get(session) is not record or record["result"] is not None:
+                    return
+                completed = len(record["evidence"])
+                phase = (
+                    "Waiting for the current research source to respond."
+                    if record["inflight"]
+                    else "Comparing the gathered evidence and preparing the recommendations."
+                )
+                message = (
+                    f"Still working on {plain(record['request']['meal'])} in "
+                    f"{plain(record['request']['location'])}: {phase} "
+                    f"{completed} research steps completed. "
+                    "You can add context or change the request while I work."
+                )
+            try:
+                handle = self.post(message)
+                if not getattr(handle, "ok", False):
+                    return
+            except Exception:
+                return  # Progress failure must not lose the normal final response.
 
     def research(self, args, session_id=None, **kwargs):
         try:
@@ -302,7 +365,7 @@ class ResearchFlow:
                         raw = json.loads(raw)
                     except ValueError:
                         pass
-                body = flatten(raw)[:50000]
+                body = flatten(raw)[:16000]
             except Exception:
                 body = "Host tool unavailable or failed. Try another available research route."
             finally:
@@ -346,12 +409,21 @@ class ResearchFlow:
                     raise ValueError("invalid_candidates")
                 if not text(args.get("coverage"), 1500):
                     raise ValueError("coverage_required")
-                for candidate in candidates:
-                    if set(candidate) != set(CANDIDATE["properties"]):
+                for candidate_index, candidate in enumerate(candidates):
+                    if set(candidate) - set(CANDIDATE["properties"]) or set(
+                        CANDIDATE["required"]
+                    ) - set(candidate):
                         raise ValueError("candidate_fields_required")
                     for key, value in candidate.items():
-                        if key != "evidence" and (not isinstance(value, str) or len(value) > 1500):
+                        if key not in ("evidence", "distance_m") and (
+                            not isinstance(value, str) or len(value) > 1500
+                        ):
                             raise ValueError("invalid_candidate_text")
+                    if "distance_m" in candidate and (
+                        type(candidate["distance_m"]) not in (int, float)
+                        or not 0 <= candidate["distance_m"] <= 100000
+                    ):
+                        raise ValueError("invalid_distance")
                     if not candidate["name"] or not candidate["why"]:
                         raise ValueError("candidate_name_and_reason_required")
                     if candidate["open_status"] not in ("published_open", "closed", "unknown"):
@@ -361,18 +433,36 @@ class ResearchFlow:
                     citations = candidate["evidence"]
                     if not isinstance(citations, list) or not 1 <= len(citations) <= 6:
                         raise ValueError("supporting_evidence_required")
-                    for citation in citations:
+                    for citation_index, citation in enumerate(citations):
                         evidence = record["evidence"].get(citation.get("evidence_id"))
                         quote, url = citation.get("quote"), citation.get("url")
-                        if (
-                            not evidence
-                            or not text(quote, 1200)
-                            or len(quote) < 12
-                            or normal(quote) not in normal(evidence["body"])
-                            or not public_url(url)
-                            or (url not in evidence["body"] and url not in evidence["urls"])
-                        ):
-                            raise ValueError("citation_not_in_retrieved_evidence")
+                        issue = None
+                        if not evidence:
+                            issue = "Unknown evidence_id; use the ID returned by spoon_research."
+                        elif not isinstance(quote, str) or not 1 <= len(quote.strip()) <= 1200:
+                            issue = "Supply a nonempty source quotation of at most 1200 characters."
+                        elif normal(quote) not in normal(evidence["body"]):
+                            issue = (
+                                "Quotation missing: copy a contiguous excerpt from this evidence."
+                            )
+                        elif not public_url(url):
+                            issue = "Use a public HTTP(S) source URL without credentials."
+                        elif url not in evidence["body"] and url not in evidence["urls"]:
+                            issue = "URL missing: use the exact source URL in this evidence."
+                        if issue:
+                            return json.dumps(
+                                {
+                                    "error": "citation_not_in_retrieved_evidence",
+                                    "candidate_index": candidate_index,
+                                    "candidate_name": candidate["name"],
+                                    "citation_index": citation_index,
+                                    "evidence_id": citation.get("evidence_id"),
+                                    "repair": issue
+                                    + " Keep other candidates and supported facts intact. "
+                                    "Do not replace the answer with a placeholder.",
+                                },
+                                ensure_ascii=False,
+                            )
                 # A changed taste profile must not leave stale personalization in /why.
                 try:
                     profile = self.taste.read(session_id)
@@ -382,6 +472,7 @@ class ResearchFlow:
                     raise ValueError("preferences_changed_restart_with_current_context")
                 result = render(args, record["request"])
                 record["result"] = copy.deepcopy(args)
+                record["done"].set()
             return json.dumps(
                 {
                     "text": result,
@@ -421,7 +512,7 @@ class ResearchFlow:
                         plain(item["rejection"] or item["why"], 1500),
                     ]
                     lines += [f"Source: {e['url']}" for e in item["evidence"]]
-                return "\n".join(lines)
+                return "\n\n".join(line for line in lines if line)
         except ValueError:
             return None
 
@@ -444,16 +535,17 @@ def render(result, request):
         role = ("My pick", "Runner-up", "Another worthwhile option")[shown - 1]
         query = ", ".join(filter(None, (item["name"], item["address"], request["location"])))
         maps = "https://www.google.com/maps/search/?" + urlencode({"api": 1, "query": query})
-        lines += [f"{shown}. {role}: {plain(item['name'])}", plain(item["why"], 1500)]
+        lines += [f"**{shown}. {role}: {plain(item['name'])}**", plain(item["why"], 1500)]
         for label, key in (("Try", "food"), ("Budget", "price"), ("Hours", "hours")):
             lines.append(f"{label}: {plain(item[key], 1500) or 'Unconfirmed'}")
         if item["open_status"] == "unknown":
             lines.append("Opening at your requested time is unconfirmed; check before leaving.")
         if item["constraint_fit"] == "unknown":
-            lines.append("Some requested needs remain unconfirmed; do not assume dietary safety.")
+            lines.append("Fit with all requested needs is not fully confirmed.")
         if item["caveat"]:
             lines.append("Worth knowing: " + plain(item["caveat"], 1500))
         lines += [f"Google Maps: {maps}"]
+        lines += ride_links(request.get("country_code"), item.get("distance_m"))
         lines += [f"Source: {url}" for url in dict.fromkeys(e["url"] for e in item["evidence"])]
         lines.append("")
     if not shown:
@@ -462,4 +554,4 @@ def render(result, request):
         plain(result["coverage"], 1500),
         f"Compared {len(result['candidates'])} places. Use /why for the tradeoffs and gaps.",
     ]
-    return "\n".join(lines)
+    return "\n\n".join(line for line in lines if line)

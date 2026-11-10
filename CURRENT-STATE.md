@@ -6,7 +6,7 @@ Do not ask the owner to retest until live search and retained-profile adoption p
 
 ## Current verification
 
-- 240 local tests pass with one host-only skip; Ruff passes.
+- 247 local tests pass with one host-only skip; Ruff passes.
 - Isolated Hermes validation and live city searches are in progress.
 - Voice remains supported through host transcription, not a new audio service.
 - Telegram delivery and voice-note ingestion need their respective surfaces; the
