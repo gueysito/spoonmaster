@@ -138,6 +138,18 @@ and root even on failure. Child processes receive an explicit environment allowl
 without inherited credentials. Hermes may prepare dependencies inside that temporary
 root; this can take several minutes. Remote execution still needs named authorization.
 
+For owner hands-on CLI testing, `scripts/interactive-hermes.py` provides `prepare`,
+`chat`, `check` and explicit `cleanup` actions with `--source`, `--python` and
+`--root`. Use a new `spoonmaster-test-*` directory directly under the host's Hermes
+home. It parks a fresh profile outside the live named-profile registry, installs
+the plugin and validates it. Only model/provider and web backend names are seeded;
+existing OpenAI Codex login access uses the host's supported root fallback.
+No credentials, conversations or memories are copied. Chat exposes only web and
+Spoonmaster tools. The existing host's update pause can block chat startup; do not
+clear that pause as part of testing. Cleanup stops only this profile's runtime,
+deletes its named profile through the isolated registry, and removes both test roots.
+Keep the roots until testing finishes, then run cleanup and verify their absence.
+
 ## First use and onboarding
 
 The first supported private conversation offers **Personalize my picks** or **Find
