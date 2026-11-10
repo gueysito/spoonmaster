@@ -216,6 +216,12 @@ bounds response size/time. Returned map identity/country/radius must corroborate
 venue. This is an additional discovery dependency, not a public-launch capacity plan.
 OpenStreetMap attribution remains visible. Public Nominatim is not integrated.
 
+Unknown cities receive the same branch-matched TripAdvisor/Yelp search-evidence path
+without waiting for a custom ladder. Neither a search mention nor a restaurant's own
+site counts as independent recommendation evidence. Footprint bounds can establish
+radius fit only when the complete mapped footprint fits; entrance precision remains
+unknown. Immediate identical dining calls reuse their current ledger for 60 seconds.
+
 For mapped distances above 804.672 metres, cards offer country-appropriate service
 entry links: Uber in US/JP, Grab in TH/ID, Gojek in ID. These are service/home/download
 links, not destination-prefilled or booking links. Availability and fares are not

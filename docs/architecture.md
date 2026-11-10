@@ -454,6 +454,14 @@ Source failure also leaves an explanation record. The ledger distinguishes missi
 coverage from evaluated rejection and retains recovery gaps and review attribution.
 No exact-location or dining-ledger persistence was added.
 
+An identical call within 60 seconds reuses the current revision-checked result without
+another provider request or duplicate card delivery. Reset, replacement and taste
+changes invalidate reuse. The cache is in memory, bounded to 100 conversations.
+OSM building footprints use a conservative spherical enclosure to prove radius fit;
+a center point alone cannot pass that gate, and entrances remain approximate.
+Unknown cities use the shared permitted crowd-source baseline for review research;
+branch identity, date, scale and count checks still apply before any ranking influence.
+
 Recovery uses two existing-host searches, one bounded structured extraction on the
 host's configured model, and at most six cached Photon venue-name lookups. Model output
 is untrusted: names and quoted food evidence must occur in the actual search result;

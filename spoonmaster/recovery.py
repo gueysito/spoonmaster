@@ -10,7 +10,14 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import ProxyHandler, Request, build_opener
 
-from .discovery import USER_AGENT, DiscoveryError, NoRedirects, distance_m, validate_origin
+from .discovery import (
+    USER_AGENT,
+    DiscoveryError,
+    NoRedirects,
+    distance_m,
+    valid_bounds,
+    validate_origin,
+)
 from .hours import parse_weekly_hours
 from .locales import source_url
 from .meal import matches, words
@@ -63,7 +70,7 @@ class Geocoder:
             if now < self.next_at:
                 time.sleep(min(1.0, self.next_at - now))
             request = Request(
-                PHOTON + "?" + urlencode({"q": query, "limit": 3}),
+                PHOTON + "?" + urlencode({"q": query, "countrycode": country, "limit": 3}),
                 headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
             )
             try:
@@ -120,6 +127,12 @@ def mapped(feature, item, hit, request):
         distance = distance_m(request["latitude"], request["longitude"], lat, lon)
         if distance > request.get("radius_m", 1600):
             return None
+        extent = props.get("extent")
+        bounds = None
+        if isinstance(extent, list) and len(extent) == 4:
+            bounds = valid_bounds(
+                {"minlon": extent[0], "maxlat": extent[1], "maxlon": extent[2], "minlat": extent[3]}
+            )
         return {
             "venue_id": f"osm:{kind}:{identifier}",
             "name": props["name"],
@@ -128,6 +141,7 @@ def mapped(feature, item, hit, request):
             "longitude": lon,
             "distance_m": distance,
             "coordinate_basis": "mapped_point" if kind == "node" else "osm_bounding_box_center",
+            "bounds": bounds,
             "source_url": f"https://www.openstreetmap.org/{kind}/{identifier}",
             "cuisine": request["meal"],
             "meal_evidence": item["quote"],
@@ -155,25 +169,39 @@ class Recovery:
     def __init__(self, dispatch, complete, geocoder=None):
         self.dispatch, self.complete = dispatch, complete
         self.geocoder = geocoder or Geocoder()
+        self.trace = {}
 
     def discover(self, request):
         hits, failures = [], []
+        self.trace = {
+            "searches": 0,
+            "usable_hits": 0,
+            "extracted": 0,
+            "grounded": 0,
+            "geocoded": 0,
+            "mapped": 0,
+        }
         if self.dispatch is None or self.complete is None:
             return [], ["host_search_or_structured_extraction_unavailable"]
-        for suffix in ("restaurants recommendations", "restaurant menu official"):
-            query = " ".join(words(request[k]) for k in ("meal", "area", "city"))
+        for purpose in ("best", "menu"):
+            query = (
+                f"{purpose} {words(request['meal'])} restaurants near "
+                f"{words(request['area'])} {words(request['city'])}"
+            )
             try:
+                self.trace["searches"] += 1
                 hits.extend(
                     hits_from(
                         self.dispatch(
                             "web_search",
-                            {"query": f"{query} {request['country_code']} {suffix}", "limit": 5},
+                            {"query": query, "limit": 5},
                         )
                     )
                 )
             except (ValueError, TypeError, RuntimeError, OSError):
                 failures.append("web_search_unavailable")
         hits = list({h["url"]: h for h in hits}.values())[:10]
+        self.trace["usable_hits"] = len(hits)
         if not hits:
             return [], failures + ["no_usable_search_excerpts"]
         try:
@@ -199,6 +227,7 @@ class Recovery:
             items = parsed.get("venues", []) if isinstance(parsed, dict) else []
             if not isinstance(items, list):
                 return [], ["invalid_discovery_extraction"]
+            self.trace["extracted"] = len(items[:6])
         except (ValueError, TypeError, RuntimeError, OSError, AttributeError):
             return [], ["discovery_extraction_unavailable"]
         venues = {}
@@ -223,8 +252,10 @@ class Recovery:
                 continue
             if not matches(request["meal"], quote):
                 continue
+            self.trace["grounded"] += 1
             try:
                 features = self.geocoder.lookup(name, request["city"], request["country_code"])
+                self.trace["geocoded"] += len(features)
             except DiscoveryError as error:
                 failures.append(str(error))
                 continue
@@ -234,4 +265,5 @@ class Recovery:
                     venues[venue["venue_id"]] = venue
         if not venues:
             failures.append("no_additional_grounded_mapped_matches")
+        self.trace["mapped"] = len(venues)
         return list(venues.values()), failures

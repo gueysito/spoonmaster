@@ -231,14 +231,20 @@ class OnboardingRepairTests(unittest.TestCase):
     setUp = OnboardingTests.setUp
     command = OnboardingTests.command
 
+    def test_explicit_food_request_does_not_interrupt_with_welcome_menu(self):
+        self.assertIsNone(
+            self.flow.before_turn(session_id="chat", user_message="Find noodles nearby")
+        )
+        self.assertFalse(self.path.exists())
+
     def test_natural_tool_questions_use_selectable_clarify_and_finish_atomically(self):
         result = json.loads(self.flow.tool({}, session_id="chat"))
         for step in range(1, 7):
             self.assertEqual(result["next_tool"], "clarify")
             self.assertEqual(result["step"], step)
             labels = result["questions"][0]["choices"]
-            self.assertTrue(labels[0].startswith("1. "))
-            self.assertTrue(labels[1].startswith("2. "))
+            self.assertFalse(labels[0].startswith("1. "))
+            self.assertFalse(labels[1].startswith("2. "))
             self.assertIn("Skip", labels)
             self.assertIn("Back", labels)
             self.assertIn("Find food now", labels)
@@ -285,4 +291,4 @@ class OnboardingRepairTests(unittest.TestCase):
         self.assertEqual(self.flow.ask_choice.call_count, 6)
         first = self.flow.ask_choice.call_args_list[0]
         self.assertIn("1/6", first.args[0])
-        self.assertEqual(first.args[1][0]["label"], "1. burger")
+        self.assertEqual(first.args[1][0]["label"], "burger")

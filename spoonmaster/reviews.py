@@ -135,7 +135,15 @@ def rating_from(snippet):
 def parse_hit(hit, venue, sources, country, city, now):
     if not isinstance(hit, dict) or not source_url(hit.get("url")):
         return None
-    title, snippet = hit.get("title"), hit.get("description")
+    title = hit.get("title")
+    snippet = next(
+        (
+            hit.get(k)
+            for k in ("description", "snippet", "text")
+            if isinstance(hit.get(k), str) and hit[k].strip()
+        ),
+        None,
+    )
     if not isinstance(title, str) or not isinstance(snippet, str):
         return None
     if not 1 <= len(title) <= 500 or not 1 <= len(snippet) <= 2000:
@@ -164,7 +172,12 @@ def parse_hit(hit, venue, sources, country, city, now):
     # Only explicit recommendation labels in a matching result title qualify.
     # Reviews/mentions alone, snippet sentiment, ratings and model claims do not.
     normalized = words(title)
-    positive = bool(re.search(r"\bbest (?:\w+ ){0,4}restaurants?\b", normalized)) or any(
+    positive = bool(
+        re.search(
+            r"\bbest (?:\w+ ){0,4}(?:restaurants?|noodles?|ramen|barbecue|bbq|hot ?pot|sushi)\b",
+            normalized,
+        )
+    ) or any(
         contains(normalized, term)
         for term in (
             "best restaurants",

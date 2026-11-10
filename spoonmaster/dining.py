@@ -1,7 +1,9 @@
 """One bounded dining transaction owns discovery, fallback, ranking, ledger and delivery."""
 
+import copy
 import json
 import threading
+import time
 
 from . import plugin
 from .cards import plain
@@ -59,6 +61,10 @@ class Dining:
         self.store, self.taste, self.reviews = store, taste, reviews
         self.recovery, self.post = recovery, post
         self.lock = threading.Lock()
+        self.cache = {}
+
+    def forget(self, session_id=None, **kwargs):
+        self.cache.pop(session_id, None)
 
     def tool(self, args, **kwargs):
         if not isinstance(args, dict) or set(args) - set(DINE_SCHEMA["parameters"]["properties"]):
@@ -87,7 +93,43 @@ class Dining:
                 {"error": "dining_in_progress", "text": "A dining search is still running."}
             )
         try:
-            return self._run(args, options, session)
+            for old_session in list(self.cache):
+                entry = self.cache.get(old_session)
+                if entry and time.monotonic() - entry["time"] >= 60:
+                    self.cache.pop(old_session, None)
+            key = json.dumps(args, sort_keys=True)
+            cached = self.cache.get(session)
+            if cached and cached["key"] == key and time.monotonic() - cached["time"] < 60:
+                if self.taste is not None:
+                    self.taste.guard_ledger(session)
+                record = self.store.search(session, cached["search_id"])
+                if record and self.taste is not None:
+                    try:
+                        profile = self.taste.read(session)
+                        revision = profile["revision"] if profile else None
+                        if revision != (record.get("presentation") or {}).get("taste_revision"):
+                            record = None
+                    except TasteError:
+                        record = None
+                if record and record["revision"] == cached["revision"] and record.get("ledger"):
+                    result = copy.deepcopy(cached["result"])
+                    result["reused"] = True
+                    result["instruction"] = "Do not retry or repost. Use this saved explanation."
+                    return json.dumps(result, ensure_ascii=False)
+            raw = self._run(args, options, session)
+            result = json.loads(raw)
+            record = self.store.current(session)
+            if result.get("search_id") and record and record.get("ledger"):
+                self.cache[session] = {
+                    "key": key,
+                    "time": time.monotonic(),
+                    "search_id": record["search_id"],
+                    "revision": record["revision"],
+                    "result": result,
+                }
+                while len(self.cache) > 100:
+                    self.cache.pop(next(iter(self.cache)))
+            return raw
         finally:
             self.lock.release()
 
@@ -136,6 +178,9 @@ class Dining:
             )
         )
         ranked["discovery_gaps"] = failures
+        trace = getattr(self.recovery, "trace", None)
+        if isinstance(trace, dict):
+            ranked["discovery_research"] = trace
         record = self.store.search(session, identifier)
         if not record or not record.get("ledger"):
             return json.dumps(
@@ -145,6 +190,8 @@ class Dining:
                 }
             )
         record["ledger"]["discovery_gaps"] = failures
+        if isinstance(trace, dict):
+            record["ledger"]["discovery_research"] = trace
         if not self.store.save(
             session,
             identifier,
@@ -186,6 +233,16 @@ def presentation(result, request):
     lines = [f"{plain(request['meal'])} near {plain(request['area'])}, {plain(request['city'])}"]
     if result.get("discovery_gaps"):
         lines.append("Some discovery sources were unavailable or incomplete; evidence gaps remain.")
+        reasons = {
+            "source_http_error": "The map discovery service returned an HTTP error.",
+            "source_unavailable": "The map discovery service did not respond successfully.",
+            "query_cooldown": "Map discovery is cooling down; it was not retried.",
+            "no_additional_grounded_mapped_matches": (
+                "Web research found no additional food-matched, mapped venue inside the radius."
+            ),
+            "no_usable_search_excerpts": "Web results lacked usable evidence excerpts.",
+        }
+        lines.extend(reasons[code] for code in result["discovery_gaps"] if code in reasons)
     for card in result.get("cards", []):
         lines += ["", card["text"]]
     for role in result.get("empty_slots", []):

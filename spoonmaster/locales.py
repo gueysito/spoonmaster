@@ -273,7 +273,11 @@ class LocaleService:
         if saved and saved["status"] != "confirmed":
             raise TasteError("locale_review_required")
         base = bundled(country, city)
-        sources = saved["sources"] if saved else (base.get("ladder") or {}).get("sources", [])
+        sources = (
+            saved["sources"]
+            if saved
+            else (base.get("ladder") or {}).get("sources", base["baseline"])
+        )
         return sources, (owner, path, self.generation, saved)
 
     def review_scope_matches(self, country, city, session, expected):

@@ -49,7 +49,7 @@ def fetch_candidates(latitude: float, longitude: float, radius_m: float = 1600) 
     validate_origin(latitude, longitude, radius_m)
     query = (
         "[out:json][timeout:25][maxsize:10485760];"
-        f"nwr[amenity=restaurant](around:{radius_m},{latitude},{longitude});out center tags;"
+        f"nwr[amenity=restaurant](around:{radius_m},{latitude},{longitude});out body bb;"
     )
     request = Request(
         f"{ENDPOINT}?{urlencode({'data': query})}", headers={"User-Agent": USER_AGENT}
@@ -148,7 +148,13 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
         return None
     if not isinstance(tags, dict):
         return None
+    bounds = valid_bounds(element.get("bounds"))
     coords = element if kind == "node" else element.get("center")
+    if not coords and bounds:
+        coords = {
+            "lat": (bounds["minlat"] + bounds["maxlat"]) / 2,
+            "lon": (bounds["minlon"] + bounds["maxlon"]) / 2,
+        }
     if not isinstance(coords, dict):
         return None
     lat, lon = coords.get("lat"), coords.get("lon")
@@ -168,6 +174,7 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
         "longitude": lon,
         "distance_m": distance_m(origin_lat, origin_lon, lat, lon),
         "coordinate_basis": "mapped_point" if kind == "node" else "osm_bounding_box_center",
+        "bounds": bounds,
         "source_url": f"https://www.openstreetmap.org/{kind}/{identifier}",
         "cuisine": _text(tags.get("cuisine"), 200),
         "hours_raw": raw_hours,
@@ -182,6 +189,36 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
         },
         "household_claims": source_claims(tags),
     }
+
+
+def valid_bounds(value):
+    if not isinstance(value, dict):
+        return None
+    try:
+        bounds = {k: value[k] for k in ("minlat", "maxlat", "minlon", "maxlon")}
+        validate_origin(bounds["minlat"], bounds["minlon"], 1)
+        validate_origin(bounds["maxlat"], bounds["maxlon"], 1)
+        if bounds["minlat"] > bounds["maxlat"] or bounds["minlon"] > bounds["maxlon"]:
+            return None
+        return bounds
+    except (KeyError, ValueError):
+        return None
+
+
+def footprint_within(venue, search):
+    bounds = valid_bounds(venue.get("bounds"))
+    if not bounds:
+        return False
+    lat = (bounds["minlat"] + bounds["maxlat"]) / 2
+    lon = (bounds["minlon"] + bounds["maxlon"]) / 2
+    # Conservative spherical bound: latitude arc + equatorial longitude arc.
+    # By triangle inequality this encloses the entire rectangle, not just its center.
+    extent = 6_371_008.8 * math.radians(
+        (bounds["maxlat"] - bounds["minlat"] + bounds["maxlon"] - bounds["minlon"]) / 2
+    )
+    return (
+        distance_m(search["latitude"], search["longitude"], lat, lon) + extent <= search["radius_m"]
+    )
 
 
 def _text(value, limit: int) -> str | None:

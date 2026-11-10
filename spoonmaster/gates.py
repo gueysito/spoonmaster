@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from .discovery import distance_m
+from .discovery import distance_m, footprint_within
 from .hours import DAYS
 from .household import aggregate, constraints
 from .meal import fit
@@ -120,10 +120,13 @@ def evaluate(venue, search, verification, request, now):
         search["latitude"], search["longitude"], venue["latitude"], venue["longitude"]
     )
     if venue["coordinate_basis"] != "mapped_point":
+        inside = footprint_within(venue, search)
         radius = verdict(
             "radius",
-            "unknown",
-            "Bounding-box center is not an exact venue entrance.",
+            "pass" if inside else "unknown",
+            "Full mapped footprint is within the requested radius; entrance remains approximate."
+            if inside
+            else "Bounding-box center alone cannot establish the venue's radius fit.",
             source,
             distance_m=round(distance, 1),
         )

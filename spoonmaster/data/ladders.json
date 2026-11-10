@@ -4,6 +4,20 @@
   "basis": "Approved field ladders plus researched NYC/SF priorities; source reputation does not grant extraction rights.",
   "baseline": [
     {
+      "name": "TripAdvisor",
+      "roles": ["local_opinion"],
+      "domains": ["tripadvisor.com"],
+      "access": "search_or_user_content",
+      "reason": "Cross-city crowd references when no reviewed local ladder exists; branch-match evidence, original scale and count remain required. No direct scraping."
+    },
+    {
+      "name": "Yelp",
+      "roles": ["local_opinion"],
+      "domains": ["yelp.com"],
+      "access": "search_or_user_content",
+      "reason": "Optional cross-city crowd reference; missing regional coverage is unknown, not negative. No direct scraping or account/API access."
+    },
+    {
       "name": "OpenStreetMap",
       "roles": [
         "discovery"

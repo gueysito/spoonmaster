@@ -74,6 +74,23 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(result["candidates"][1]["venue_id"], "osm:way:1")
         self.assertEqual(result["candidates"][1]["coordinate_basis"], "osm_bounding_box_center")
 
+    def test_way_bounds_without_center_are_retained_for_radius_proof(self):
+        way = {
+            "type": "way",
+            "id": 2,
+            "tags": {"amenity": "restaurant", "name": "Test"},
+            "bounds": {
+                "minlat": 35.6594,
+                "maxlat": 35.6596,
+                "minlon": 139.7004,
+                "maxlon": 139.7006,
+            },
+        }
+        result = normalized([way])["candidates"][0]
+        self.assertEqual(result["bounds"], way["bounds"])
+        self.assertAlmostEqual(result["latitude"], 35.6595)
+        self.assertAlmostEqual(result["longitude"], 139.7005)
+
     def test_malformed_records_do_not_become_places(self):
         elements = [
             None,

@@ -318,10 +318,10 @@ class ReviewTests(unittest.TestCase):
         result = ReviewSearch(self.locales).collect([v], "PT", "Lisbon", "chat")
         self.assertEqual(result["status"], "locale_review_required")
         store.forget_city("local-cli", place("PT", "Lisbon"))
-        self.assertEqual(
-            ReviewSearch(self.locales).collect([v], "PT", "Lisbon", "chat")["status"],
-            "no_review_sources",
-        )
+        fallback = ReviewSearch(self.locales).collect([v], "PT", "Lisbon", "chat")
+        self.assertEqual(fallback["status"], "searched")
+        self.assertEqual(fallback["venues"][v["venue_id"]], [])
+        self.assertNotIn("site:example.com", self.calls[-1][1]["query"])
 
     def test_ladder_deletion_during_search_discards_results(self):
         original = self.locales.dispatch

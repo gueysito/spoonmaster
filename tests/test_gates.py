@@ -108,6 +108,19 @@ class GateTests(unittest.TestCase):
             result = build_ledger([venue(cuisine="vegan")], SEARCH, {}, request, now=NOW)
             self.assertEqual(checks(result["entries"][0])["diet_and_vetoes"]["result"], "unknown")
 
+    def test_building_footprint_inside_radius_passes_without_claiming_exact_entrance(self):
+        item = venue(
+            coordinate_basis="osm_bounding_box_center",
+            bounds={"minlat": 34.9999, "maxlat": 35.0001, "minlon": 138.9999, "maxlon": 139.0001},
+        )
+        check = checks(build_ledger([item], SEARCH, {}, {}, now=NOW)["entries"][0])["radius"]
+        self.assertEqual(check["result"], "pass")
+        self.assertIn("entrance remains approximate", check["reason"])
+        for bounds in (None, {**item["bounds"], "minlat": True}, {**item["bounds"], "maxlat": 36}):
+            changed = {**item, "bounds": bounds}
+            check = checks(build_ledger([changed], SEARCH, {}, {}, now=NOW)["entries"][0])["radius"]
+            self.assertEqual(check["result"], "unknown")
+
     def test_freshness_rejects_missing_naive_future_and_expired_timestamps(self):
         for value in (
             None,

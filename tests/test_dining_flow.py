@@ -11,7 +11,7 @@ from spoonmaster.cards import ride_links
 from spoonmaster.dining import Dining, message_chunks
 from spoonmaster.discovery import DiscoveryError
 from spoonmaster.ledger import LedgerStore
-from spoonmaster.recovery import Recovery, mapped
+from spoonmaster.recovery import Geocoder, Recovery, mapped
 from spoonmaster.verification import Verifier
 from tests.test_gates import venue
 
@@ -159,8 +159,53 @@ class DiningFlowTests(unittest.TestCase):
         self.assertIn("Uber", " ".join(ride_links("US", 805)))
         self.assertFalse(ride_links("XX", 805))
 
+    def test_immediate_identical_request_reuses_ledger_without_reposting_or_search(self):
+        post = Mock(return_value=SimpleNamespace(ok=True))
+        self.flow.post = post
+        first = self.run_flow()
+        calls = post.call_count
+        with patch.object(plugin, "fetch_candidates") as fetch:
+            second = json.loads(self.flow.tool(request(), session_id="test"))
+            fetch.assert_not_called()
+        self.assertTrue(second["reused"])
+        self.assertEqual(second["search_id"], first["search_id"])
+        self.assertEqual(post.call_count, calls)
+        self.store.forget("test")
+        self.run_flow()
+        self.assertGreater(post.call_count, calls)
+
 
 class RecoveryTests(unittest.TestCase):
+    def test_geocoder_bounds_response_and_caches_only_public_query(self):
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.read.return_value = b'{"features": []}'
+        opener = Mock()
+        opener.open.return_value = response
+        geocoder = Geocoder()
+        with patch("spoonmaster.recovery.build_opener", return_value=opener):
+            self.assertEqual(geocoder.lookup("Example BBQ", "Tokyo", "JP"), [])
+            self.assertEqual(geocoder.lookup("Example BBQ", "Tokyo", "JP"), [])
+        opener.open.assert_called_once()
+        call = opener.open.call_args
+        self.assertTrue(call.args[0].full_url.startswith("https://photon.komoot.io/api/?"))
+        self.assertNotIn("latitude", call.args[0].full_url)
+        self.assertEqual(call.kwargs["timeout"], 8)
+        response.read.assert_called_once_with(131073)
+
+    def test_geocoder_rejects_oversized_response_without_retry(self):
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.read.return_value = b"x" * 131073
+        opener = Mock()
+        opener.open.return_value = response
+        with patch("spoonmaster.recovery.build_opener", return_value=opener):
+            with self.assertRaises(DiscoveryError):
+                Geocoder().lookup("Example BBQ", "Tokyo", "JP")
+        opener.open.assert_called_once()
+
     def setUp(self):
         self.hit = {
             "title": "Example BBQ",

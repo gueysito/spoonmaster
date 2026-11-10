@@ -140,6 +140,7 @@ def register(ctx):
     )
 
     def clear_context(session_id=None, **kwargs):
+        dining.forget(session_id)
         forget_session(session_id, _ledger_store=store)
         taste.forget(session_id)
         onboarding.forget(session_id)

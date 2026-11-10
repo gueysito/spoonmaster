@@ -42,7 +42,7 @@ not more information.
    typed place.
 2. First conversation after installation: offer "Personalize my picks" or "Find food
    now" (F8). Onboarding is optional; later uses reuse any existing profile.
-3. The locale scout (F2) confirms where to look for this place.
+3. Load the locale ladder or shared baseline. Optional source scouting never blocks a meal.
 4. Discovery finds candidates inside the radius; gates check each one (F3, F4).
 5. The reply leads with one pick, then a runner-up and a wildcard (F5), with a one-line
    ledger summary and a way to expand it.
@@ -72,7 +72,8 @@ The ladders are the core asset. Detail in [source-ladders.md](source-ladders.md)
 - On onboarding and on the first request in a new area, identify the country and city
   and load that place's ladder: which sources to use for quality signal, current
   facts, bookings and local opinion, in what order.
-- Unknown place: scout it. Use the host's web search to find the local review
+- Unknown place: use the shared baseline immediately. On request, scout it using
+  the host's web search to find the local review
   platforms, editorials, food writers, video channels and social accounts people there
   actually trust. Propose a ladder, show it, let the user confirm or edit, then cache it.
 - Ladders are data, not code. Field-tested ladders ship for Japan, Thailand and

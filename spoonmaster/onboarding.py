@@ -86,7 +86,13 @@ class Onboarding:
     def _question(self, draft):
         index = len(draft["choices"])
         question, _, first, second = PAIRS[index]
-        return (
+        notice = (
+            "These six choices will save tastes locally for future sessions and may reach "
+            "your model provider. You can switch to food now without saving tastes.\n"
+            if index == 0
+            else ""
+        )
+        return notice + (
             f"{index + 1}/6: {question}\n1. {first}\n2. {second}\n"
             "Choose 1, 2, Skip or Back. Find food now leaves without saving this draft."
         )
@@ -107,11 +113,7 @@ class Onboarding:
             }
             self.drafts[session] = draft
             self._prune()
-            return (
-                "These six choices will save tastes locally for future sessions and may reach "
-                "your model provider. You can switch to food now without saving tastes.\n"
-                + self._question(draft)
-            )
+            return self._question(draft)
 
     def skip(self, session):
         self.forget(session)
@@ -291,8 +293,8 @@ class Onboarding:
             choice = ask(
                 response,
                 [
-                    {"value": "1", "label": "1. " + pair[2]},
-                    {"value": "2", "label": "2. " + pair[3]},
+                    {"value": "1", "label": pair[2]},
+                    {"value": "2", "label": pair[3]},
                     {"value": "skip", "label": "Skip this question"},
                     {"value": "back", "label": "Back"},
                     {"value": "now", "label": "Find food now"},
@@ -339,7 +341,7 @@ class Onboarding:
                     return json.dumps({"complete": True, "text": response})
                 step = len(draft["choices"]) + 1
                 pair = PAIRS[step - 1]
-                choices = ["1. " + pair[2], "2. " + pair[3], "Skip", "Back", "Find food now"]
+                choices = [pair[2], pair[3], "Skip", "Back", "Find food now"]
                 return json.dumps(
                     {
                         "complete": False,
