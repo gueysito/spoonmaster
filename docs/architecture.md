@@ -385,7 +385,7 @@ confirmation; reset/deletion during search discards the result. Profile deletion
 removes city rows. City lists do not contain exact coordinates or companion data.
 
 Approving a list never changes enabled adapters. Existing OSM discovery and venue
-verification remain the executable baseline. Live provider scouting and model/channel
+verification remain the baseline; T9b adds bounded host-search review evidence below. Live provider scouting and model/channel
 orchestration remain unverified; tests inject the documented search envelope.
 
 T9 differential review starts from `de0c58b`, with core checkpoint `8d42640`.
@@ -397,3 +397,35 @@ credential, shell, ingress, upload, payment or direct source-fetch surface is ad
 Host-provider allowance/recovery is disclosed rather than assumed free. The installed
 host schema and actual plugin entrypoint are tested; live provider/model orchestration
 and broader public-release review remain outside this evidence.
+
+## Shared review evidence (T9b)
+
+`reviews.py` adds a per-registration `ReviewSearch` around the existing host dispatcher.
+`spoon_recommend` accepts explicit city/country, resolves current private reviewed sources
+through `LocaleService.review_sources`, filters hard failures, and searches up to six
+supported-taste/distance candidates. It makes no direct publisher requests and accepts
+no model-supplied evidence, score, URL or verdict. Response envelopes are bounded to
+100 KB/five results; titles/snippets and links are validated before use. Queries contain
+only public venue/address and explicit city/country data, with sanitized search tokens.
+
+Branch matching uses exact normalized names and mapped street addresses, plus city
+corroboration in the result. City aliases and common English address abbreviations are
+explicit; incomplete or ambiguous data is not repaired by guessing. The literal positive
+recommendation labels and exclusions in `parse_hit` define the bounded editorial signal;
+this is not general sentiment analysis. Ordinary reviews remain attributed references.
+Explicit crowd value/scale/count tuples compare only within common source/scale coverage
+across a taste-tied candidate set. No averages, inferred scales or rating thresholds.
+
+Ranking order: hard gates, supported taste, distinct editorial publisher support,
+comparable crowd values, distance; wildcard diversity remains unchanged. Reviews do not
+modify any safety gate. Evidence lives in existing expiring ledgers, not a new store.
+Cards and selection retain source references/dates; reset, search replacement and stale
+revision guards prevent returning invalidated results. Source resolution is checked
+before each dispatch and at completion; identity/profile/source changes discard evidence.
+
+Changed-boundary review: fixed public dispatcher and bounded inputs; no arbitrary URL
+fetch, SQL construction, filesystem path, credential read or shell from provider text.
+Tests exercise profile/session isolation, reset/deletion races, malicious source text,
+wrong branches, restricted-source denial, rate limits and safe error output. No new
+dependencies, ingress, payments, uploads, CORS or authentication surface. Broader public
+release audit remains T14; these checks do not certify source truth or model obedience.

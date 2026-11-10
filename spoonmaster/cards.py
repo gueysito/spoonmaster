@@ -139,6 +139,7 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         "unknown_checks": list(entry["unknown_gates"]),
         "household_warnings": household_warnings,
         "verification_attempted_at": verification.get("checked_at") if verification else None,
+        "review_evidence": entry.get("review_evidence", []),
     }
     card["text"] = card_text(card)
     return card
@@ -162,9 +163,36 @@ def card_text(card):
             f"Cost: {card['cost']}",
             f"Order: {card['order']}",
             f"Why: {card['fit']}",
+            *review_lines(card),
             f"Friction: {card['friction']}",
             *[f"Household: {warning}" for warning in card.get("household_warnings", [])],
             f"Caveat: {card['caveat']}",
             f"[Venue source]({card['sources'][0]})",
         ]
     )
+
+
+def review_lines(card):
+    items = card.get("review_evidence", [])
+    if not items:
+        return ["Reviews: no usable branch-matched evidence; quality remains unknown."]
+    lines = []
+    for item in items:
+        kind = (
+            "editorial recommendation signal"
+            if item["kind"] == "editorial_recommendation"
+            else "review reference only"
+        )
+        date = item["published_at"] or "publication date unknown"
+        lines.append(
+            f"Reviews: [{item['publisher']}]({item['url']}) · {kind}; {date}; "
+            f"retrieved {item['retrieved_at']} · {item['status']}."
+        )
+        if item.get("rating"):
+            rating = item["rating"]
+            lines.append(
+                f"Reported crowd rating: {rating['value']}/{rating['scale']} "
+                f"from {rating['count']} reviews/ratings (search excerpt)."
+            )
+    lines.append("Review evidence is a search excerpt, not full-review analysis or current facts.")
+    return lines

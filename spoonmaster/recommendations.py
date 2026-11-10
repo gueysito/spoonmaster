@@ -5,11 +5,12 @@ from datetime import datetime, timezone
 
 from .cards import ROLES, card_text, render_card
 from .gates import arrival_gate, build_ledger, fresh
-from .shortlist import admissible, shortlist
+from .reviews import attach_reviews, ranking_weights
+from .shortlist import admissible, ordered_candidates, shortlist
 from .taste_rank import apply_taste, companion_matches, taste_matches
 
 
-def recommend(record, request, verifier, *, now=None, profile=None):
+def recommend(record, request, verifier, *, now=None, profile=None, review_search=None):
     live_clock = now is None
     now = now or datetime.now(timezone.utc)
     venues, search = record["venues"], record["search"]
@@ -18,7 +19,6 @@ def recommend(record, request, verifier, *, now=None, profile=None):
     taste = taste_matches(venues, profile, request.get("taste_context", {}))
     companion_matches(venues, request.get("household", {}), taste)
     apply_taste(ledger, taste, venues)
-    slots = shortlist(venues, search, ledger, taste)
     if request.get("mode") == "price_tiers":
         return (
             {
@@ -29,6 +29,18 @@ def recommend(record, request, verifier, *, now=None, profile=None):
             ledger,
             None,
         )
+    research = {
+        "status": "unavailable",
+        "venues": {},
+        "attempted": 0,
+        "note": "No review evidence available; coverage is unknown, not negative.",
+    }
+    pool = ordered_candidates(venues, search, ledger, taste)
+    if review_search is not None:
+        research = review_search(pool, request.get("country_code"), request.get("city"))
+        research["not_searched"] = max(0, len(pool) - research["attempted"])
+    weights = ranking_weights(pool, taste, research)
+    slots = shortlist(venues, search, ledger, taste, weights)
     if slots:
         result = verifier.verify(
             [v["venue_id"] for v in slots.values()], "finalists", request.get("country_code")
@@ -43,6 +55,7 @@ def recommend(record, request, verifier, *, now=None, profile=None):
             return {"error": "venue_evidence_changed", "action": "Run a new search."}, None, None
         ledger = build_ledger(venues, search, evidence, request, now=now)
         apply_taste(ledger, taste, venues)
+    attach_reviews(ledger, research)
     entries = {e["venue_id"]: e for e in ledger["entries"]}
     cards = [
         render_card(
@@ -68,6 +81,13 @@ def recommend(record, request, verifier, *, now=None, profile=None):
         elif taste:
             card["fit"] = "Distance is the fallback; no supported taste match for this venue."
             card["text"] = card_text(card)
+        if any(weights.get(card["venue_id"], ())):
+            card["fit"] = (
+                (card["fit"] + " " if matched else "No supported personal taste match. ")
+                + "Branch-matched review evidence breaks taste ties before distance. "
+                + ("Wildcard adds cuisine variety." if card["role"] == "wildcard" else "")
+            )
+            card["text"] = card_text(card)
     roles = {card["role"] for card in cards}
     ledger["summary"] = ledger["summary"].replace(
         "No recommendations selected yet.",
@@ -91,11 +111,11 @@ def recommend(record, request, verifier, *, now=None, profile=None):
         {
             "cards": cards,
             "empty_slots": [role for role in ROLES if role not in roles],
-            "tradeoff": (
-                "Supported taste matches first, then distance; cuisine variety for the wildcard."
-                if taste
-                else "Distance first; no supported taste matches for this search."
-            ),
+            "tradeoff": "Supported tastes first, then branch-matched editorial recommendations, "
+            "then comparable same-source crowd scores, then distance; cuisine variety for the "
+            "wildcard. Missing coverage "
+            "is unknown, not negative. Search evidence is provisional.",
+            "review_research": ledger["review_research"],
             "note": "Empty slots had no qualifying distinct option after bounded verification.",
             "map_privacy": "Opening directions shares origin and destination with Google.",
         },

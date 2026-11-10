@@ -1,7 +1,8 @@
 # Current state
 
 Discovery, provisional recommendation cards, selected-venue rechecks and the reject
-ledger run locally, with onboarding, tastes, companions and locale source ladders. T9 passes. Updated 2026-11-08.
+ledger run locally, with shared review influence, NYC/SF ladders, onboarding, tastes
+and companions. T9a/T9b pass. Updated 2026-11-09.
 
 ## Works
 
@@ -9,7 +10,7 @@ ledger run locally, with onboarding, tastes, companions and locale source ladder
 - Standards kit adopted; commit-message and pre-commit hooks active.
 - `spoon_candidates` and `spoon_verify_hours`: finalist checks, selected refresh, sourced call links.
 - `spoon_evaluate`, `spoon_ledger` and `/why`: all ten gates, explicit failures/unknowns, full paging.
-- 167 local tests pass on Python 3.11/3.13; all 168 pass on Hermes 3.14.9; Ruff passes.
+- 189 local tests pass on Python 3.13; all 190 pass on Hermes 3.14.9; Ruff passes.
 - [Live probe](docs/data-gate.md): three venue attempts, two prose-hours extracts, selected recheck.
 - Real Hermes doctor/validate pass with ten tools/three hooks; profiles, upload and roots removed.
 - `spoon_recommend` / `spoon_select`: provisional cards, call guidance, empty slots and stale-choice guards.
@@ -18,7 +19,9 @@ ledger run locally, with onboarding, tastes, companions and locale source ladder
 - First-use onboarding or immediate search; six optional picks and one later reminder.
 - Saved family/coworker/friend groups require confirmed attendance per search; sensitive-save consent.
 - Typed age/diet/outing rules, hard vetoes and explicit provisional warnings.
-- Japan/Thailand/Indonesia ladders; bounded host-search scout and confirmed private city cache.
+- Japan/Thailand/Indonesia and NYC/SF ladders; reviewed future-city sources use the same review path.
+- Branch-matched editorial and comparable crowd evidence can break taste ties; cards retain sources.
+- Live NYC/SF discovery passes; SF needed a later attempt after upstream failures.
 
 ## Known from the test host (2026-11-08)
 
@@ -34,11 +37,11 @@ ledger run locally, with onboarding, tastes, companions and locale source ladder
 - Telegram: `/why` delivery, telephone-link taps, images, expandable quotes, `ask_choice` buttons.
 - Free tiers for Google Places and HotPepper Gourmet; Tabelog terms.
 - Pristine minimum-version compatibility and Telegram delivery of the new tool.
-- Live provider scouting and end-to-end conversational orchestration.
+- Live host-provider review/scout calls and end-to-end conversational orchestration.
 
 ## Next action
 
-T10: profile-merging spike, with explicit scoped sharing and hard-veto preservation.
+T12: owner hands-on testing of NYC/SF and the full conversation flow, then address findings.
 No release or catalog submission.
 
 ## Deadline

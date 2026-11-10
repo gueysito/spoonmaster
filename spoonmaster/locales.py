@@ -264,6 +264,24 @@ class LocaleService:
         self.next_search = 0
         self.generation = 0
 
+    def review_sources(self, country, city, session):
+        """Resolve only a private caller's current, confirmed source priorities."""
+        key = place(country, city)
+        owner, path = self.taste.binding(session)
+        saved = LocaleStore(path).read_city(owner, key)
+        if saved and saved["status"] != "confirmed":
+            raise TasteError("locale_review_required")
+        base = bundled(country, city)
+        sources = saved["sources"] if saved else (base.get("ladder") or {}).get("sources", [])
+        return sources, (owner, path, self.generation, saved)
+
+    def review_scope_matches(self, country, city, session, expected):
+        try:
+            _, current = self.review_sources(country, city, session)
+            return current == expected
+        except TasteError:
+            return False
+
     def forget(self, session_id=None, **kwargs):
         with self.lock:
             self.pending.pop(session_id, None)

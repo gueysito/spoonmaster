@@ -71,8 +71,8 @@ returns distance-sorted evidence, not recommendations. Tool registration is test
 against a mock context and a separately loaded directory package. The manifest
 targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
 Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 168 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
-3.11/3.13 passes 167 tests and skips the one real-host identity test. Profile
+all 190 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
+3.13 passes 189 tests and skips the one real-host identity test. Profile
 deletion and removal of the copied files and temporary root were verified.
 
 `spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
@@ -112,8 +112,9 @@ time. Re-run `spoon_evaluate` after hours verification or changed outing constra
 `spoon_recommend` accepts the same outing inputs, plus optional `country_code`,
 `travel_mode` and three-letter `home_currency`. It attempts hours verification for
 up to three finalists and returns complete provisional cards with explicit unknowns.
-Ranking uses supported saved cuisine/venue preferences, then distance, with a distinct
-listed cuisine for the wildcard. Restaurant quality is not inferred. Tentative tastes
+Ranking uses supported saved cuisine/venue preferences, then attributed editorial support
+and comparable same-source crowd ratings when available, then distance, with a distinct
+listed cuisine for the wildcard. Missing review coverage remains unknown; no quality guarantee is inferred. Tentative tastes
 receive less weight; context-bound preferences apply only to explicitly matching
 `taste_context` tags (season, time, occasion, company). Known failures, duplicate venues
 and weekly-predicted closures cannot fill slots. Missing prices leave requested
@@ -161,6 +162,45 @@ After the first successful venue choice following skipped onboarding, the select
 card includes one brief reminder about later personalization. A persisted marker
 prevents repeated reminders across sessions and restarts. Completing onboarding
 suppresses it. Storage/reminder failures never block a selected venue.
+
+## Review evidence across cities
+
+Pass the explicitly established `country_code` and `city` to `spoon_recommend`.
+The same review path applies to Japan, Thailand, Indonesia, NYC/SF and future
+owner-confirmed city ladders. No city or country is inferred from private coordinates.
+
+Before selecting cards, the plugin checks up to six admissible candidates in
+supported-taste/distance order, with one existing-host `web_search` call per candidate
+and five results per call. Missing mapped street addresses skip that candidate's search.
+Only public venue names, addresses, city/country and source-domain filters leave for
+search. This uses the host provider's configured allowance, without new accounts,
+credentials, provider settings or direct publisher fetches. One batch runs per plugin
+registration at a time, with 60 seconds between batch starts. Host timeouts remain
+host-owned; the plugin does not promise a fixed end-to-end response time.
+
+Evidence must match the restaurant name, mapped street address and city. Basic English
+street abbreviations are normalized; ambiguous branches and incomplete addresses yield
+unknown coverage. Search excerpts are not complete reviews. Explicit editorial
+recommendation labels in result titles can break taste ties; ordinary mentions cannot.
+Crowd ratings require an explicit score, scale and review count in the excerpt and are
+compared only when the whole taste-tied candidate set shares that publisher and scale.
+Scores from different platforms are never averaged. English recommendation labels and
+rating formats are supported initially; other text remains reference-only. Known source
+dates older than 365 days or in the future do not affect ranking. Undated editorial
+signals are provisional and explicitly labeled; retrieval is not publication freshness.
+
+Cards and the full ledger preserve source links, retrieval/publication dates, review
+references and unknowns. Reviews never establish hours, availability, dietary safety,
+prices or dishes. Search failure or missing context falls back to the existing
+provisional flow with an explicit research status. Selection retains evidence without
+re-running search. It expires with the conversation's search/ledger, clears on reset,
+and is not written to disk. Viewing it may put it in Hermes/model-provider transcripts.
+Private source-list access and concurrent reset/deletion guards still apply.
+
+NYC/SF source references include Eater, The Infatuation, local newspaper critics,
+Michelin, Yelp and OpenTable; Google Maps stays link-only. Restricted publishers cannot
+be fetched by the venue-page adapter even if an OSM website field points to them.
+See [source ladders](docs/source-ladders.md) for access limits and evidence selection.
 
 ## Optional taste memory
 

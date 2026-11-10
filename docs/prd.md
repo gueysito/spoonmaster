@@ -72,7 +72,7 @@ The ladders are the core asset. Detail in [source-ladders.md](source-ladders.md)
   platforms, editorials, food writers, video channels and social accounts people there
   actually trust. Propose a ladder, show it, let the user confirm or edit, then cache it.
 - Ladders are data, not code. Field-tested ladders ship for Japan, Thailand and
-  Indonesia; others are scouted.
+  Indonesia; NYC and SF now have researched city ladders; other cities are scouted.
 - Social sources (Instagram and similar) are roadmap and only through permitted routes.
 
 ### F3. Candidate discovery and evidence
@@ -87,6 +87,8 @@ The ladders are the core asset. Detail in [source-ladders.md](source-ladders.md)
   what the source actually supports, rating with its own scale and review count, recent
   themes only from real text, hours and last order, menu and prices where verifiable,
   confidence and missing fields.
+- Review influence is implemented through bounded, branch-matched host-search evidence.
+  Supported tastes and hard gates take precedence; missing coverage remains unknown.
 - Never average scores across platforms. Never infer review text from a score or
   snippet. Never claim complete coverage.
 

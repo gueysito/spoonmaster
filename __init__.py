@@ -22,6 +22,7 @@ from .spoonmaster.plugin import (
     verify_hours,
     why,
 )
+from .spoonmaster.reviews import ReviewSearch
 from .spoonmaster.taste_service import FEEDBACK_SCHEMA, PROFILE_SCHEMA, TasteService, owner_key
 
 
@@ -33,6 +34,7 @@ def register(ctx):
     onboarding = Onboarding(taste, getattr(ctx, "ask_choice", None))
     companions = CompanionService(taste)
     locales = LocaleService(taste, getattr(ctx, "dispatch_tool", None))
+    reviews = ReviewSearch(locales)
     ctx.register_tool(
         name="spoon_candidates",
         toolset="spoonmaster",
@@ -64,6 +66,8 @@ def register(ctx):
         (SELECT_SCHEMA, select_venue),
     ):
         bound = partial(handler, _ledger_store=store, _taste_service=taste)
+        if handler is recommend_candidates:
+            bound = partial(bound, _review_service=reviews)
         bound = partial(companions.wrap, bound)
         if handler is select_venue:
             bound = partial(onboarding.selection_tool, bound)

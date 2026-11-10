@@ -143,3 +143,10 @@ when to revisit. Agent recommendations are noted as such.
 - Alternative: city data only, which would not deliver the requested quality influence.
 - Boundaries: local pilot, existing host search allowance, no live-profile changes;
   independent Telegram/model testing remains separate from isolated runtime validation.
+
+- Implementation policy: up to six public-venue searches per recommendation batch, with
+  explicit city/country and existing provider allowance; private tastes never enter queries.
+  Editorial signals use explicit recommendation labels; same-source crowd scores require
+  explicit scale/count and comparable coverage. Unknown dates remain provisional; dates
+  older than one year or in the future cannot influence ranking. Missing evidence falls
+  back to taste/distance. These conservative defaults need live usability evaluation.

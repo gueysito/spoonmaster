@@ -221,7 +221,10 @@ class Verifier:
             or any(not isinstance(key, str) or len(key) > 80 for key in ids)
             or len(set(ids)) != len(ids)
             or stage not in ("finalists", "selected")
-            or country not in (None, "JP", "TH", "ID", "KR", "US")
+            or (
+                country is not None
+                and (not isinstance(country, str) or re.fullmatch(r"[A-Z]{2}", country) is None)
+            )
         ):
             return {"error": "invalid_arguments"}
         if not self.lock.acquire(blocking=False):

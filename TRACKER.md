@@ -39,15 +39,15 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
 | T9a | NYC/SF city ladders and U.S. basics | City aliases select distinct sources; other U.S. cities remain scouted; sourced U.S. phone links and both time zones work | 1 | done | City/phone/time-zone regressions plus existing locale/discovery checks pass. No new website access or account. |
-| T9b | Shared attributed review influence | Branch-matched permitted evidence affects otherwise comparable picks across bundled and confirmed future-city ladders; taste/vetoes win; cards/ledger retain attribution and honest gaps; isolated host verification passes | 5 | next | D-017. |
+| T9b | Shared attributed review influence | Branch-matched permitted evidence affects otherwise comparable picks across bundled and confirmed future-city ladders; taste/vetoes win; cards/ledger retain attribution and honest gaps; isolated host verification passes | 5 | done | D-017; 190 tests run locally (one host-only skip), all 190 pass on Hermes 3.14.9. Ruff/standards, doctor/validate and scanner pass; isolated root/profile/upload/alias cleanup independently verified. Changed-code/security/bounded-work review passed; mutation checks prove pick influence and publisher deduplication regressions detect removal. Live NYC discovery returned 111 venues (66 street addresses); Live SF discovery returned 116 venues (95 street addresses) after two upstream HTTP/availability failures and operator-guidance review. Live host-provider/model/Telegram quality remains T12. |
 
 ## Phase 3: Closer, hardening, submission (2026-11-10)
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T10 | Merge profiles (spike `a2a`, else share card) | Merged pick never violates a hard veto; explains fit per person | 3 | next | |
+| T10 | Merge profiles (spike `a2a`, else share card) | Merged pick never violates a hard veto; explains fit per person | 3 | planned | After hands-on spine testing. |
 | T11 | Order card | Top dishes with evidence counts; local text; no safety promises | 2 | planned | |
-| T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 3 | planned | |
+| T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 3 | next | T9b isolated-runtime checks passed. Owner conversation/Telegram testing and live provider coverage remain; upstream availability remains a live-test variable. |
 | T13 | README disclosures and catalog entry draft | Every host, stored item and capability listed | 1 | planned | Pilot network/privacy disclosures present. Resolve shared Overpass backend suitability before public release; [operator policy](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html). |
 | T14 | Security review at the public boundary | Owner chooses run, later or decline | 1 | planned | |
 | T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | blocked | Owner decision |

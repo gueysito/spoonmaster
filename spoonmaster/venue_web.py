@@ -14,6 +14,13 @@ from .discovery import USER_AGENT
 MAX_BYTES = 512 * 1024
 TIMEOUT = 8
 RESTRICTED = (
+    "yelp.com",
+    "theinfatuation.com",
+    "guide.michelin.com",
+    "eater.com",
+    "nytimes.com",
+    "sfchronicle.com",
+    "opentable.com",
     "google.com",
     "google.co.jp",
     "tabelog.com",

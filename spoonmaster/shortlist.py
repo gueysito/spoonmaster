@@ -35,13 +35,15 @@ def admissible(entry):
     )
 
 
-def shortlist(venues, search, ledger, taste=None):
+def ordered_candidates(venues, search, ledger, taste=None, reviews=None):
     taste = taste or {}
+    reviews = reviews or {}
     entries = {entry["venue_id"]: entry for entry in ledger["entries"]}
     ordered = sorted(
         venues,
         key=lambda v: (
             -taste.get(v["venue_id"], {}).get("score", 0),
+            tuple(-value for value in reviews.get(v["venue_id"], (0,))),
             distance_m(search["latitude"], search["longitude"], v["latitude"], v["longitude"]),
             v["venue_id"],
         ),
@@ -56,6 +58,11 @@ def shortlist(venues, search, ledger, taste=None):
         if admissible(entries[venue["venue_id"]]) and not vetoed:
             if not any(duplicate(venue, other) for other in unique):
                 unique.append(venue)
+    return unique
+
+
+def shortlist(venues, search, ledger, taste=None, reviews=None):
+    unique = ordered_candidates(venues, search, ledger, taste, reviews)
     slots = dict(zip(("pick", "runner_up"), unique[:2]))
     known = set().union(*(cuisines(v) for v in unique[:2]))
     if known:

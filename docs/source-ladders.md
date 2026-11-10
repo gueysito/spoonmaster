@@ -179,3 +179,20 @@ Research: [Eater NYC](https://ny.eater.com/23832815/nyc-dining-guide),
 [NYT](https://www.nytimes.com/spotlight/best-restaurants), and
 [Chronicle methodology](https://marketing.sfgate.com/blog/celebrate-the-bay-areas-best-restaurants-with-the-chronicles-top-100-list).
 These are complementary source choices, not a measured city-specific popularity ranking.
+
+## Review influence (T9b)
+
+Bundled priorities or a current owner-confirmed city list select permitted search domains.
+The shared recommendation path consumes at most six candidate searches, not entire guide
+pages. It requires exact mapped branch-address evidence and city corroboration before
+retaining a hit. Explicit recommendation labels in result titles can supply provisional
+editorial support; a mere mention cannot. Original crowd rating/scale/count expressions
+can break ties only within common publisher/scale coverage. See README for bounds and
+known language/coverage limits. Official venue checks still own published hours.
+
+Publisher access remains search snippets/user content only. Direct publisher extraction
+is disabled, including when a review link is supplied as the OSM venue website.
+[Yelp access rules](https://www.yelp.com/robots.txt),
+[Infatuation terms](https://www.theinfatuation.com/terms), and
+[Michelin terms](https://guide.michelin.com/en/terms-of-use) restrict automated extraction.
+Google Maps remains link-only; no Places billing project or API account is added.
