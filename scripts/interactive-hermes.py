@@ -46,22 +46,43 @@ def main() -> None:
         raise ValueError("Use a new spoonmaster-test-* directory directly beneath ~/.hermes")
     if root.is_symlink():
         raise ValueError("Test root cannot be a symlink")
-    home = root / "home"
+    # Gateway ownership is inferred from this layout; an arbitrary /home path
+    # falls back to "default" and conflicts with the owner's live gateway.
+    home = root / "profiles" / root.name
     marker = root / "test-owner.json"
 
     def cli(target: Path, *arguments: str) -> None:
+        child_env = environment(source, python, target, root)
+        if target == home:
+            # Fail before any gateway action if a host upgrade changes identity inference.
+            subprocess.run(
+                [
+                    str(python),
+                    "-B",
+                    "-c",
+                    "import os, sys; from gateway.host_attach import profile_name_for_home; "
+                    "actual = profile_name_for_home(os.environ['HERMES_HOME']); "
+                    "sys.exit(0 if actual == sys.argv[1] else 'Test profile identity mismatch')",
+                    root.name,
+                ],
+                cwd=root,
+                env=child_env,
+                check=True,
+            )
         subprocess.run(
             [str(python), "-B", "-m", "hermes_cli.main", *arguments],
             cwd=root,
-            env=environment(source, python, target, root),
+            env=child_env,
             check=True,
         )
 
     if args.action == "prepare":
         root.mkdir(mode=0o700)
+        (root / ".env").touch(mode=0o600)
+        (root / "profiles").mkdir()
         (root / "tmp").mkdir()
         staging = Path(tempfile.mkdtemp(prefix="spoonmaster-interactive-")).resolve()
-        name = "spoonmaster-test"
+        name = root.name
         marker.write_text(json.dumps({"staging": str(staging), "profile": name}))
         cli(staging, "profile", "create", name, "--no-alias", "--no-skills")
         shutil.move(str(staging / "profiles" / name), home)
@@ -94,7 +115,7 @@ def main() -> None:
         cli(home, "plugins", "enable", "spoonmaster")
         cli(home, "plugins", "doctor", str(plugin), "--ci")
         cli(home, "plugins", "validate", str(plugin), "--install-deps")
-        print("READY: isolated interactive profile; cleanup remains explicit")
+        print("INSTALLED: run check before hands-on testing; cleanup remains explicit")
         return
 
     receipt = json.loads(marker.read_text())

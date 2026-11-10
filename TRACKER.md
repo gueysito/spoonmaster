@@ -47,7 +47,7 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 |---|---|---|---|---|---|
 | T10 | Merge profiles (spike `a2a`, else share card) | Merged pick never violates a hard veto; explains fit per person | 3 | planned | After hands-on spine testing. |
 | T11 | Order card | Top dishes with evidence counts; local text; no safety promises | 2 | planned | |
-| T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 3 | next | T9b isolated-runtime checks passed. Interactive harness installs and passes doctor/validate; live model startup currently blocked by a shared live update fence (`update_paused`, held checkout lock). Owner conversation/Telegram testing and live provider coverage remain; do not clear the host update fence. |
+| T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 3 | next | T9b isolated-runtime checks passed. Interactive harness passes doctor/validate; corrected named-profile layout and startup identity guard prevent default-gateway collision. Live model reply, NYC locale tool and web search pass on the isolated host. Owner recommendation/conversation and Telegram testing remain. |
 | T13 | README disclosures and catalog entry draft | Every host, stored item and capability listed | 1 | planned | Pilot network/privacy disclosures present. Resolve shared Overpass backend suitability before public release; [operator policy](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html). |
 | T14 | Security review at the public boundary | Owner chooses run, later or decline | 1 | planned | |
 | T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | blocked | Owner decision |

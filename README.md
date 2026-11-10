@@ -141,9 +141,12 @@ root; this can take several minutes. Remote execution still needs named authoriz
 For owner hands-on CLI testing, `scripts/interactive-hermes.py` provides `prepare`,
 `chat`, `check` and explicit `cleanup` actions with `--source`, `--python` and
 `--root`. Use a new `spoonmaster-test-*` directory directly under the host's Hermes
-home. It parks a fresh profile outside the live named-profile registry, installs
+home. It parks a fresh profile under the test root's own `profiles/<name>` folder,
+outside the live named-profile registry, installs
 the plugin and validates it. Only model/provider and web backend names are seeded;
 existing OpenAI Codex login access uses the host's supported root fallback.
+The harness verifies the host resolves that unique profile identity before any
+test-home CLI action; an arbitrary home path would collide with the default gateway.
 No credentials, conversations or memories are copied. Chat exposes only web and
 Spoonmaster tools. The existing host's update pause can block chat startup; do not
 clear that pause as part of testing. Cleanup stops only this profile's runtime,
