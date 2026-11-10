@@ -5,12 +5,14 @@ from datetime import datetime, timezone
 
 from .cards import ROLES, card_text, render_card
 from .gates import arrival_gate, build_ledger, fresh
+from .outing import with_timezone
 from .reviews import attach_reviews, ranking_weights
 from .shortlist import admissible, ordered_candidates, shortlist
 from .taste_rank import apply_taste, companion_matches, taste_matches
 
 
 def recommend(record, request, verifier, *, now=None, profile=None, review_search=None):
+    request = with_timezone(request)
     live_clock = now is None
     now = now or datetime.now(timezone.utc)
     venues, search = record["venues"], record["search"]

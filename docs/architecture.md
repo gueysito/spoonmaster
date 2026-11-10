@@ -105,8 +105,17 @@ Counts distinguish returned/evaluated candidates from other discovered venues om
 by the result limit. Radius is recomputed for the original search, never reused from
 another origin. A bounding-box center cannot establish an exact entrance distance.
 
-Arrival math uses an explicitly supplied offset-aware arrival and IANA venue time zone,
-including the preceding day's overnight service and exclusive closing boundaries.
+Schedule math defaults to the current UTC clock converted to the venue's IANA time
+zone. An explicit offset-aware user-requested arrival overrides it. Current-time checks
+refresh after network verification and on selection; they are never saved as a frozen
+arrival option. Known established cities resolve through a bounded city/zone map;
+unknown zones remain unresolved, with no host-zone inference. The existing engine
+handles preceding-day overnight service and exclusive closing boundaries.
+The pre-turn hook supplies a fresh UTC clock and instructions to use a stated outing
+origin or user-shared pin, asking for an area/landmark/pin only when missing or ambiguous.
+Missing coordinates at the discovery boundary return `location_required` before any
+network access. No device geolocation is added. Natural-language interpretation still
+belongs to the host model; plugin schedule calculations do not depend on its clock.
 The weekly schedule result is separate from actual availability, which remains unknown
 without date-specific evidence. Missing route, last-order, dietary, household, taste or
 friction evidence remains unknown. An explicit venue veto fails; an empty dietary list

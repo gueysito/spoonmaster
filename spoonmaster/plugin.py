@@ -9,6 +9,7 @@ from .discovery import DiscoveryError, fetch_candidates, validate_origin
 from .gates import build_ledger, timestamp
 from .household import HOUSEHOLD_SCHEMA, TRAVEL_MODES, valid_household
 from .ledger import LedgerStore, ledger_page, render_ledger, session_key
+from .outing import LOCATION_PROMPT, valid_zone
 from .taste import CONTEXT_KEYS, TasteError, text
 from .verification import Verifier
 
@@ -23,6 +24,9 @@ CANDIDATES_SCHEMA = {
         "Discover restaurant candidates around an explicitly supplied location. "
         "Sends coordinates and radius to the public OpenStreetMap Overpass API. "
         "Use only for a user-requested nearby search; never infer a private location. "
+        "Use a stated outing location or a user-shared pin. If none is supplied, ask for "
+        "a city/area, address or landmark and suggest dropping a location pin where supported. "
+        "Do not ask again for an unambiguous location already supplied for this outing. "
         "For a new area, first use spoon_locale with an established country/city to load "
         "source priorities. This discovery tool still queries only OpenStreetMap. "
         "Returns untrusted source data ordered by straight-line distance. "
@@ -51,6 +55,8 @@ def candidates(args, *, _ledger_store=None, **kwargs) -> str:
     """Validate at the actual tool boundary, independent of model schema adherence."""
     if not isinstance(args, dict) or set(args) - {"latitude", "longitude", "radius_m", "limit"}:
         return json.dumps({"error": "invalid_arguments"})
+    if "latitude" not in args or "longitude" not in args:
+        return json.dumps({"error": "location_required", "action": LOCATION_PROMPT})
     limit = args.get("limit", 10)
     if type(limit) is not int or not 1 <= limit <= 20:
         return json.dumps({"error": "invalid_arguments"})
@@ -130,8 +136,10 @@ EVALUATE_SCHEMA = {
         "Apply all ten dining gates to EVERY candidate returned in the latest discovery search. "
         "Supply its search_id and whether the user confirmed that origin for this outing. "
         "Uses retained source evidence, never model-supplied verdicts. For schedule math, "
-        "supply a user-planned expected_arrival with UTC offset and the known venue IANA timezone; "
-        "do not guess an ETA or timezone. Dietary restrictions are user-stated; omit if unknown, "
+        "omit expected_arrival to use the current clock. Supply expected_arrival with UTC "
+        "offset ONLY for a time explicitly requested by the user. Supply the known venue "
+        "IANA timezone; never use the host timezone or ask the user for the current time. "
+        "Current time is not a travel ETA. Dietary restrictions are user-stated; omit if unknown, "
         "and send [] only if the user explicitly states none. Excluded venue IDs are explicit "
         "user vetoes. household contains only explicitly supplied members and hard/soft outing "
         "rules; omit unknown ages/diets, never infer restrictions or save health data as tastes. "
@@ -208,15 +216,10 @@ def _evaluation_arguments(args):
                 )
             ):
                 return False
-    if ("expected_arrival" in args) != ("venue_timezone" in args):
+    if "venue_timezone" in args and not valid_zone(args["venue_timezone"]):
         return False
     if "expected_arrival" in args:
-        zone = args["venue_timezone"]
-        if (
-            timestamp(args["expected_arrival"]) is None
-            or not isinstance(zone, str)
-            or not 1 <= len(zone) <= 100
-        ):
+        if timestamp(args["expected_arrival"]) is None:
             return False
     return True
 
@@ -292,6 +295,8 @@ RECOMMEND_SCHEMA = {
     "description": (
         "Build up to three provisional dining cards from this conversation's latest search. "
         "Use user-confirmed outing constraints as for spoon_evaluate. Attempts hours checks "
+        "using current time unless expected_arrival is explicitly requested by the user. "
+        "Omit expected_arrival for now; use the destination's venue_timezone, not the host's. "
         "before displaying each finalist. Unknowns remain explicit; slots are never padded. "
         "Supply an explicitly established country_code and city for review research: "
         "at most six host web searches send only public venue names/addresses and city/country. "

@@ -93,6 +93,9 @@ class RegistrationScopeTests(unittest.TestCase):
                 hook = context.hooks["pre_llm_call"]
                 result = hook(session_id="first", platform="cli", user_message="hello")
                 self.assertIn("Find food now", result["context"])
+                self.assertIn("Spoonmaster current clock (UTC):", result["context"])
+                self.assertIn("Omit expected_arrival", result["context"])
+                self.assertIn("location pin", result["context"])
                 self.assertFalse(data_dir.exists())
                 self.assertIn(
                     "Let's find food",

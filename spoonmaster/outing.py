@@ -1,0 +1,70 @@
+"""Current-time defaults and explicit-location guidance, without device inference."""
+
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+LOCATION_PROMPT = (
+    "Where should I look? Tell me a city and area, address, or nearby landmark, "
+    "or drop a location pin if your chat app supports it."
+)
+
+# City-specific entries avoid treating multi-zone countries as a single timezone.
+CITY_ZONES = {
+    ("JP", "tokyo"): "Asia/Tokyo",
+    ("TH", "bangkok"): "Asia/Bangkok",
+    ("TH", "chiang mai"): "Asia/Bangkok",
+    ("ID", "bali"): "Asia/Makassar",
+    ("ID", "denpasar"): "Asia/Makassar",
+    ("ID", "ubud"): "Asia/Makassar",
+    ("ID", "canggu"): "Asia/Makassar",
+    ("US", "new york city"): "America/New_York",
+    ("US", "new york"): "America/New_York",
+    ("US", "nyc"): "America/New_York",
+    ("US", "san francisco"): "America/Los_Angeles",
+    ("US", "sf"): "America/Los_Angeles",
+    ("US", "el paso"): "America/Denver",
+}
+
+
+def valid_zone(value):
+    if not isinstance(value, str) or not 1 <= len(value) <= 100:
+        return False
+    try:
+        ZoneInfo(value)
+        return True
+    except (ZoneInfoNotFoundError, ValueError):
+        return False
+
+
+def with_timezone(request):
+    """Resolve only an established city; never the machine's timezone or location."""
+    result = dict(request)
+    if "venue_timezone" not in result:
+        city = " ".join(result.get("city", "").casefold().split())
+        zone = CITY_ZONES.get((result.get("country_code"), city))
+        if zone:
+            result["venue_timezone"] = zone
+    return result
+
+
+def dining_context(*, now=None):
+    now = now or datetime.now(timezone.utc)
+    return {
+        "context": (
+            f"Spoonmaster current clock (UTC): {now.astimezone(timezone.utc).isoformat()}. "
+            "For dining, use the current time unless the user explicitly states another time. "
+            "Omit expected_arrival for now; the plugin reads its clock on every evaluation "
+            "and selected-venue recheck. Do not ask the user what time it is. "
+            "Use the established destination's IANA venue_timezone, never the host timezone. "
+            "Resolve an explicit local meal time against that destination and date; clarify "
+            "only an ambiguous requested time. Current time is not a travel ETA. "
+            "Use only an outing location stated by the user or a location pin they shared. "
+            "Reuse an unambiguous location already supplied for this outing; a new city "
+            "replaces the old origin. Do not infer location from IP, host, timezone, tastes "
+            "or previous outings. If missing or ambiguous, ask: "
+            + LOCATION_PROMPT
+            + " An area/landmark is a search anchor, not a claim of exact user position. "
+            "Do not request a pin on a terminal; offer the typed alternatives. "
+            "Do not ask for location for unrelated questions or personalization."
+        )
+    }

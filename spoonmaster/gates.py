@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from .discovery import distance_m
 from .hours import DAYS
 from .household import aggregate, constraints
+from .outing import with_timezone
 from .verification import FRESH_SECONDS
 
 GATES = (
@@ -72,9 +73,10 @@ def arrival_gate(verification, request, now):
         return verdict(
             gate, "unknown", "Hours verification is stale or has an invalid timestamp.", sources
         )
-    arrival = timestamp(request.get("expected_arrival"))
+    explicit = "expected_arrival" in request
+    arrival = timestamp(request.get("expected_arrival")) if explicit else now
     if arrival is None or not now <= arrival <= now + timedelta(days=1):
-        return verdict(gate, "unknown", "A future arrival within 24 hours is needed.", sources)
+        return verdict(gate, "unknown", "The requested arrival must be within 24 hours.", sources)
     try:
         zone = ZoneInfo(request.get("venue_timezone") or "")
     except (ZoneInfoNotFoundError, ValueError, TypeError):
@@ -100,7 +102,7 @@ def arrival_gate(verification, request, now):
         sources,
         weekly_schedule_result=weekly_result,
         expected_arrival=arrival.astimezone(zone).isoformat(),
-        basis="user_supplied_arrival_and_timezone",
+        basis="user_supplied_arrival_and_timezone" if explicit else "current_time_at_venue",
     )
 
 
@@ -204,6 +206,7 @@ def evaluate(venue, search, verification, request, now):
 
 def build_ledger(venues, search, verifications, request, *, now=None):
     now = now or datetime.now(timezone.utc)
+    request = with_timezone(request)
     entries = [evaluate(v, search, verifications.get(v["venue_id"]), request, now) for v in venues]
     counts = {
         kind: sum(e["disposition"] == kind for e in entries)

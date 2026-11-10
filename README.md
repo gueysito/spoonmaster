@@ -95,10 +95,22 @@ with saved OSM JSON to avoid repeating discovery. The demo then makes live venue
 
 `spoon_evaluate` checks every returned candidate from the latest search using its
 `search_id`, the user's `origin_confirmed` answer, optional explicitly stated
-`dietary_restrictions` and `excluded_venue_ids`. Optional `expected_arrival` (ISO timestamp
-with UTC offset) and `venue_timezone` (IANA name, such as `Asia/Tokyo`) enable weekly
-schedule math. No ETA or time zone is guessed. Weekly matching is not confirmation of
+`dietary_restrictions` and `excluded_venue_ids`. Omit `expected_arrival` to use the
+current clock, refreshed during recommendation and selected-venue checks. Supply an
+offset-aware `expected_arrival` only when the user requests a different time.
+`venue_timezone` is the destination's IANA zone, such as `Asia/Tokyo`, never the host's.
+Known city/zone mappings cover Tokyo, Bangkok/Chiang Mai, Bali, NYC, SF and El Paso;
+other established destinations can supply their IANA zone. An unknown zone leaves
+schedule math unresolved, without asking the user for the current time.
+No ETA is guessed. Weekly matching is not confirmation of
 date-specific availability; last order and other missing facts remain unknown.
+
+The search location must come from the user's stated area, address or landmark, or a
+pin they share. Missing/ambiguous locations prompt for those choices, including a pin
+where supported. Terminal users can type a location. An already stated outing origin
+does not require another confirmation; changing cities replaces it. Device/IP location
+and the host time zone are never used to infer an origin. An area is a search anchor,
+not a claim of precise user position.
 
 Each gate returns pass, fail or unknown with a reason and source links where evidence
 exists. Explicit failures exclude a venue; any unknown leaves it unresolved. The
@@ -272,8 +284,10 @@ conversations, identities or profiles. Do not put diagnoses into preference fiel
 
 Typed outing rules support a highchair requirement, parking, maximum queue/travel
 minutes and an arrival-before deadline, each hard or soft. Arrival means reaching the
-venue, not finishing dinner or returning home. The user supplies the planned arrival;
-the plugin does not invent routes or ETA. Transport mode is carried into directions.
+venue, not finishing dinner or returning home. The current clock is the default check
+time; a user-supplied planned arrival overrides it. A current-time check does not prove
+arrival-before constraints. The plugin does not invent routes or ETA. Transport mode
+is carried into directions.
 Fresh explicit OSM age/diet/highchair conflicts trigger named ledger rules. Hard
 conflicts exclude; soft conflicts and unsupported facts remain visible warnings.
 Unknown requirements permit provisional cards with confirmation advice. Positive OSM

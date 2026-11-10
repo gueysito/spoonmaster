@@ -85,7 +85,12 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
     schedule = checks["open_at_arrival"].get("weekly_schedule_result")
     if schedule:
         label = {"pass": "open", "fail": "closed", "unknown": "unknown"}[schedule]
-        arrival = f"Weekly schedule predicts {label}; actual availability unconfirmed"
+        check = checks["open_at_arrival"]
+        when = "Now" if check.get("basis") == "current_time_at_venue" else "Requested time"
+        arrival = (
+            f"{when} ({check['expected_arrival']}): weekly schedule predicts {label}; "
+            "actual availability unconfirmed; travel time not included"
+        )
     cost_home = home_currency or "home currency"
     distance = checks["radius"].get("distance_m")
     fit = {

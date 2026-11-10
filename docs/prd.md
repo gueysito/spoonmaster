@@ -56,6 +56,10 @@ not more information.
 
 - Accept a location pin where the channel provides one, or a typed address, landmark
   or area. Confirm ambiguous places; never guess a city or country.
+- If absent, ask for a stated location and suggest a shared pin where supported.
+  Reuse the current outing's stated location; do not detect device/IP location.
+- Use the current time unless the user states another time, evaluated in the
+  destination's time zone. Do not ask for the current time or treat it as travel ETA.
 - Default radius 1 mile (1.6 km) from an explicit origin; user can change it.
 - Never expand the radius silently when results are sparse; say so and offer to widen.
 - Distinguish straight-line distance from travel time.

@@ -6,6 +6,7 @@ import time
 
 from .cards import plain
 from .onboarding_store import OnboardingStore
+from .outing import LOCATION_PROMPT
 from .taste import TasteError
 from .taste_service import owner_key
 
@@ -18,7 +19,10 @@ INTRO = (
     "You can view, correct or delete them anytime. Skipping saves only your onboarding "
     "choice/reminder status, not tastes."
 )
-FIND_NOW = "Let's find food. Share a location or area if you haven't already, and what sounds good."
+FIND_NOW = (
+    "Let's find food. I'll use the current time unless you specify another time. "
+    "If you haven't already supplied a location for this outing: " + LOCATION_PROMPT
+)
 REMINDER = (
     "Want more personal picks? Say ‘get me onboarded’ anytime. "
     "A few quick questions, then I learn from your choices and feedback."

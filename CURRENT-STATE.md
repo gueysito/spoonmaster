@@ -1,8 +1,8 @@
 # Current state
 
-Discovery, provisional recommendation cards, selected-venue rechecks and the reject
-ledger run locally, with shared review influence, NYC/SF ladders, onboarding, tastes
-and companions. T9a/T9b pass. Updated 2026-11-09.
+Current-time defaults and explicit-location guidance are implemented and runtime-tested.
+Owner testing exposed broader dining/onboarding failures; the full experience is not
+ready for another owner test. T9a/T9b pass. Updated 2026-11-10.
 
 ## Works
 
@@ -10,7 +10,7 @@ and companions. T9a/T9b pass. Updated 2026-11-09.
 - Standards kit adopted; commit-message and pre-commit hooks active.
 - `spoon_candidates` and `spoon_verify_hours`: finalist checks, selected refresh, sourced call links.
 - `spoon_evaluate`, `spoon_ledger` and `/why`: all ten gates, explicit failures/unknowns, full paging.
-- 189 local tests pass on Python 3.13; all 190 pass on Hermes 3.14.9; Ruff passes.
+- 197 local tests pass plus one host-only skip; all 198 pass on Hermes 3.14.9; Ruff passes.
 - [Live probe](docs/data-gate.md): three venue attempts, two prose-hours extracts, selected recheck.
 - Real Hermes doctor/validate pass with ten tools/three hooks; profiles, upload and roots removed.
 - `spoon_recommend` / `spoon_select`: provisional cards, call guidance, empty slots and stale-choice guards.
@@ -41,7 +41,7 @@ and companions. T9a/T9b pass. Updated 2026-11-09.
 
 ## Next action
 
-T12: owner hands-on testing of NYC/SF and the full conversation flow, then address findings.
+T12: finish remaining owner-reported workflow/discovery/onboarding repairs and live chat checks.
 No release or catalog submission.
 
 ## Deadline

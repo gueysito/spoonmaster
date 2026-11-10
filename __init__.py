@@ -6,6 +6,7 @@ from .spoonmaster.companions import COMPANIONS_SCHEMA, CompanionService
 from .spoonmaster.ledger import LedgerStore
 from .spoonmaster.locales import LOCALE_SCHEMA, LocaleService
 from .spoonmaster.onboarding import Onboarding
+from .spoonmaster.outing import dining_context
 from .spoonmaster.plugin import (
     CANDIDATES_SCHEMA,
     EVALUATE_SCHEMA,
@@ -128,7 +129,11 @@ def register(ctx):
         welcome = onboarding.before_turn(**kwargs)
         party = companions.before_turn(**kwargs)
         locale = locales.before_turn(**kwargs)
-        contexts = [result["context"] for result in (welcome, recalled, party, locale) if result]
+        contexts = [
+            result["context"]
+            for result in (welcome, recalled, party, locale, dining_context())
+            if result
+        ]
         return {"context": "\n".join(contexts)} if contexts else None
 
     ctx.register_hook("on_session_reset", clear_context)

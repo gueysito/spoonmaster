@@ -48,7 +48,6 @@ class PluginTests(unittest.TestCase):
     def test_invalid_arguments_never_fetch(self):
         for args in [
             None,
-            {},
             {"latitude": 0, "longitude": 0, "limit": True},
             {"latitude": 0, "longitude": 0, "url": "http://127.0.0.1"},
             {"latitude": 10**400, "longitude": 0},
@@ -58,6 +57,15 @@ class PluginTests(unittest.TestCase):
                 self.assertEqual(
                     json.loads(plugin.candidates(args)), {"error": "invalid_arguments"}
                 )
+                fetch.assert_not_called()
+
+    def test_missing_location_asks_for_stated_area_or_pin_without_network(self):
+        for args in ({}, {"latitude": 35}, {"longitude": 139}):
+            with patch.object(plugin, "fetch_candidates") as fetch:
+                result = json.loads(plugin.candidates(args))
+                self.assertEqual(result["error"], "location_required")
+                self.assertIn("location pin", result["action"])
+                self.assertIn("landmark", result["action"])
                 fetch.assert_not_called()
 
     def test_failure_remains_unverified_and_cooldown_applies(self):
@@ -176,6 +184,8 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
                         else 'invalid_arguments')
             if name == 'spoon_profile':
                 expected = 'private_context_required'
+            if name == 'spoon_candidates':
+                expected = 'location_required'
             assert json.loads(handler({}))['error'] == expected
             print(name)
         def register_command(self, name, handler, description, args_hint):
