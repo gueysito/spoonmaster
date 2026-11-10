@@ -169,3 +169,24 @@ when to revisit. Agent recommendations are noted as such.
   account creation or live-profile changes. Ride links open services; no unsupported
   destination-prefill claim. Real model/surface behavior must be checked separately
   from deterministic tests and plugin installation.
+
+## D-019: Discovery latency and repeat-request consistency (2026-11-10)
+
+- Owner reported inconsistent performance. Measured cause: the shared Overpass
+  endpoint answered the 1.6 km restaurant query in 33 to 38 seconds whatever the
+  query shape (bbox, node-only, smaller radius, mirrors), while the client deadline
+  was 15 seconds. Every live search therefore failed into web recovery, which is
+  slower and rarely yields three options. A second request within ten seconds also
+  returned no cards because the discovery and verification cooldowns failed closed.
+- Decision: wait for the endpoint (45 s client, 30 s server deadline) and reuse the
+  covering result for the same 100 m cell for 10 minutes, recentered on the exact
+  origin. Cooldowns pause briefly instead of failing; concurrent callers wait for the
+  running pass. The map query runs beside the web pass; finalist pages are read side
+  by side. On a map outage with nothing mapped, one seeded web pass follows.
+- Alternatives rejected: Overpass mirrors (all slower or down on the measurement
+  day); shorter deadlines with more recovery logic (treats the symptom and sends more
+  model/search work for worse results); a dedicated Overpass instance (needs an
+  account or hosting, outside the free-source pilot; revisit at T13).
+- Limits: the cache is in-process and public venue data only; retrieval times stay
+  truthful, so cached venues age out of the 15-minute evidence window on their own.
+  A slow endpoint still costs up to 45 seconds on a cold cell.

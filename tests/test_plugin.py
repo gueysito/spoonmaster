@@ -7,10 +7,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from spoonmaster import plugin
-from spoonmaster.discovery import DiscoveryError
+from spoonmaster.discovery import DiscoveryError, normalize_candidates
 from spoonmaster.ledger import LedgerStore
 from spoonmaster.verification import Verifier
 from tests.test_discovery import normalized, venue
@@ -24,6 +24,13 @@ class PluginTests(unittest.TestCase):
         self.cooldown.start()
         self.addCleanup(self.clock.stop)
         self.addCleanup(self.cooldown.stop)
+        self.sleep = Mock()
+        for item in (
+            patch.object(plugin, "_area_cache", {}),
+            patch.object(plugin, "_sleep", self.sleep),
+        ):
+            item.start()
+            self.addCleanup(item.stop)
         self.ledger_store = patch.object(plugin, "ledgers", LedgerStore())
         self.ledger_store.start()
         self.addCleanup(self.ledger_store.stop)
@@ -34,7 +41,7 @@ class PluginTests(unittest.TestCase):
         ):
             result = json.loads(
                 plugin.candidates(
-                    {"latitude": 0, "longitude": 0, "limit": 1},
+                    {"latitude": 35.6595, "longitude": 139.7005, "limit": 1},
                     task_id="synthetic",
                     parent_agent=object(),
                 )
@@ -68,23 +75,59 @@ class PluginTests(unittest.TestCase):
                 self.assertIn("landmark", result["action"])
                 fetch.assert_not_called()
 
-    def test_failure_remains_unverified_and_cooldown_applies(self):
+    def test_failure_is_remembered_briefly_and_cooldown_waits_instead_of_failing(self):
         with patch.object(
             plugin, "fetch_candidates", side_effect=DiscoveryError("source_rate_limited")
-        ):
+        ) as fetch:
             first = json.loads(plugin.candidates({"latitude": 0, "longitude": 0}))
             second = json.loads(plugin.candidates({"latitude": 0, "longitude": 0}))
+            # Another area inside the cooldown pauses politely, then still gets its query.
+            third = json.loads(plugin.candidates({"latitude": 1, "longitude": 1}))
         self.assertEqual(first, {"status": "unverified", "error": "source_rate_limited"})
-        self.assertEqual(second["error"], "query_cooldown")
-        with patch.object(plugin.time, "monotonic", return_value=111):
+        self.assertEqual(second["error"], "source_rate_limited")
+        self.assertTrue(second["cache_reused"])
+        self.assertEqual(third["error"], "source_rate_limited")
+        self.assertEqual(fetch.call_count, 2)
+        self.sleep.assert_called_once_with(10)
+        with patch.object(plugin.time, "monotonic", return_value=161):
             with patch.object(plugin, "fetch_candidates", return_value=normalized([])):
                 self.assertEqual(
                     json.loads(plugin.candidates({"latitude": 0, "longitude": 0}))["status"],
                     "discovery_only",
                 )
 
-    def test_concurrent_call_is_refused_without_network(self):
-        with plugin._query_lock, patch.object(plugin, "fetch_candidates") as fetch:
+    def test_same_area_reuses_the_covering_query_with_exact_distances(self):
+        # The covering query is made for the cell center with a margin; results are
+        # recentered on each exact origin, so radius membership stays exact.
+        far = venue(2, lat=0.0144, lon=0)  # about 1.6 km north of the cell center
+        covering = normalize_candidates({"elements": [venue(1, lat=0, lon=0), far]}, 0, 0, 1750)
+        with patch.object(plugin, "fetch_candidates", return_value=covering) as fetch:
+            first = json.loads(
+                plugin.candidates({"latitude": 0.0004, "longitude": 0, "radius_m": 1600})
+            )
+            narrower = json.loads(
+                plugin.candidates({"latitude": -0.0004, "longitude": 0, "radius_m": 1600})
+            )
+            widened = json.loads(
+                plugin.candidates({"latitude": 0, "longitude": 0, "radius_m": 2000})
+            )
+        fetch.assert_any_call(0.0, 0.0, 1750)
+        self.assertEqual(fetch.call_count, 2)
+        self.assertEqual([v["venue_id"] for v in first["candidates"]], ["osm:node:1", "osm:node:2"])
+        self.assertAlmostEqual(first["candidates"][0]["distance_m"], 44.5, places=0)
+        self.assertTrue(narrower["cache_reused"])
+        self.assertEqual([v["venue_id"] for v in narrower["candidates"]], ["osm:node:1"])
+        self.assertEqual(narrower["skipped"]["outside_radius"], 1)
+        self.assertFalse(widened.get("cache_reused"))
+        # Only the widened radius needed a new query, so only it paused for the cooldown.
+        self.sleep.assert_called_once_with(10)
+
+    def test_concurrent_call_waits_then_gives_up_without_network(self):
+        with (
+            plugin._query_lock,
+            patch.object(plugin, "QUERY_WAIT_SECONDS", 0),
+            patch.object(plugin, "fetch_candidates") as fetch,
+        ):
             result = json.loads(plugin.candidates({"latitude": 0, "longitude": 0}))
         self.assertEqual(result["error"], "query_in_progress")
         fetch.assert_not_called()

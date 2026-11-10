@@ -1,6 +1,7 @@
 """Behavioral checks for finalist attempts, selected refreshes and safe call fallbacks."""
 
 import json
+import threading
 import unittest
 from unittest.mock import Mock
 
@@ -39,13 +40,26 @@ def page(**updates):
 class VerificationTests(unittest.TestCase):
     def make(self, fetch):
         self.now = 100
-        verifier = Verifier(fetch=fetch, clock=lambda: self.now)
+        self.sleep = Mock()
+        verifier = Verifier(fetch=fetch, clock=lambda: self.now, sleep=self.sleep)
         verifier.remember([venue(str(i)) for i in range(1, 4)])
         return verifier
 
     def test_three_attempts_continue_after_failure_and_keep_provenance(self):
-        fetch = Mock(side_effect=[page(), PageError("page_http_error"), "<p>No hours</p>"])
+        outcomes = {"1": page(), "2": PageError("page_http_error"), "3": "<p>No hours</p>"}
+        started = threading.Barrier(3, timeout=5)
+
+        def fetch(url):
+            # Every finalist page is requested while the others are still pending.
+            started.wait()
+            outcome = outcomes[url.rsplit("/", 1)[-1]]
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+        fetch = Mock(side_effect=fetch)
         verifier = self.make(fetch)
+        verifier.remember([venue(str(i), website=f"https://example.com/{i}") for i in range(1, 4)])
         results = verifier.verify(["1", "2", "3"], "finalists")["venues"]
         self.assertEqual(fetch.call_count, 3)
         self.assertEqual([r["status"] for r in results], ["confirmed", "unknown", "unknown"])
@@ -168,16 +182,21 @@ class VerificationTests(unittest.TestCase):
         labeled = "<h1>Example Dining</h1><div>電話番号</div><div>03-1234-5678</div>"
         self.assertEqual(extract(labeled, venue(), "JP")["phone"]["uri"], "tel:+81312345678")
 
-    def test_cooldown_and_concurrency_prevent_repeated_fetches(self):
+    def test_cooldown_pauses_instead_of_failing_and_concurrency_waits(self):
         fetch = Mock(return_value=page())
         verifier = self.make(fetch)
         verifier.verify(["1"], "finalists")
-        self.assertEqual(verifier.verify(["2"], "finalists")["error"], "verification_cooldown")
+        self.now += 4
+        # A second search seconds later still gets its finalist check after a short pause.
+        self.assertEqual(verifier.verify(["2"], "finalists")["venues"][0]["status"], "confirmed")
+        self.sleep.assert_called_once_with(6)
+        self.assertEqual(fetch.call_count, 2)
+        verifier.wait = 0
         with verifier.lock:
             self.assertEqual(
                 verifier.verify(["1"], "selected")["error"], "verification_in_progress"
             )
-        self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(fetch.call_count, 2)
 
     def test_unparseable_osm_hours_are_not_silently_overridden(self):
         verifier = self.make(Mock(return_value=page()))

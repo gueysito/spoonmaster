@@ -3,7 +3,7 @@
 import json
 import unittest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from spoonmaster import plugin
 from spoonmaster.ledger import LedgerStore
@@ -37,7 +37,8 @@ class RecommendationTests(unittest.TestCase):
             self.fetches.append(url)
             raise PageError("network_unavailable")
 
-        self.verifier = Verifier(fetch=fetch)
+        self.sleep = Mock()
+        self.verifier = Verifier(fetch=fetch, sleep=self.sleep)
         self.verifier.remember(self.venues)
         self.args = {"search_id": self.id, "origin_confirmed": True, "dietary_restrictions": []}
 
@@ -104,19 +105,19 @@ class RecommendationTests(unittest.TestCase):
         self.assertNotIn("cards", result)
         self.assertEqual(self.store.latest("first"), {"new_constraints": True})
 
-    def test_cooldown_returns_no_cards_and_does_not_claim_attempt(self):
+    def test_cooldown_pauses_briefly_and_still_returns_cards(self):
         self.verifier.next_stage_at["finalists"] = float("inf")
         result = self.call(plugin.recommend_candidates)
-        self.assertEqual(result["error"], "verification_cooldown")
-        self.assertNotIn("cards", result)
-        self.assertFalse(self.fetches)
+        self.assertEqual(len(result["cards"]), 3)
+        self.sleep.assert_called_once_with(10)
+        self.assertEqual(len(self.fetches), 3)
 
-    def test_changed_constraints_invalidate_old_cards_even_during_cooldown(self):
+    def test_changed_constraints_replace_old_cards_within_the_cooldown(self):
         self.call(plugin.recommend_candidates)
         result = self.call(
             plugin.recommend_candidates, {**self.args, "excluded_venue_ids": ["osm:node:0"]}
         )
-        self.assertEqual(result["error"], "verification_cooldown")
+        self.assertNotIn("osm:node:0", [card["venue_id"] for card in result["cards"]])
         selected = self.call(plugin.select_venue, {"search_id": self.id, "venue_id": "osm:node:0"})
         self.assertEqual(selected["error"], "venue_not_presented")
 

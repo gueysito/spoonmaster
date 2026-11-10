@@ -377,17 +377,24 @@ Live provider scouting and end-to-end model/Telegram presentation remain unverif
 This slice sends coordinates, radius and a restaurant query to
 `https://overpass-api.de/api/interpreter`, plus an identifying Spoonmaster user agent.
 The service receives the caller's IP address. Requests use TLS, one fixed endpoint,
-no redirects, no automatic retries, a 2 MiB response cap and 15-second socket timeout
-with elapsed-time checks between reads. DNS and a blocked socket read are not a strict
-whole-request deadline. The tool admits one query at a time per process and enforces
-a 10-second cooldown after each request. This is a pilot, not a public-service quota.
+no redirects, no automatic retries, a 2 MiB response cap and 45-second socket timeout
+with elapsed-time checks between reads (the shared public endpoint measured 33 to 38
+seconds per query on 2026-11-10). DNS and a blocked socket read are not a strict
+whole-request deadline. The tool admits one query at a time per process; a second
+caller waits for the running query, and a query inside the 10-second politeness
+pause waits instead of failing. Each query covers a 100 m cell plus a 150 m margin,
+and its result serves repeat requests in that cell for 10 minutes (failures for 60
+seconds), recentered on the exact origin. Cached venues keep their original retrieval
+time. The dining tool runs this map query beside its web pass rather than ahead of it.
+This is a pilot, not a public-service quota.
 
 Hours verification additionally contacts the OSM-linked venue's HTTPS host, reading
 `robots.txt` and at most one page per pass. Each server receives the caller's IP and
 Spoonmaster user agent. Public-address validation, TLS hostname checks, IP pinning,
 no redirects, 512 KiB caps and eight-second socket timeouts bound this transport.
-One verification call runs at a time with a 10-second cooldown per stage. No browser,
-cookies, login, automatic retry or protection bypass is used.
+One verification call runs at a time; up to three finalist pages are read side by
+side, and a call inside the 10-second per-stage pause waits instead of failing. No
+browser, cookies, login, automatic retry or protection bypass is used.
 
 Plugin code never reads credentials, invokes a model or shell, sends telemetry or
 runs background jobs. Delegated locale search uses the host's configured provider and

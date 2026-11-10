@@ -165,7 +165,10 @@ class DiscoveryTests(unittest.TestCase):
         for error, code in [
             (HTTPError("private", 429, "private", None, None), "source_rate_limited"),
             (HTTPError("private", 302, "private", None, None), "source_http_error"),
+            (HTTPError("private", 504, "private", None, None), "source_timeout"),
             (URLError("private"), "source_unavailable"),
+            (URLError(TimeoutError("timed out")), "source_timeout"),
+            (TimeoutError("timed out"), "source_timeout"),
         ]:
             with self.subTest(code=code), patch("spoonmaster.discovery.build_opener") as opener:
                 opener.return_value.open.side_effect = error

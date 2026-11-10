@@ -1,6 +1,7 @@
 """Replay owner-reported failures through the owned dining transaction."""
 
 import json
+import threading
 import unittest
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -51,9 +52,12 @@ class DiningFlowTests(unittest.TestCase):
         self.recovery = Mock()
         self.recovery.discover.return_value = ([], [])
         self.flow = Dining(self.store, None, None, self.recovery)
+        self.sleep = Mock()
         self.patches = [
-            patch.object(plugin, "verifier", Verifier()),
+            patch.object(plugin, "verifier", Verifier(sleep=self.sleep)),
             patch.object(plugin, "_next_query_at", 0),
+            patch.object(plugin, "_area_cache", {}),
+            patch.object(plugin, "_sleep", self.sleep),
         ]
         for item in self.patches:
             item.start()
@@ -137,6 +141,66 @@ class DiningFlowTests(unittest.TestCase):
         for role in ("Pick", "Runner-up", "Wildcard"):
             self.assertIn(role, "\n".join(posted))
         self.assertEqual(message_chunks("x" * 3501), [])
+
+    def test_second_cuisine_in_the_same_area_gets_cards_without_another_map_query(self):
+        # Owner-reported: a follow-up request seconds later used to return no options.
+        with patch.object(
+            plugin, "fetch_candidates", return_value={"candidates": options()}
+        ) as fetch:
+            first = json.loads(self.flow.tool(request(meal="noodles"), session_id="test"))
+            second = json.loads(self.flow.tool(request(meal="sushi"), session_id="test"))
+        self.assertEqual(len(first["cards"]), 3)
+        self.assertEqual([c["cuisine"] for c in second["cards"]], ["sushi"])
+        self.assertNotIn("query_cooldown", second["discovery_gaps"])
+        self.assertFalse(second.get("reused"))
+        fetch.assert_called_once()
+        self.assertEqual(self.recovery.discover.call_count, 2)
+        self.assertEqual(self.store.latest("test")["evaluated"], 4)
+
+    def test_map_query_and_web_pass_run_side_by_side(self):
+        map_started, web_done = threading.Event(), threading.Event()
+
+        def fetch(*args):
+            map_started.set()
+            if not web_done.wait(5):
+                raise AssertionError("web pass did not run while the map query was pending")
+            return {"candidates": options()}
+
+        def discover(args, **kwargs):
+            self.assertTrue(map_started.wait(5))
+            web_done.set()
+            return [], []
+
+        self.recovery.discover.side_effect = discover
+        with patch.object(plugin, "fetch_candidates", side_effect=fetch):
+            result = json.loads(self.flow.tool(request(), session_id="test"))
+        self.assertEqual(len(result["cards"]), 3)
+        self.recovery.discover.assert_called_once_with(request())
+
+    def test_outage_with_nothing_mapped_runs_one_seeded_pass(self):
+        self.recovery.discover.side_effect = [
+            ([], ["no_usable_search_excerpts"]),
+            (options()[:3], []),
+        ]
+        with patch.object(
+            plugin, "fetch_candidates", side_effect=DiscoveryError("source_timeout")
+        ) as fetch:
+            result = json.loads(self.flow.tool(request(), session_id="test"))
+        fetch.assert_called_once()
+        self.assertEqual(
+            [call.kwargs.get("seed") for call in self.recovery.discover.call_args_list],
+            [None, True],
+        )
+        self.assertEqual(len(result["cards"]), 3)
+        self.assertIn("source_timeout", result["discovery_gaps"])
+        self.assertIn("timed out", result["text"])
+
+    def test_parallel_dining_calls_wait_for_the_running_search(self):
+        self.flow.wait = 0
+        with self.flow.lock:
+            result = json.loads(self.flow.tool(request(), session_id="test"))
+        self.assertEqual(result["error"], "dining_in_progress")
+        self.assertEqual(len(self.run_flow()["cards"]), 3)
 
     def test_wrong_session_and_invalid_input_cannot_search_or_reuse_results(self):
         self.run_flow()

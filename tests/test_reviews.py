@@ -440,6 +440,7 @@ class ReviewTests(unittest.TestCase):
                 patch.object(impl, "fetch_candidates", return_value={"candidates": venues}),
                 patch.object(impl, "verifier", verifier),
                 patch.object(impl, "_next_query_at", 0),
+                patch.object(impl, "_area_cache", {}),
             ):
                 found = json.loads(
                     ctx.tools["spoon_candidates"](

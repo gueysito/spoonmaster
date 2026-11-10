@@ -470,6 +470,20 @@ or radius checks. Bounded public-name diagnostics explain rejected map matches.
 Model output
 is untrusted: names and quoted food evidence must occur in the actual search result;
 map identity, country, coordinates, venue type and radius are independently checked.
+
+### Discovery latency and repeat requests (T12b, D-019)
+
+The shared Overpass endpoint takes about 35 seconds per query, so `spoon_dine` starts
+the map query on a worker thread and runs the web pass on the handler thread, then
+joins. The query covers the origin's 100 m cell plus a 150 m margin; `plugin._discover`
+caches that covering result per cell for 10 minutes (failures for 60 seconds) and
+`discovery.recenter` recomputes distances and radius membership for each exact
+origin. Retrieval times are the real ones, so the evidence gate ages cached venues out
+after 15 minutes. The Overpass cooldown, the verifier's per-stage cooldown and the
+dining, query and verifier locks wait (10 s, 10 s, 180 s, 60 s, 60 s) instead of
+failing. Finalist pages are read with one thread per venue; results keep the request
+order. When the map query fails and the concurrent web pass mapped nothing, one
+seeded pass runs; Overpass itself is never retried in a call.
 No model-provided coordinates or arbitrary URL fetches are admitted by recovery.
 Missing evidence means no candidate. The shared source ladder does not authorize
 access; reusable source scouting is separate from getting a meal in an unknown city.

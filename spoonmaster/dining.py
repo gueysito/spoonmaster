@@ -4,6 +4,7 @@ import copy
 import json
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from . import plugin
 from .cards import plain
@@ -12,6 +13,8 @@ from .ledger import LedgerStore, session_key
 from .locales import place
 from .outing import LOCATION_PROMPT, broad_origin
 from .taste import TasteError, text
+
+WAIT_SECONDS = 180
 
 DINE_SCHEMA = {
     "name": "spoon_dine",
@@ -66,6 +69,7 @@ class Dining:
         self.store, self.taste, self.reviews = store, taste, reviews
         self.recovery, self.post = recovery, post
         self.lock = threading.Lock()
+        self.wait = WAIT_SECONDS
         self.cache = {}
 
     def forget(self, session_id=None, **kwargs):
@@ -101,7 +105,8 @@ class Dining:
                 raise ValueError
         except (ValueError, TasteError):
             return json.dumps({"error": "invalid_arguments"})
-        if not self.lock.acquire(blocking=False):
+        # A parallel tool batch waits for the running search instead of losing its turn.
+        if not self.lock.acquire(timeout=self.wait):
             return json.dumps(
                 {"error": "dining_in_progress", "text": "A dining search is still running."}
             )
@@ -151,20 +156,26 @@ class Dining:
         identifier = self.store.remember(
             session, {"candidates": [], "candidates_in_radius": 0}, origin
         )
-        found = json.loads(
-            plugin.candidates(
+        # The map query is plain stdlib networking, so it runs beside the host-backed web
+        # pass instead of ahead of it: the shared public endpoint alone takes about 35 s.
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pending = pool.submit(
+                plugin.candidates,
                 {**origin, "limit": 20, "meal": args["meal"]},
                 _ledger_store=LedgerStore(),
                 session_id=session,
             )
-        )
+            # Enrich even a populated OSM result: broad cuisine tags can omit relevant places.
+            extra, gaps = self.recovery.discover(args) if self.recovery is not None else ([], [])
+            found = json.loads(pending.result())
         venues = found.get("candidates", [])
         unexamined = max(0, found.get("candidates_in_radius", len(venues)) - len(venues))
         failures = [found["error"]] if found.get("error") else []
-        # Enrich even a populated OSM result: broad cuisine tags can omit relevant places.
-        # The same bounded path also recovers outages; never retry Overpass here.
         if self.recovery is not None:
-            extra, gaps = self.recovery.discover(args, seed=bool(found.get("error")))
+            if found.get("error") and not extra:
+                # Outage with nothing mapped: one seeded pass anchors web search in map
+                # leads. Overpass itself is never retried here.
+                extra, gaps = self.recovery.discover(args, seed=True)
             failures.extend(gaps)
             by_id = {v["venue_id"]: v for v in venues}
             for v in extra:

@@ -1,8 +1,9 @@
 # Current state
 
 Owner-reported dining/onboarding repairs are implemented and verified for another
-CLI test. Source coverage can still produce fewer than three options; Telegram taps
-remain unverified. T9a/T9b pass. Updated 2026-11-10.
+CLI test. Live map discovery now completes (D-019): the client deadline matches the
+measured endpoint, same-area repeats are served from a 10-minute cache and cooldowns
+no longer drop cards. Telegram taps remain unverified. T9a/T9b pass. Updated 2026-11-10.
 
 ## Works
 
@@ -10,7 +11,10 @@ remain unverified. T9a/T9b pass. Updated 2026-11-10.
 - Standards kit adopted; commit-message and pre-commit hooks active.
 - `spoon_candidates` and `spoon_verify_hours`: finalist checks, selected refresh, sourced call links.
 - `spoon_evaluate`, `spoon_ledger` and `/why`: all ten gates, explicit failures/unknowns, full paging.
-- 224 local tests pass plus one host-only skip; all 225 pass on Hermes 3.14.9; Ruff passes.
+- 229 local tests pass plus one host-only skip; Ruff passes. 225 passed on Hermes 3.14.9
+  before the D-019 changes; the host rerun is pending.
+- Live Shibuya discovery returns 853 venues in about 38 s; a second cuisine in the same
+  area answers from cache with no new map query (T12b).
 - [Live probe](docs/data-gate.md): three venue attempts, two prose-hours extracts, selected recheck.
 - Real Hermes doctor/validate pass with twelve tools/three hooks; profiles, upload and roots removed.
 - `spoon_recommend` / `spoon_select`: provisional cards, call guidance, empty slots and stale-choice guards.
@@ -41,7 +45,8 @@ remain unverified. T9a/T9b pass. Updated 2026-11-10.
 
 ## Next action
 
-T12: owner retest of the repaired CLI flow; Telegram channel verification remains V2.
+T12: owner retest of the repaired CLI flow with the D-019 discovery changes, after a
+Hermes host test rerun; Telegram channel verification remains V2.
 No release or catalog submission.
 
 ## Deadline

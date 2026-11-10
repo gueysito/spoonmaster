@@ -1,5 +1,6 @@
 """Bounded, keyless OSM discovery. No ranking, website crawling or persistence."""
 
+import copy
 import json
 import math
 import time
@@ -16,7 +17,10 @@ ENDPOINT = "https://overpass-api.de/api/interpreter"
 USER_AGENT = "Spoonmaster/0.1.0 (https://github.com/gueysito/spoonmaster)"
 MAX_BYTES = 2 * 1024 * 1024
 MAX_ELEMENTS = 5000
-TIMEOUT_SECONDS = 15
+# Measured 2026-11-10: the shared public endpoint answered a 1.6 km restaurant query in
+# 33 to 38 seconds regardless of query shape, so shorter client deadlines fail every call.
+TIMEOUT_SECONDS = 45
+SERVER_TIMEOUT_SECONDS = 30
 
 
 class DiscoveryError(Exception):
@@ -48,7 +52,7 @@ def fetch_candidates(latitude: float, longitude: float, radius_m: float = 1600) 
     """Make one fixed-host request. Never retry, redirect, or fetch venue URLs."""
     validate_origin(latitude, longitude, radius_m)
     query = (
-        "[out:json][timeout:10][maxsize:10485760];"
+        f"[out:json][timeout:{SERVER_TIMEOUT_SECONDS}][maxsize:10485760];"
         f"nwr[amenity=restaurant](around:{radius_m},{latitude},{longitude});out body bb;"
     )
     request = Request(
@@ -78,8 +82,16 @@ def fetch_candidates(latitude: float, longitude: float, radius_m: float = 1600) 
         error.close()
         if error.code == 429:
             raise DiscoveryError("source_rate_limited") from None
+        if error.code == 504:
+            raise DiscoveryError("source_timeout") from None
         raise DiscoveryError("source_http_error") from None
-    except (URLError, TimeoutError, OSError, HTTPException):
+    except URLError as error:
+        if isinstance(error.reason, TimeoutError):
+            raise DiscoveryError("source_timeout") from None
+        raise DiscoveryError("source_unavailable") from None
+    except TimeoutError:
+        raise DiscoveryError("source_timeout") from None
+    except (OSError, HTTPException):
         raise DiscoveryError("source_unavailable") from None
     except (ValueError, RecursionError):
         raise DiscoveryError("invalid_source_response") from None
@@ -138,6 +150,23 @@ def normalize_candidates(payload: dict, latitude: float, longitude: float, radiu
             "Distinct OSM objects may describe the same business; only exact IDs are deduplicated.",
         ],
     }
+
+
+def recenter(result: dict, latitude: float, longitude: float, radius_m: float) -> dict:
+    """Re-express a covering result for an exact origin: fresh distances, exact radius."""
+    validate_origin(latitude, longitude, radius_m)
+    result = copy.deepcopy(result)
+    kept = []
+    for candidate in result.get("candidates", []):
+        candidate["distance_m"] = distance_m(
+            latitude, longitude, candidate["latitude"], candidate["longitude"]
+        )
+        if candidate["distance_m"] <= radius_m:
+            kept.append(candidate)
+    if "skipped" in result:
+        result["skipped"]["outside_radius"] += len(result["candidates"]) - len(kept)
+    result["candidates"] = sorted(kept, key=lambda item: (item["distance_m"], item["venue_id"]))
+    return result
 
 
 def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:

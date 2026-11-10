@@ -1,12 +1,12 @@
 """Hermes tools for discovery, verification and conversation-scoped dining checks."""
 
+import copy
 import json
-import math
 import re
 import threading
 import time
 
-from .discovery import DiscoveryError, fetch_candidates, validate_origin
+from .discovery import DiscoveryError, fetch_candidates, recenter, validate_origin
 from .gates import build_ledger, timestamp
 from .household import HOUSEHOLD_SCHEMA, TRAVEL_MODES, valid_household
 from .ledger import LedgerStore, ledger_page, render_ledger, session_key
@@ -17,8 +17,51 @@ from .verification import Verifier
 
 _query_lock = threading.Lock()
 _next_query_at = 0.0
+# Same-area results serve repeat requests (a second cuisine, a widened radius) without
+# another Overpass round trip. The window stays inside the 15-minute evidence freshness
+# bound so cached venues keep passing the evidence gate; failures are remembered briefly.
+AREA_SECONDS = 10 * 60
+FAILURE_SECONDS = 60
+AREA_MARGIN_M = 150
+COOLDOWN_SECONDS = 10
+QUERY_WAIT_SECONDS = 60
+_area_cache = {}
+_sleep = time.sleep
 verifier = Verifier()
 ledgers = LedgerStore()
+
+
+def _area_key(latitude, longitude, radius_m):
+    """A cell of about 100 m; the covering query adds a margin wider than any offset."""
+    return (round(latitude, 3), round(longitude, 3), round(radius_m))
+
+
+def _discover(latitude, longitude, radius_m):
+    """Serve from the area cache or make one polite Overpass request; never fail on cooldown."""
+    global _next_query_at
+    key = _area_key(latitude, longitude, radius_m)
+    now = time.monotonic()
+    cached = _area_cache.get(key)
+    if cached:
+        limit = FAILURE_SECONDS if "error" in cached[1] else AREA_SECONDS
+        if now - cached[0] < limit:
+            result = copy.deepcopy(cached[1])
+            result["cache_reused"] = True
+            return result
+        _area_cache.pop(key, None)
+    if now < _next_query_at:
+        _sleep(min(COOLDOWN_SECONDS, _next_query_at - now))
+    try:
+        result = fetch_candidates(key[0], key[1], min(2000, key[2] + AREA_MARGIN_M))
+    except DiscoveryError as error:
+        result = {"status": "unverified", "error": str(error)}
+    finally:
+        _next_query_at = time.monotonic() + COOLDOWN_SECONDS
+    _area_cache[key] = (time.monotonic(), copy.deepcopy(result))
+    while len(_area_cache) > 32:
+        _area_cache.pop(next(iter(_area_cache)))
+    return result
+
 
 CANDIDATES_SCHEMA = {
     "name": "spoon_candidates",
@@ -75,29 +118,16 @@ def candidates(args, *, _ledger_store=None, **kwargs) -> str:
         validate_origin(args.get("latitude"), args.get("longitude"), args.get("radius_m", 1600))
     except ValueError:
         return json.dumps({"error": "invalid_arguments"})
-    global _next_query_at
-    if not _query_lock.acquire(blocking=False):
+    # Concurrent callers wait for the in-flight query instead of failing their own search.
+    if not _query_lock.acquire(timeout=QUERY_WAIT_SECONDS):
         return json.dumps({"status": "unverified", "error": "query_in_progress"})
     try:
-        if time.monotonic() < _next_query_at:
-            return json.dumps(
-                {
-                    "status": "unverified",
-                    "error": "query_cooldown",
-                    "retry_after_seconds": math.ceil(_next_query_at - time.monotonic()),
-                    "action": "Do not retry now. Use spoon_dine for bounded fallback.",
-                }
-            )
-        try:
-            result = fetch_candidates(
-                args["latitude"], args["longitude"], args.get("radius_m", 1600)
-            )
-        except DiscoveryError as error:
-            return json.dumps({"status": "unverified", "error": str(error)})
-        finally:
-            _next_query_at = time.monotonic() + 10
+        result = _discover(args["latitude"], args["longitude"], args.get("radius_m", 1600))
     finally:
         _query_lock.release()
+    if "error" in result:
+        return json.dumps(result)
+    result = recenter(result, args["latitude"], args["longitude"], args.get("radius_m", 1600))
     result["candidates_in_radius"] = len(result["candidates"])
     if args.get("meal"):
         result["candidates"].sort(key=lambda v: fit(v, args["meal"])["result"] != "pass")
