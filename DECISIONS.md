@@ -130,3 +130,16 @@ when to revisit. Agent recommendations are noted as such.
 - Alternative: manual proposals using only user-supplied source evidence.
 - Limits: city/country queries only; no new subscription, key, provider configuration,
   source-page fetch or paid venue API. Confirmation saves guidance, not access rights.
+
+## D-017: City ladders and shared review influence (2026-11-09)
+
+- Decision: add researched New York City and San Francisco source priorities and connect
+  attributed review evidence to recommendations for all cities, including future reviewed
+  ladders. The owner approved implementation, verification and then GitHub publication.
+- Why: source names alone do not influence the current taste/distance ranking.
+- Invariants: hard gates and supported tastes take precedence; exact branch matching,
+  source attribution and explicit gaps; no cross-platform score averaging or invented
+  review sentiment. Source lists never enable direct extraction, accounts or paid APIs.
+- Alternative: city data only, which would not deliver the requested quality influence.
+- Boundaries: local pilot, existing host search allowance, no live-profile changes;
+  independent Telegram/model testing remains separate from isolated runtime validation.

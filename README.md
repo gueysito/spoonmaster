@@ -238,7 +238,9 @@ provider. Deletion does not erase those transcripts or backups.
 ## Locale source ladders
 
 `spoon_locale get` loads source priorities from bundled JSON for Japan (Tokyo pilot),
-Thailand and Indonesia. Use an explicitly established country code and city; if the
+Thailand and Indonesia, plus city-specific New York City and San Francisco ladders.
+NYC/New York and SF are explicit aliases; other U.S. cities still require scouting.
+Use an explicitly established country code and city; if the
 place is ambiguous, the agent asks. Location resolution stays with the user or the
 host's existing tools; this plugin adds no reverse-geocoding endpoint.
 

@@ -6,7 +6,8 @@ Choosing the right sources for the place is the core of good recommendations. Th
 ladders below come from field use in Japan, Thailand and Indonesia during summer 2026
 through the author's Hermes agent; Korea was used in the field without a written ladder.
 
-Ladders ship in `spoonmaster/data/ladders.json` for Japan, Thailand and Indonesia.
+Ladders ship in `spoonmaster/data/ladders.json` for Japan, Thailand and Indonesia,
+plus distinct New York City and San Francisco entries.
 `spoon_locale` loads them or stages an unknown-city proposal for review.
 Access status is planned unless marked. Nothing here
 grants permission to scrape: every source goes through the tiers in section 3.
@@ -29,7 +30,7 @@ These labels describe published evidence, never an open-at-arrival verdict. T4 o
 arrival, time zones and exceptional closures. The agent must show uncertainty on cards.
 On selection, unresolved hours produce advice to call before leaving. A sourced number
 is rendered as a `tel:` link and a visible number. Local numbers require an explicitly
-known venue country (JP, TH, ID or KR in this pilot); no inferred country, dial commands,
+known venue country (JP, TH, ID, KR or US in this pilot); no inferred country, dial commands,
 extensions or ambiguous multiple numbers. A unique phone from the named OSM-linked
 page is a source claim, not independently verified branch ownership or service.
 
@@ -161,3 +162,20 @@ permissions and disabled adapters remain unchanged after confirmation.
 | Local opinion matters but is not automatically right | Ladders weigh local sources first and cross-check |
 | Recent video and social posts were strong current signals | Recency is tracked per evidence item; social is roadmap |
 | The best meal fits the day: energy, weather, kids, transit | Household and situation gates |
+
+## U.S. city priorities (researched 2026-11-09, not field-tested)
+
+New York City (aliases NYC/New York) and San Francisco (alias SF) select city-specific
+bundled data before country defaults. Other U.S. cities still require a reviewed scout.
+Eater and The Infatuation supply editorial discovery/occasion references; NYT serves
+NYC and the San Francisco Chronicle serves SF. Michelin, Yelp and OpenTable are
+complementary references; Google Maps remains link-only and venue sites provide facts.
+Regional guides do not expand the requested radius. No publisher is directly scraped.
+
+Research: [Eater NYC](https://ny.eater.com/23832815/nyc-dining-guide),
+[Eater SF](https://sf.eater.com/maps/best-restaurants-san-francisco-38),
+[Infatuation NYC](https://www.theinfatuation.com/new-york/guides/best-restaurants-nyc),
+[Infatuation SF](https://www.theinfatuation.com/san-francisco/guides/best-restaurants-in-san-francisco),
+[NYT](https://www.nytimes.com/spotlight/best-restaurants), and
+[Chronicle methodology](https://marketing.sfgate.com/blog/celebrate-the-bay-areas-best-restaurants-with-the-chronicles-top-100-list).
+These are complementary source choices, not a measured city-specific popularity ranking.

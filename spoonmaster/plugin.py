@@ -106,7 +106,7 @@ VERIFY_SCHEMA = {
                 "uniqueItems": True,
             },
             "stage": {"type": "string", "enum": ["finalists", "selected"]},
-            "country_code": {"type": "string", "enum": ["JP", "TH", "ID", "KR"]},
+            "country_code": {"type": "string", "enum": ["JP", "TH", "ID", "KR", "US"]},
         },
         "required": ["venue_ids", "stage"],
         "additionalProperties": False,
@@ -301,7 +301,7 @@ RECOMMEND_SCHEMA = {
         **EVALUATE_SCHEMA["parameters"],
         "properties": {
             **EVALUATE_SCHEMA["parameters"]["properties"],
-            "country_code": {"type": "string", "enum": ["JP", "TH", "ID", "KR"]},
+            "country_code": {"type": "string", "enum": ["JP", "TH", "ID", "KR", "US"]},
             "home_currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
             "taste_context": {
                 "type": "object",

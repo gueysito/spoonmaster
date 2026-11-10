@@ -175,6 +175,10 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
         "website": _website(tags.get("website") or tags.get("contact:website")),
         "phone_raw": _text(tags.get("phone") or tags.get("contact:phone"), 80),
         "country_code": _text(tags.get("addr:country"), 2),
+        "address": {
+            key: _text(tags.get("addr:" + key), 120)
+            for key in ("housenumber", "street", "city", "postcode")
+        },
         "household_claims": source_claims(tags),
     }
 

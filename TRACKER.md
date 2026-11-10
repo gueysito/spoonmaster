@@ -31,6 +31,16 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 | T8 | Dining companions and household rules | Ages, diet, transport mode enforced as typed constraints; reusable family/coworker/friend profiles with explicit saving consent and confirmed party per outing; unrelated outings exclude companion context; unknown requirements remain provisional with warnings | 4 | done | Core `bc05b45`; D-015 expanded scope (2h reforecast to 4h). Private groups, reviewed save/use consent, selected members/rules, scoped ranking and hard-conflict gates; 151 local tests pass on Python 3.11/3.13 and all 152 on Hermes 3.14.9. Nine tools/three hooks, doctor/validate, Ruff/standards and independent cleanup pass. Actual-entrypoint and mutation checks cover isolation/deletion; live model/Telegram presentation remains unverified. |
 | T9 | Tokyo ladder and locale scout | Japan ladder loads from data; scout proposes a ladder for an unknown city | 2 | done | Core `8d42640`; Japan/Thailand/Indonesia JSON ladders and two-query host scout under D-016, with direct confirmation, private city cache and unchanged access permissions. 167 local tests pass on Python 3.11/3.13 and all 168 on Hermes 3.14.9; ten tools/three hooks, doctor/validate, Ruff/standards and independent cleanup pass. Registered flow and installed search schema verified; live provider/model/Telegram orchestration remains unverified. |
 
+## Approved expansion (2026-11-09)
+
+Owner approved NYC/SF plus shared review influence before hands-on testing and GitHub publication.
+Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hours.
+
+| ID | Task | Acceptance | Est | Status | Evidence |
+|---|---|---|---|---|---|
+| T9a | NYC/SF city ladders and U.S. basics | City aliases select distinct sources; other U.S. cities remain scouted; sourced U.S. phone links and both time zones work | 1 | done | City/phone/time-zone regressions plus existing locale/discovery checks pass. No new website access or account. |
+| T9b | Shared attributed review influence | Branch-matched permitted evidence affects otherwise comparable picks across bundled and confirmed future-city ladders; taste/vetoes win; cards/ledger retain attribution and honest gaps; isolated host verification passes | 5 | next | D-017. |
+
 ## Phase 3: Closer, hardening, submission (2026-11-10)
 
 | ID | Task | Acceptance | Est | Status | Evidence |

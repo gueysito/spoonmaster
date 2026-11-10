@@ -91,7 +91,14 @@ def place(country, city):
     # Do not turn city input into search operators, coordinates or arbitrary prompts.
     if not all(c.isalpha() or c in " -'." for c in city):
         raise TasteError("invalid_locale")
-    return country + ":" + " ".join(city.casefold().split())
+    normalized = " ".join(city.casefold().split())
+    if country == "US":
+        normalized = {
+            "nyc": "new york city",
+            "new york": "new york city",
+            "sf": "san francisco",
+        }.get(normalized, normalized)
+    return country + ":" + normalized
 
 
 def source_url(value):
@@ -137,7 +144,7 @@ def valid_sources(sources):
     return True
 
 
-def bundled(country):
+def bundled(country, city=None):
     try:
         raw = DATA.read_text(encoding="utf-8")
         if len(raw) > 50_000:
@@ -145,7 +152,8 @@ def bundled(country):
         data = json.loads(raw)
         if data["version"] != 1 or not isinstance(data["countries"], dict):
             raise ValueError
-        ladder = data["countries"].get(country)
+        ladder = data.get("cities", {}).get(place(country, city)) if city else None
+        ladder = ladder or data["countries"].get(country)
         return {
             "status": "bundled" if ladder else "scout_needed",
             "baseline": data["baseline"],
@@ -284,7 +292,7 @@ class LocaleService:
                 generation = self.generation
             if args["action"] == "get":
                 saved = LocaleStore(path).read_city(owner, key)
-                base = bundled(args["country_code"])
+                base = bundled(args["country_code"], args["city"])
                 return json.dumps(
                     {
                         **base,

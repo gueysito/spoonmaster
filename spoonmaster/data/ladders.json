@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "reviewed_on": "2026-11-08",
-  "basis": "docs/source-ladders.md approved field ladders; not independent source-quality certification",
+  "reviewed_on": "2026-11-09",
+  "basis": "Approved field ladders plus researched NYC/SF priorities; source reputation does not grant extraction rights.",
   "baseline": [
     {
       "name": "OpenStreetMap",
@@ -229,6 +229,208 @@
       ],
       "notes": [
         "Confirm transport and family needs; traffic, heat and rain require actual evidence."
+      ]
+    }
+  },
+  "cities": {
+    "US:new york city": {
+      "name": "New York City",
+      "sources": [
+        {
+          "name": "Eater New York City",
+          "domains": [
+            "ny.eater.com"
+          ],
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Neighborhood guides, essential lists and new openings; search evidence only."
+        },
+        {
+          "name": "The Infatuation",
+          "domains": [
+            "theinfatuation.com"
+          ],
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Occasion-focused editorial reviews; no direct extraction. Retain original evidence and dates."
+        },
+        {
+          "name": "New York Times",
+          "domains": [
+            "nytimes.com"
+          ],
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Local critic reference; no paywall bypass or subscription dependency."
+        },
+        {
+          "name": "Michelin Guide",
+          "domains": [
+            "guide.michelin.com"
+          ],
+          "roles": [
+            "quality"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Stars, Bib Gourmand and selected listings are distinct guide recognition, not live availability."
+        },
+        {
+          "name": "Google Maps",
+          "domains": [
+            "google.com"
+          ],
+          "roles": [
+            "navigation"
+          ],
+          "access": "link_only",
+          "reason": "User-facing maps and review cross-check links; no Places API or scraping."
+        },
+        {
+          "name": "Yelp",
+          "domains": [
+            "yelp.com"
+          ],
+          "roles": [
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Crowd-review reference only through attributed search snippets or user content; no direct access."
+        },
+        {
+          "name": "OpenTable",
+          "domains": [
+            "opentable.com"
+          ],
+          "roles": [
+            "booking",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Diner-review and reservation references, not proof of current availability."
+        },
+        {
+          "name": "Venue website",
+          "domains": [],
+          "roles": [
+            "current_facts",
+            "booking"
+          ],
+          "access": "existing_adapter",
+          "reason": "Published hours/menu/contact facts through existing bounded verification."
+        }
+      ],
+      "notes": [
+        "Research-backed source priorities, not field-tested coverage or access permission.",
+        "Enforce the requested radius; city and regional guide coverage are not interchangeable."
+      ]
+    },
+    "US:san francisco": {
+      "name": "San Francisco",
+      "sources": [
+        {
+          "name": "Eater San Francisco",
+          "domains": [
+            "sf.eater.com"
+          ],
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Neighborhood guides, essential lists and new openings; search evidence only."
+        },
+        {
+          "name": "The Infatuation",
+          "domains": [
+            "theinfatuation.com"
+          ],
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Occasion-focused editorial reviews; no direct extraction. Retain original evidence and dates."
+        },
+        {
+          "name": "San Francisco Chronicle",
+          "domains": [
+            "sfchronicle.com"
+          ],
+          "roles": [
+            "quality",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Local critic reference; no paywall bypass or subscription dependency."
+        },
+        {
+          "name": "Michelin Guide",
+          "domains": [
+            "guide.michelin.com"
+          ],
+          "roles": [
+            "quality"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Stars, Bib Gourmand and selected listings are distinct guide recognition, not live availability."
+        },
+        {
+          "name": "Google Maps",
+          "domains": [
+            "google.com"
+          ],
+          "roles": [
+            "navigation"
+          ],
+          "access": "link_only",
+          "reason": "User-facing maps and review cross-check links; no Places API or scraping."
+        },
+        {
+          "name": "Yelp",
+          "domains": [
+            "yelp.com"
+          ],
+          "roles": [
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Crowd-review reference only through attributed search snippets or user content; no direct access."
+        },
+        {
+          "name": "OpenTable",
+          "domains": [
+            "opentable.com"
+          ],
+          "roles": [
+            "booking",
+            "local_opinion"
+          ],
+          "access": "search_or_user_content",
+          "reason": "Diner-review and reservation references, not proof of current availability."
+        },
+        {
+          "name": "Venue website",
+          "domains": [],
+          "roles": [
+            "current_facts",
+            "booking"
+          ],
+          "access": "existing_adapter",
+          "reason": "Published hours/menu/contact facts through existing bounded verification."
+        }
+      ],
+      "notes": [
+        "Research-backed source priorities, not field-tested coverage or access permission.",
+        "Enforce the requested radius; city and regional guide coverage are not interchangeable."
       ]
     }
   }

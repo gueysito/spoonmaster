@@ -12,6 +12,11 @@ def telephone(raw, source_url, country=None):
     if not re.fullmatch(r"\+?[0-9 ()-]+", value):
         return None
     number = re.sub(r"[ ()-]", "", value)
+    if country == "US" and not number.startswith("+"):
+        national = number[1:] if len(number) == 11 and number.startswith("1") else number
+        if not re.fullmatch(r"[2-9][0-9]{2}[2-9][0-9]{6}", national):
+            return None
+        number = "+1" + national
     # Only convert a local number when the venue has an explicit country code.
     prefixes = {"JP": "81", "TH": "66", "ID": "62", "KR": "82"}
     if not number.startswith("+") and country in prefixes and number.startswith("0"):
