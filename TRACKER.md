@@ -58,8 +58,13 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 T12 owner retest correction (2026-11-10): raw `/spoon profile` output now has a human
 summary while export/tool data remain unchanged. City-only origins are rejected;
 Photon English-name selection fixes reproduced Japanese-name mapping failures, and
-map waits are reduced. Local suite: 222 tests, one host-only skip. Isolated host
-verification and adoption in the owner's existing temporary profile are next.
+map waits are reduced. Code `e6a28a8`: 222 tests pass on isolated Hermes with doctor/validate; local suite
+has one host-only skip. Installed in the retained owner test profile with identical
+taste-database checksum; readable profile and immediate city clarification verified
+in the native terminal. A subsequent replay exposed unmapped web-only discoveries;
+bounded map-led recovery now targets the existing second web query without accepting
+map-name-only evidence. Local suite: 224 tests with one host-only skip. Final meal
+replay and exact-revision host verification follow.
 
 | ID | Question | How | Status |
 |---|---|---|---|

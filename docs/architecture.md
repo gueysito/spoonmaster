@@ -463,7 +463,11 @@ Unknown cities use the shared permitted crowd-source baseline for review researc
 branch identity, date, scale and count checks still apply before any ranking influence.
 
 Recovery uses two existing-host searches, one bounded structured extraction on the
-host's configured model, and at most six cached Photon venue-name lookups. Model output
+host's configured model, and at most six cached Photon venue-name lookups. On map
+outages, one additional food-name lookup with a coarse location bias can focus the
+second web search on an independently mapped venue. It does not bypass source evidence
+or radius checks. Bounded public-name diagnostics explain rejected map matches.
+Model output
 is untrusted: names and quoted food evidence must occur in the actual search result;
 map identity, country, coordinates, venue type and radius are independently checked.
 No model-provided coordinates or arbitrary URL fetches are admitted by recovery.

@@ -20,7 +20,7 @@ from .discovery import (
 )
 from .hours import parse_weekly_hours
 from .locales import source_url
-from .meal import matches, words
+from .meal import matches, terms, words
 
 PHOTON = "https://photon.komoot.io/api/"
 
@@ -62,6 +62,25 @@ class Geocoder:
 
     def lookup(self, name, city, country):
         query = " ".join((words(name), words(city), country))
+        return self._query({"q": query, "countrycode": country, "lang": "en", "limit": 3})
+
+    def nearby(self, request):
+        # Coarse bias only; exact outing coordinates never go to Photon.
+        return self._query(
+            {
+                "q": words(request["meal"]) + " " + words(request["city"]),
+                "countrycode": request["country_code"],
+                "lang": "en",
+                "limit": 6,
+                "lat": round(request["latitude"], 2),
+                "lon": round(request["longitude"], 2),
+                "location_bias_scale": 0.0,
+                "osm_tag": "amenity:restaurant",
+            }
+        )
+
+    def _query(self, parameters):
+        query = urlencode(parameters)
         with self.lock:
             now = time.monotonic()
             cached = self.cache.get(query)
@@ -70,9 +89,7 @@ class Geocoder:
             if now < self.next_at:
                 time.sleep(min(1.0, self.next_at - now))
             request = Request(
-                PHOTON
-                + "?"
-                + urlencode({"q": query, "countrycode": country, "lang": "en", "limit": 3}),
+                PHOTON + "?" + query,
                 headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
             )
             try:
@@ -173,7 +190,7 @@ class Recovery:
         self.geocoder = geocoder or Geocoder()
         self.trace = {}
 
-    def discover(self, request):
+    def discover(self, request, *, seed=False):
         hits, failures = [], []
         self.trace = {
             "searches": 0,
@@ -182,14 +199,38 @@ class Recovery:
             "grounded": 0,
             "geocoded": 0,
             "mapped": 0,
+            "map_attempts": [],
+            "seed_matches": 0,
         }
         if self.dispatch is None or self.complete is None:
             return [], ["host_search_or_structured_extraction_unavailable"]
+        seeds = []
+        if seed and terms(request["meal"]):
+            try:
+                for feature in self.geocoder.nearby(request):
+                    props = feature.get("properties", {}) if isinstance(feature, dict) else {}
+                    name = props.get("name") if isinstance(props, dict) else None
+                    if not isinstance(name, str) or not matches(request["meal"], name):
+                        continue
+                    # This is only a map lead. No card can use it without grounded web evidence.
+                    if mapped(feature, {"name": name, "quote": ""}, {}, request):
+                        seeds.append(feature)
+            except DiscoveryError as error:
+                failures.append(str(error))
+        self.trace["seed_matches"] = len(seeds)
         for purpose in ("best", "menu"):
             query = (
                 f"{purpose} {words(request['meal'])} restaurants near "
                 f"{words(request['area'])} {words(request['city'])}"
             )
+            if purpose == "menu" and seeds:
+                query = (
+                    words(seeds[0]["properties"]["name"])
+                    + " "
+                    + words(request["city"])
+                    + " menu "
+                    + words(request["meal"])
+                )
             try:
                 self.trace["searches"] += 1
                 hits.extend(
@@ -256,13 +297,27 @@ class Recovery:
                 continue
             self.trace["grounded"] += 1
             try:
-                features = self.geocoder.lookup(name, request["city"], request["country_code"])
+                features = [f for f in seeds if mapped(f, item, hit, request)]
+                if not features:
+                    features = self.geocoder.lookup(name, request["city"], request["country_code"])
                 self.trace["geocoded"] += len(features)
             except DiscoveryError as error:
                 failures.append(str(error))
                 continue
+            attempt = {"name": name, "results": []}
+            self.trace["map_attempts"].append(attempt)
             for feature in features:
                 venue = mapped(feature, item, hit, request)
+                props = feature.get("properties", {}) if isinstance(feature, dict) else {}
+                if isinstance(props, dict):
+                    attempt["results"].append(
+                        {
+                            "name": props.get("name", "")[:150]
+                            if isinstance(props.get("name", ""), str)
+                            else "",
+                            "accepted": venue is not None,
+                        }
+                    )
                 if venue:
                     venues[venue["venue_id"]] = venue
         if not venues:

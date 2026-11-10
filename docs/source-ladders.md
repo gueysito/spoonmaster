@@ -207,7 +207,13 @@ Search excerpts go to the configured host model for bounded extraction; existing
 allowances apply. A name must be present in the result title/quote and the food quote
 must be an exact excerpt. This is discovery evidence, never a critic endorsement.
 
-Up to six public venue-name/city queries use `https://photon.komoot.io/api/`. The
+Up to six public venue-name/city queries use `https://photon.komoot.io/api/`. When
+map discovery fails, one additional food-name query can supply a mapped lead for
+the existing second web search. Its location bias rounds latitude/longitude to two
+decimal places (roughly a kilometre); the exact origin stays out of Photon requests.
+A map lead alone cannot become a card: the same web-excerpt food/identity checks
+still apply, and exact radius checks run locally. This does not add web searches.
+The
 [Photon operator](https://github.com/komoot/photon#demo-server) permits moderate project
 use, may throttle, and offers no availability guarantee. The local-pilot client
 serializes requests, spaces uncached requests by one second, caches up to 100 public

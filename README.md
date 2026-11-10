@@ -35,6 +35,9 @@ extraction when needed. No additional account or paid API is required; the exist
 host model/search provider allowance still applies. Public area/food and venue names
 are sent to those services; keep private addresses and health details out of the
 public area/meal fields. See [source boundaries](docs/source-ladders.md#t12-discovery-recovery-and-ride-links).
+During map-service outages, Photon can also receive a coarse location bias (coordinates
+rounded to two decimals) to find map leads for source verification. Map names alone
+never qualify a recommendation.
 Ride links beyond half a mile open country-appropriate services; enter the destination
 there. No ride is booked and no fare or pickup is prefilled.
 

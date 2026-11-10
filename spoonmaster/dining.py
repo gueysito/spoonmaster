@@ -164,7 +164,7 @@ class Dining:
         # Enrich even a populated OSM result: broad cuisine tags can omit relevant places.
         # The same bounded path also recovers outages; never retry Overpass here.
         if self.recovery is not None:
-            extra, gaps = self.recovery.discover(args)
+            extra, gaps = self.recovery.discover(args, seed=bool(found.get("error")))
             failures.extend(gaps)
             by_id = {v["venue_id"]: v for v in venues}
             for v in extra:

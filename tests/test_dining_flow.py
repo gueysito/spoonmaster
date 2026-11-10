@@ -5,6 +5,7 @@ import unittest
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
+from urllib.parse import parse_qs, urlsplit
 
 from spoonmaster import plugin
 from spoonmaster.cards import ride_links
@@ -114,7 +115,7 @@ class DiningFlowTests(unittest.TestCase):
         post = Mock()
         self.flow.post = post
 
-        def recover(args):
+        def recover(args, **kwargs):
             self.store.forget("test")
             return options()[:3], []
 
@@ -210,6 +211,21 @@ class RecoveryTests(unittest.TestCase):
                 Geocoder().lookup("Example BBQ", "Tokyo", "JP")
         opener.open.assert_called_once()
 
+    def test_nearby_query_uses_coarse_bias_and_restaurant_filter(self):
+        response = Mock()
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.read.return_value = b'{"features": []}'
+        opener = Mock()
+        opener.open.return_value = response
+        with patch("spoonmaster.recovery.build_opener", return_value=opener):
+            Geocoder().nearby(request(latitude=35.658514, longitude=139.70133))
+        query = parse_qs(urlsplit(opener.open.call_args.args[0].full_url).query)
+        self.assertEqual(query["lat"], ["35.66"])
+        self.assertEqual(query["lon"], ["139.7"])
+        self.assertEqual(query["osm_tag"], ["amenity:restaurant"])
+        self.assertEqual(query["lang"], ["en"])
+
     def setUp(self):
         self.hit = {
             "title": "Example BBQ",
@@ -245,6 +261,20 @@ class RecoveryTests(unittest.TestCase):
         geocoder.reset_mock()
         self.assertFalse(recovery.discover(request(meal="bbq"))[0])
         geocoder.lookup.assert_not_called()
+
+    def test_outage_seed_targets_web_search_but_never_substitutes_for_evidence(self):
+        geocoder = Mock()
+        geocoder.nearby.return_value = [self.feature]
+        dispatch = Mock(return_value=json.dumps({"success": True, "data": {"web": [self.hit]}}))
+        complete = Mock(return_value=SimpleNamespace(parsed={"venues": [self.item]}))
+        recovery = Recovery(dispatch, complete, geocoder)
+        venues, _ = recovery.discover(request(meal="bbq"), seed=True)
+        self.assertEqual(len(venues), 1)
+        self.assertEqual(dispatch.call_count, 2)
+        self.assertIn("example bbq", dispatch.call_args_list[1].args[1]["query"])
+        geocoder.lookup.assert_not_called()
+        complete.return_value.parsed = {"venues": []}
+        self.assertFalse(recovery.discover(request(meal="bbq"), seed=True)[0])
 
     def test_wrong_country_name_radius_and_invalid_coordinate_are_rejected(self):
         for feature in (
