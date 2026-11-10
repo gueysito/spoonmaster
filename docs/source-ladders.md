@@ -196,3 +196,31 @@ is disabled, including when a review link is supplied as the OSM venue website.
 [Infatuation terms](https://www.theinfatuation.com/terms), and
 [Michelin terms](https://guide.michelin.com/en/terms-of-use) restrict automated extraction.
 Google Maps remains link-only; no Places billing project or API account is added.
+
+## T12 discovery recovery and ride links
+
+Each dining request uses bounded web enrichment inside `spoon_dine` to cover venues
+with missing/broad OSM cuisine tags. The same path recovers source outages, without
+asking the user to approve an ordinary fallback search.
+Two configured host searches send only the requested food and public area/city/country.
+Search excerpts go to the configured host model for bounded extraction; existing host
+allowances apply. A name must be present in the result title/quote and the food quote
+must be an exact excerpt. This is discovery evidence, never a critic endorsement.
+
+Up to six public venue-name/city queries use `https://photon.komoot.io/api/`. The
+[Photon operator](https://github.com/komoot/photon#demo-server) permits moderate project
+use, may throttle, and offers no availability guarantee. The local-pilot client
+serializes requests, spaces uncached requests by one second, caches up to 100 public
+queries for 30 minutes, makes no automatic retries, refuses redirects/proxies, and
+bounds response size/time. Returned map identity/country/radius must corroborate the
+venue. This is an additional discovery dependency, not a public-launch capacity plan.
+OpenStreetMap attribution remains visible. Public Nominatim is not integrated.
+
+For mapped distances above 804.672 metres, cards offer country-appropriate service
+entry links: Uber in US/JP, Grab in TH/ID, Gojek in ID. These are service/home/download
+links, not destination-prefilled or booking links. Availability and fares are not
+promised. Sources: [Uber web](https://m.uber.com/),
+[Uber deep-link contract](https://developer.uber.com/docs/riders/ride-requests/tutorials/deep-links/introduction),
+[Grab Thailand](https://www.grab.com/th/en/download/),
+[Grab Indonesia](https://www.grab.com/id/download/), [Gojek](https://www.gojek.com/en-id/).
+No developer account, API credential, booking or ride transaction is added.

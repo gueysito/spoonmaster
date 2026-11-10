@@ -1,6 +1,7 @@
 """Hermes tools for discovery, verification and conversation-scoped dining checks."""
 
 import json
+import math
 import re
 import threading
 import time
@@ -9,6 +10,7 @@ from .discovery import DiscoveryError, fetch_candidates, validate_origin
 from .gates import build_ledger, timestamp
 from .household import HOUSEHOLD_SCHEMA, TRAVEL_MODES, valid_household
 from .ledger import LedgerStore, ledger_page, render_ledger, session_key
+from .meal import fit
 from .outing import LOCATION_PROMPT, valid_zone
 from .taste import CONTEXT_KEYS, TasteError, text
 from .verification import Verifier
@@ -44,6 +46,7 @@ CANDIDATES_SCHEMA = {
             "longitude": {"type": "number", "minimum": -180, "maximum": 180},
             "radius_m": {"type": "number", "minimum": 1, "maximum": 2000, "default": 1600},
             "limit": {"type": "integer", "minimum": 1, "maximum": 20, "default": 10},
+            "meal": {"type": "string", "maxLength": 80},
         },
         "required": ["latitude", "longitude"],
         "additionalProperties": False,
@@ -53,7 +56,15 @@ CANDIDATES_SCHEMA = {
 
 def candidates(args, *, _ledger_store=None, **kwargs) -> str:
     """Validate at the actual tool boundary, independent of model schema adherence."""
-    if not isinstance(args, dict) or set(args) - {"latitude", "longitude", "radius_m", "limit"}:
+    if not isinstance(args, dict) or set(args) - {
+        "latitude",
+        "longitude",
+        "radius_m",
+        "limit",
+        "meal",
+    }:
+        return json.dumps({"error": "invalid_arguments"})
+    if "meal" in args and not text(args["meal"], 80):
         return json.dumps({"error": "invalid_arguments"})
     if "latitude" not in args or "longitude" not in args:
         return json.dumps({"error": "location_required", "action": LOCATION_PROMPT})
@@ -69,7 +80,14 @@ def candidates(args, *, _ledger_store=None, **kwargs) -> str:
         return json.dumps({"status": "unverified", "error": "query_in_progress"})
     try:
         if time.monotonic() < _next_query_at:
-            return json.dumps({"status": "unverified", "error": "query_cooldown"})
+            return json.dumps(
+                {
+                    "status": "unverified",
+                    "error": "query_cooldown",
+                    "retry_after_seconds": math.ceil(_next_query_at - time.monotonic()),
+                    "action": "Do not retry now. Use spoon_dine for bounded fallback.",
+                }
+            )
         try:
             result = fetch_candidates(
                 args["latitude"], args["longitude"], args.get("radius_m", 1600)
@@ -81,6 +99,8 @@ def candidates(args, *, _ledger_store=None, **kwargs) -> str:
     finally:
         _query_lock.release()
     result["candidates_in_radius"] = len(result["candidates"])
+    if args.get("meal"):
+        result["candidates"].sort(key=lambda v: fit(v, args["meal"])["result"] != "pass")
     result["candidates"] = result["candidates"][:limit]
     result["limited"] = result["candidates_in_radius"] > limit
     verifier.remember(result["candidates"])
@@ -155,6 +175,7 @@ EVALUATE_SCHEMA = {
         "properties": {
             "search_id": {"type": "string", "maxLength": 24},
             "origin_confirmed": {"type": "boolean"},
+            "meal": {"type": "string", "maxLength": 80},
             "expected_arrival": {"type": "string", "maxLength": 64},
             "venue_timezone": {"type": "string", "maxLength": 100},
             "household": HOUSEHOLD_SCHEMA,
@@ -197,6 +218,8 @@ def _evaluation_arguments(args):
     if not isinstance(args.get("search_id"), str) or len(args["search_id"]) != 24:
         return False
     if type(args.get("origin_confirmed")) is not bool:
+        return False
+    if "meal" in args and not text(args["meal"], 80):
         return False
     if "household" in args and not valid_household(args["household"]):
         return False

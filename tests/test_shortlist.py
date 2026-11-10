@@ -21,7 +21,7 @@ class ShortlistTests(unittest.TestCase):
         ]
         slots = self.slots(list(reversed(venues)))
         self.assertEqual([v["venue_id"] for v in slots.values()], ["0", "1", "3"])
-        self.assertNotIn("wildcard", self.slots(venues[:3]))
+        self.assertEqual(self.slots(venues[:3])["wildcard"]["venue_id"], "2")
         self.assertEqual(list(self.slots(venues[:1])), ["pick"])
         self.assertEqual(self.slots([]), {})
 

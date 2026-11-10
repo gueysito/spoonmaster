@@ -225,3 +225,64 @@ class OnboardingTests(unittest.TestCase):
         self.taste.state_directory = lambda: original
         self.command("delete confirm")
         self.assertIn("second", self.flow.drafts)
+
+
+class OnboardingRepairTests(unittest.TestCase):
+    setUp = OnboardingTests.setUp
+    command = OnboardingTests.command
+
+    def test_natural_tool_questions_use_selectable_clarify_and_finish_atomically(self):
+        result = json.loads(self.flow.tool({}, session_id="chat"))
+        for step in range(1, 7):
+            self.assertEqual(result["next_tool"], "clarify")
+            self.assertEqual(result["step"], step)
+            labels = result["questions"][0]["choices"]
+            self.assertTrue(labels[0].startswith("1. "))
+            self.assertTrue(labels[1].startswith("2. "))
+            self.assertIn("Skip", labels)
+            self.assertIn("Back", labels)
+            self.assertIn("Find food now", labels)
+            self.assertIsNone(self.store.read("local-cli"))
+            result = json.loads(
+                self.flow.tool({"action": "answer", "step": step, "choice": "1"}, session_id="chat")
+            )
+        self.assertTrue(result["complete"])
+        self.assertIn("You're set", result["text"])
+        self.assertEqual(len(self.store.read("local-cli")["prefs"]), 6)
+
+    def test_typo_and_invalid_text_keep_the_controller_in_charge(self):
+        self.command("personalize")
+        for step in range(1, 4):
+            self.command(f"pick {step} 1")
+        result = self.flow.before_turn(session_id="chat", user_message="brght and tangy")
+        self.assertEqual(result["action"], "block")
+        self.assertIn("5/6", result["message"])
+        result = self.flow.before_turn(session_id="chat", user_message="unclear answer")
+        self.assertIn("5/6", result["message"])
+        self.assertFalse(self.flow.drafts["chat"]["paused"])
+        self.assertIsNone(self.store.read("local-cli"))
+
+    def test_back_stale_answer_and_exit_never_partially_save(self):
+        self.flow.tool({}, session_id="chat")
+        self.flow.tool({"action": "answer", "step": 1, "choice": "1"}, session_id="chat")
+        stale = json.loads(
+            self.flow.tool({"action": "answer", "step": 1, "choice": "2"}, session_id="chat")
+        )
+        self.assertEqual(stale["step"], 2)
+        back = json.loads(
+            self.flow.tool({"action": "answer", "step": 2, "choice": "back"}, session_id="chat")
+        )
+        self.assertEqual(back["step"], 1)
+        self.assertTrue(
+            json.loads(self.flow.tool({"action": "now"}, session_id="chat"))["complete"]
+        )
+        self.assertIsNone(self.store.read("local-cli"))
+
+    def test_personalize_command_uses_picker_without_intro_or_typing_commands(self):
+        self.flow.ask_choice = Mock(side_effect=["1"] * 6)
+        result = self.command("personalize")
+        self.assertIn("You're set", result)
+        self.assertEqual(self.flow.ask_choice.call_count, 6)
+        first = self.flow.ask_choice.call_args_list[0]
+        self.assertIn("1/6", first.args[0])
+        self.assertEqual(first.args[1][0]["label"], "1. burger")

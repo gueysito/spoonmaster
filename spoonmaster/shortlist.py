@@ -30,6 +30,7 @@ def admissible(entry):
     checks = {check["gate"]: check for check in entry["checks"]}
     return (
         not entry["failed_gates"]
+        and entry.get("meal_fit", {"result": "pass"})["result"] == "pass"
         and all(checks[key]["result"] == "pass" for key in ("origin", "radius", "evidence"))
         and checks["open_at_arrival"].get("weekly_schedule_result") != "fail"
     )
@@ -63,6 +64,11 @@ def ordered_candidates(venues, search, ledger, taste=None, reviews=None):
 
 def shortlist(venues, search, ledger, taste=None, reviews=None):
     unique = ordered_candidates(venues, search, ledger, taste, reviews)
+    diverse = []
+    for venue in unique:
+        if not any(same_brand(venue, other) for other in diverse):
+            diverse.append(venue)
+    unique = diverse
     slots = dict(zip(("pick", "runner_up"), unique[:2]))
     known = set().union(*(cuisines(v) for v in unique[:2]))
     if known:
@@ -71,4 +77,14 @@ def shortlist(venues, search, ledger, taste=None, reviews=None):
             if listed and listed.isdisjoint(known):
                 slots["wildcard"] = venue
                 break
+    if "wildcard" not in slots and len(unique) > 2:
+        slots["wildcard"] = unique[2]
     return slots
+
+
+def same_brand(left, right):
+    left_brand, right_brand = left.get("brand"), right.get("brand")
+    if left_brand and right_brand and left_brand.casefold() == right_brand.casefold():
+        return True
+    # Same-name branches are alternatives within one restaurant, not independent options.
+    return bool(names(left) & names(right))

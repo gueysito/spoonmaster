@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from .discovery import distance_m
 from .hours import DAYS
 from .household import aggregate, constraints
+from .meal import fit
 from .outing import with_timezone
 from .verification import FRESH_SECONDS
 
@@ -197,6 +198,7 @@ def evaluate(venue, search, verification, request, now):
     return {
         "venue_id": venue["venue_id"],
         "name": venue["name"],
+        "meal_fit": fit(venue, request.get("meal")),
         "checks": checks,
         "disposition": "excluded" if failed else "unresolved" if unknown else "eligible",
         "failed_gates": failed,

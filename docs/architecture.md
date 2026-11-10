@@ -438,3 +438,48 @@ Tests exercise profile/session isolation, reset/deletion races, malicious source
 wrong branches, restricted-source denial, rate limits and safe error output. No new
 dependencies, ingress, payments, uploads, CORS or authentication surface. Broader public
 release audit remains T14; these checks do not certify source truth or model obedience.
+
+### Owner-tested workflow repair (T12, D-018)
+
+`spoon_dine` owns a dining transaction: bounded discovery → current-meal match →
+bounded web enrichment/recovery → review research → hours verification → ledger → canonical cards.
+The current food request is separate from long-lived taste preferences. Discovery
+prioritizes matching cuisine before its result cap; noodles include several noodle
+cuisines. A third distinct same-cuisine option can fill the wildcard; known same-brand
+branches cannot fill separate slots. Missing matches remain explicit empty slots.
+
+The transaction reserves a conversation-scoped record before external work. Reset or
+replacement invalidates that record; returned work cannot recreate the old outing.
+Source failure also leaves an explanation record. The ledger distinguishes missing
+coverage from evaluated rejection and retains recovery gaps and review attribution.
+No exact-location or dining-ledger persistence was added.
+
+Recovery uses two existing-host searches, one bounded structured extraction on the
+host's configured model, and at most six cached Photon venue-name lookups. Model output
+is untrusted: names and quoted food evidence must occur in the actual search result;
+map identity, country, coordinates, venue type and radius are independently checked.
+No model-provided coordinates or arbitrary URL fetches are admitted by recovery.
+Missing evidence means no candidate. The shared source ladder does not authorize
+access; reusable source scouting is separate from getting a meal in an unknown city.
+
+Cards use `ctx.post_message` in the calling session, with bounded message chunks and
+an explicit delivery result. If unavailable, canonical text is returned for the host
+to relay. This avoids global output middleware and preserves all three options.
+The model still interprets natural language, so live conversation checks are required
+in addition to deterministic engine tests. Public source outages can still leave no
+supported options, and availability, prices and route times remain unknown without
+specific evidence.
+
+Both onboarding entrypoints share one draft/commit controller. Synchronous commands
+use `ctx.ask_choice`; the natural-language tool returns the exact next `clarify`
+question and accepts the chosen answer with its step number. The native host owns the
+picker; the plugin owns advancement, stale-answer rejection, backtracking and atomic
+saving. Unrecognized typed fallback replies re-prompt, and unambiguous small typos are
+accepted. Explicit tasks do not receive an unrelated first-use welcome menu.
+
+Source lesson: Agent Harness Engineering, `ARCHITECTURE.md` → Symbolic Control and
+Thin Orchestration, revision `3a57c61e074a8ffffe5c8eacdbbdbc31bc7496a7`.
+Application: Spoonmaster dining/onboarding control outside model prose, bounded recovery
+and failure-replay tests. Expected benefit: prevent omitted tool stages and invented
+state transitions. Implementation and test evidence live in this repository; this is
+not yet proof of sustained recommendation quality. No research-canon writeback.

@@ -48,7 +48,18 @@ def map_links(venue, search, mode=None):
     }
 
 
-def render_card(venue, search, entry, verification, *, role, now, mode=None, home_currency=None):
+def render_card(
+    venue,
+    search,
+    entry,
+    verification,
+    *,
+    role,
+    now,
+    mode=None,
+    home_currency=None,
+    country_code=None,
+):
     checks = {check["gate"]: check for check in entry["checks"]}
     phone = None
     hours = "Unconfirmed"
@@ -96,7 +107,7 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
     fit = {
         "pick": "Nearest shortlisted option; taste fit is not established yet.",
         "runner_up": "Next nearest shortlisted alternative; taste fit is not established yet.",
-        "wildcard": "A different listed cuisine; taste fit is not established yet.",
+        "wildcard": "A distinct additional option; taste fit is not established yet.",
         "selected": "Your selected venue; unresolved checks still need confirmation.",
     }[role]
     matched = checks["taste"].get("matched_preferences")
@@ -145,6 +156,8 @@ def render_card(venue, search, entry, verification, *, role, now, mode=None, hom
         "household_warnings": household_warnings,
         "verification_attempted_at": verification.get("checked_at") if verification else None,
         "review_evidence": entry.get("review_evidence", []),
+        "discovery_evidence": venue.get("discovery_evidence"),
+        "ride_links": ride_links(venue.get("country_code") or country_code, distance),
     }
     card["text"] = card_text(card)
     return card
@@ -165,16 +178,42 @@ def card_text(card):
             f"Arrival: {card['arrival']}",
             f"Last order: {card['last_order']} · Closing: {card['closing']}",
             f"Travel: {card['travel']}",
+            *card.get("ride_links", []),
             f"Cost: {card['cost']}",
             f"Order: {card['order']}",
             f"Why: {card['fit']}",
             *review_lines(card),
+            *(
+                ["Food evidence: [search excerpt](" + card["discovery_evidence"]["url"] + ")"]
+                if card.get("discovery_evidence")
+                else []
+            ),
             f"Friction: {card['friction']}",
             *[f"Household: {warning}" for warning in card.get("household_warnings", [])],
             f"Caveat: {card['caveat']}",
             f"[Venue source]({card['sources'][0]})",
         ]
     )
+
+
+def ride_links(country, distance):
+    if distance is None or distance <= 804.672:
+        return []
+    links = {
+        "US": [("Uber", "https://m.uber.com/")],
+        "JP": [("Uber", "https://m.uber.com/")],
+        "TH": [("Grab", "https://www.grab.com/th/en/download/")],
+        "ID": [
+            ("Grab", "https://www.grab.com/id/download/"),
+            ("Gojek", "https://www.gojek.com/en-id/"),
+        ],
+    }.get(country, [])
+    if not links:
+        return []
+    return [
+        "Ride options: " + " · ".join(f"[{name}]({url})" for name, url in links),
+        "Open the service and enter the destination; no fare, pickup or booking is prefilled.",
+    ]
 
 
 def review_lines(card):

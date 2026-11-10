@@ -48,7 +48,8 @@ def recommend(record, request, verifier, *, now=None, profile=None, review_searc
             [v["venue_id"] for v in slots.values()], "finalists", request.get("country_code")
         )
         if "error" in result:
-            return result, None, None
+            ledger["summary"] += " Finalist verification unavailable: " + result["error"] + "."
+            return result, ledger, None
         if live_clock:
             now = datetime.now(timezone.utc)
         evidence = verifier.snapshot(venues)
@@ -69,6 +70,7 @@ def recommend(record, request, verifier, *, now=None, profile=None, review_searc
             now=now,
             mode=request.get("travel_mode"),
             home_currency=request.get("home_currency"),
+            country_code=request.get("country_code"),
         )
         for role, venue in slots.items()
         if admissible(entries[venue["venue_id"]])
@@ -87,7 +89,11 @@ def recommend(record, request, verifier, *, now=None, profile=None, review_searc
             card["fit"] = (
                 (card["fit"] + " " if matched else "No supported personal taste match. ")
                 + "Branch-matched review evidence breaks taste ties before distance. "
-                + ("Wildcard adds cuisine variety." if card["role"] == "wildcard" else "")
+                + (
+                    "Wildcard is a distinct additional option."
+                    if card["role"] == "wildcard"
+                    else ""
+                )
             )
             card["text"] = card_text(card)
     roles = {card["role"] for card in cards}
@@ -163,6 +169,7 @@ def select(record, venue_id, verifier, *, now=None):
         now=now,
         mode=options.get("travel_mode"),
         home_currency=options.get("home_currency"),
+        country_code=options.get("country_code"),
     )
     if not admissible(entry):
         card["caveat"] = (

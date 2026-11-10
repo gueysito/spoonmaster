@@ -12,6 +12,27 @@ doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
 
+## Repaired dining flow
+
+Ask for food with a stated area or shared location pin. `spoon_dine` now owns the
+whole search, current-food matching, bounded fallback, reviews, three distinct options
+and `/why`. It uses current time unless you specify another time. An unknown city's
+source-ladder setup never blocks dinner. Unavailable sources and empty slots are
+reported rather than filled with invented options.
+
+`/spoon personalize` uses Hermes's native picker. Natural requests such as “get me
+onboarded” use `spoon_onboard` with the native `clarify` tool, so enable the `clarify`
+toolset alongside `web` and `spoonmaster`. Each question offers consistent 1/2 choices,
+Skip, Back and Find food now. Unsupported surfaces retain a short typed fallback.
+
+The recovery path adds the public Photon geocoder and one bounded host-model
+extraction when needed. No additional account or paid API is required; the existing
+host model/search provider allowance still applies. Public area/food and venue names
+are sent to those services; keep private addresses and health details out of the
+public area/meal fields. See [source boundaries](docs/source-ladders.md#t12-discovery-recovery-and-ride-links).
+Ride links beyond half a mile open country-appropriate services; enter the destination
+there. No ride is booked and no fare or pickup is prefilled.
+
 ## What it will do
 
 - **Decide.** "Dinner nearby, nothing fussy" plus a location pin returns one pick, a

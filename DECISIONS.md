@@ -150,3 +150,22 @@ when to revisit. Agent recommendations are noted as such.
   explicit scale/count and comparable coverage. Unknown dates remain provisional; dates
   older than one year or in the future cannot influence ranking. Missing evidence falls
   back to taste/distance. These conservative defaults need live usability evaluation.
+
+## D-018: Complete owner-tested dining and onboarding flows (2026-11-10)
+
+- Owner authorized finishing the reported failures before another testing round.
+- Decision: one dining tool owns discovery through saved explanation and delivered
+  cards; optional source scouting never blocks a meal. Bounded, attributed web
+  recovery shares the same gates and ledger. Current food intent outranks unrelated
+  saved tastes; known same-brand branches do not fill separate slots. Wildcard may
+  be a third distinct requested-cuisine option instead of requiring another cuisine.
+- Onboarding uses a single controller with native choices, consistent 1/2 labels,
+  Skip/Back/Find food now, tolerant fallback and atomic saving. Explicit meal requests
+  do not trigger a welcome menu. Current time and explicit/pinned location remain
+  the owner's established defaults.
+- Alternative rejected: additional instructions around independent optional tools,
+  which cannot ensure the ledger, reviews or all cards actually get produced.
+- Limits: local pilot, public free data, existing host model/search allowances, no
+  account creation or live-profile changes. Ride links open services; no unsupported
+  destination-prefill claim. Real model/surface behavior must be checked separately
+  from deterministic tests and plugin installation.

@@ -160,6 +160,7 @@ def _candidate(element, origin_lat: float, origin_lon: float) -> dict | None:
     return {
         "venue_id": f"osm:{kind}:{identifier}",
         "name": _text(tags.get("name"), 200),
+        "brand": _text(tags.get("brand"), 200),
         "alternate_names": [
             name for key in ("name:en", "name:ja") if (name := _text(tags.get(key), 200))
         ],

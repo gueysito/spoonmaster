@@ -3,6 +3,7 @@
 import json
 import threading
 import time
+from difflib import get_close_matches
 
 from .cards import plain
 from .onboarding_store import OnboardingStore
@@ -36,12 +37,32 @@ PAIRS = (
     ("When choosing food?", "attribute", "familiar favorites", "trying something new"),
 )
 
+ONBOARD_SCHEMA = {
+    "name": "spoon_onboard",
+    "description": (
+        "Run or resume optional six-choice personalization using the chat surface's selectable "
+        "choices. Call when the user asks to personalize/get onboarded. The controller owns "
+        "every question, answer and atomic save. Do not invent questions or ask the user to "
+        "type slash commands. No meal-search detours during onboarding."
+    ),
+    "parameters": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "action": {"type": "string", "enum": ["next", "answer", "now"]},
+            "step": {"type": "integer", "minimum": 1, "maximum": 6},
+            "choice": {"type": "string", "enum": ["1", "2", "skip", "back"]},
+        },
+    },
+}
+
 
 class Onboarding:
-    def __init__(self, taste, ask_choice=None, clock=time.monotonic):
+    def __init__(self, taste, ask_choice=None, clock=time.monotonic, dispatch=None):
         self.taste = taste
         self.ask_choice = ask_choice
         self.clock = clock
+        self.dispatch = dispatch
         self.drafts = {}
         self.offered = {}
         self.lock = threading.RLock()
@@ -67,8 +88,7 @@ class Onboarding:
         question, _, first, second = PAIRS[index]
         return (
             f"{index + 1}/6: {question}\n1. {first}\n2. {second}\n"
-            f"Reply 1, 2 or skip, or use /spoon pick {index + 1} 1|2|skip. "
-            "You can switch to /spoon now anytime."
+            "Choose 1, 2, Skip or Back. Find food now leaves without saving this draft."
         )
 
     def start(self, session):
@@ -112,6 +132,10 @@ class Onboarding:
             draft = self.drafts.get(session)
             if not draft or draft["scope"] != scope:
                 return "No active questions here. Use /spoon start."
+            if answer == "back" and step == len(draft["choices"]) + 1:
+                if draft["choices"]:
+                    draft["choices"].pop()
+                return self._question(draft)
             if step != len(draft["choices"]) + 1 or answer not in ("1", "2", "skip"):
                 return "That answer is for a different question. " + self._question(draft)
             state = store.status(owner)
@@ -168,8 +192,9 @@ class Onboarding:
             message = user_message.strip().casefold()
             if message == "find food now":
                 response = self.skip(session_id)
-            elif message in ("personalize my picks", "get me onboarded"):
+            elif message in ("personalize my picks", "get me onboarded", "personalize"):
                 response = self.start(session_id)
+                return {"context": "Call spoon_onboard now to show selectable choices. " + response}
             else:
                 with self.lock:
                     self._prune()
@@ -177,24 +202,37 @@ class Onboarding:
                     if draft and draft["scope"] == scope and not draft["paused"]:
                         step = len(draft["choices"]) + 1
                         pair = PAIRS[step - 1]
-                        choice = {
+                        aliases = {
                             "1": "1",
                             "2": "2",
+                            "a": "1",
+                            "b": "2",
                             "skip": "skip",
+                            "back": "back",
                             pair[2]: "1",
                             pair[3]: "2",
                             "neither": "skip",
-                        }.get(message)
+                        }
+                        choice = aliases.get(message)
+                        if not choice:
+                            matches = get_close_matches(message, pair[2:], n=2, cutoff=0.85)
+                            if len(matches) == 1:
+                                choice = aliases[matches[0]]
                         if choice:
                             response = self.answer(session_id, step, choice)
-                            return {"context": "Spoonmaster onboarding response: " + response}
-                        draft["paused"] = True
+                            return {"action": "block", "message": response, "context": response}
+                        response = "I didn't record that choice. " + self._question(draft)
+                        return {"action": "block", "message": response, "context": response}
                     if scope in self.offered:
                         return None
                     self.offered[scope] = {"time": self.clock(), "offered": False}
                     self._prune()
                 if store.status(owner) is not None or self.taste.read(session_id) is not None:
                     return None
+                if message not in ("hi", "hello", "hey", "start", "spoonmaster"):
+                    with self.lock:
+                        self.offered[scope] = {"time": self.clock(), "offered": True}
+                    return None  # An explicit task never gets an unrelated welcome menu.
                 response = INTRO
             with self.lock:
                 self.offered[scope] = {"time": self.clock(), "offered": True}
@@ -219,39 +257,105 @@ class Onboarding:
         except (RuntimeError, ValueError, TypeError):
             return None
 
-    def _interactive(self, session):
+    def _interactive(self, session, *, personalize=False, picker=None):
         _, _, _, scope = self._access(session)
         with self.lock:
             self.offered[scope] = {"time": self.clock(), "offered": True}
             self._prune()
-        if not self.ask_choice:
-            return INTRO
-        choice = self._ask(
-            INTRO,
-            [
-                {"value": "personalize", "label": "Personalize my picks"},
-                {"value": "now", "label": "Find food now"},
-            ],
-        )
-        if choice == "now":
-            return self.skip(session)
-        if choice != "personalize":
-            return INTRO
-        response = self.start(session)
-        for step in range(1, len(PAIRS) + 1):
-            pair = PAIRS[step - 1]
-            choice = self._ask(
-                response,
+        ask = picker or self._ask
+        if not personalize:
+            choice = ask(
+                INTRO,
                 [
-                    {"value": "1", "label": pair[2]},
-                    {"value": "2", "label": pair[3]},
-                    {"value": "skip", "label": "Skip this question"},
+                    {"value": "personalize", "label": "Personalize my picks"},
+                    {"value": "now", "label": "Find food now"},
                 ],
             )
-            if choice not in ("1", "2", "skip"):
+            if choice == "now":
+                return self.skip(session)
+            if choice != "personalize":
+                return INTRO
+        with self.lock:
+            self._prune()
+            draft = self.drafts.get(session)
+            response = self._question(draft) if draft and draft["scope"] == scope else None
+        response = response or self.start(session)
+        # Six answers plus bounded backtracking; cancellation preserves the active draft.
+        for _ in range(24):
+            with self.lock:
+                draft = self.drafts.get(session)
+                if not draft or draft["scope"] != scope:
+                    return response
+                step = len(draft["choices"]) + 1
+            pair = PAIRS[step - 1]
+            choice = ask(
+                response,
+                [
+                    {"value": "1", "label": "1. " + pair[2]},
+                    {"value": "2", "label": "2. " + pair[3]},
+                    {"value": "skip", "label": "Skip this question"},
+                    {"value": "back", "label": "Back"},
+                    {"value": "now", "label": "Find food now"},
+                ],
+            )
+            if choice == "now":
+                return self.skip(session)
+            if choice not in ("1", "2", "skip", "back"):
                 return response
             response = self.answer(session, step, choice)
         return response
+
+    def tool(self, args, **kwargs):
+        if not isinstance(args, dict) or set(args) - {"action", "step", "choice"}:
+            return json.dumps({"error": "invalid_arguments"})
+        action = args.get("action", "next")
+        if action not in ("next", "answer", "now"):
+            return json.dumps({"error": "invalid_arguments"})
+        session = kwargs.get("session_id")
+        try:
+            _, _, _, scope = self._access(session)
+            if action == "now":
+                return json.dumps({"complete": True, "text": self.skip(session)})
+            with self.lock:
+                self._prune()
+                draft = self.drafts.get(session)
+                if draft and draft["scope"] != scope:
+                    draft = None
+                if action == "answer":
+                    if type(args.get("step")) is not int or args.get("choice") not in (
+                        "1",
+                        "2",
+                        "skip",
+                        "back",
+                    ):
+                        return json.dumps({"error": "invalid_arguments"})
+                    if not draft:
+                        return json.dumps({"error": "no_active_onboarding"})
+                    response = self.answer(session, args["step"], args["choice"])
+                else:
+                    response = self._question(draft) if draft else self.start(session)
+                draft = self.drafts.get(session)
+                if not draft:
+                    return json.dumps({"complete": True, "text": response})
+                step = len(draft["choices"]) + 1
+                pair = PAIRS[step - 1]
+                choices = ["1. " + pair[2], "2. " + pair[3], "Skip", "Back", "Find food now"]
+                return json.dumps(
+                    {
+                        "complete": False,
+                        "step": step,
+                        "text": response,
+                        "next_tool": "clarify",
+                        "questions": [{"question": response, "choices": choices}],
+                        "instruction": "Call clarify with these questions. Do not ask for typing. "
+                        "Then call spoon_onboard action=answer with this step and choice "
+                        "1, 2, skip or back; Find food now uses action=now. Repeat until "
+                        "complete=true. Never invent the next "
+                        "question, save an unanswered choice or mention a prior meal search.",
+                    }
+                )
+        except TasteError as error:
+            return json.dumps({"error": str(error), "text": "Personalization was not saved."})
 
     def command(self, raw_args, *, source=None, platform=None, session_id=None, **kwargs):
         parts = raw_args.split() if isinstance(raw_args, str) else []
@@ -276,7 +380,7 @@ class Onboarding:
             if parts == ["start"]:
                 return self._interactive(session_id)
             if parts == ["personalize"]:
-                return self.start(session_id)
+                return self._interactive(session_id, personalize=True)
             if parts == ["now"]:
                 return self.skip(session_id)
             if len(parts) == 3 and parts[0] == "pick" and parts[1] in tuple("123456"):

@@ -33,7 +33,7 @@ def environment(source: Path, python: Path, home: Path, root: Path) -> dict[str,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "chat", "check", "cleanup"))
+    parser.add_argument("action", choices=("prepare", "chat", "check", "stop", "cleanup"))
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--python", type=Path, required=True)
     parser.add_argument("--root", type=Path, required=True)
@@ -130,14 +130,23 @@ def main() -> None:
             cli(home, "gateway", "stop")
             shutil.move(str(home), destination)
         if destination.exists():
-            cli(staging, "profile", "delete", receipt["profile"], "--yes")
+            try:
+                cli(staging, "profile", "delete", receipt["profile"], "--yes")
+            except subprocess.CalledProcessError:
+                # Some host versions raise identity-settlement errors after deleting the
+                # isolated directory. Only continue if deletion actually completed.
+                if destination.exists():
+                    raise
         if destination.exists():
             raise RuntimeError("Profile deletion did not complete")
         shutil.rmtree(staging)
         shutil.rmtree(root)
         print("CLEAN: profile, plugin, conversations and test caches removed")
         return
-    arguments = ["chat", "--ignore-rules", "-t", "web,spoonmaster"]
+    if args.action == "stop":
+        cli(home, "gateway", "stop")
+        return
+    arguments = ["chat", "--ignore-rules", "-t", "web,spoonmaster,clarify"]
     if args.action == "check":
         arguments += ["--oneshot", "-q", args.query or "Reply with TEST_READY only."]
     cli(home, *arguments)

@@ -1,6 +1,6 @@
 # Tracker
 
-The single task authority. Status: `done`, `next`, `planned`, `blocked`, `cut`.
+The single task authority. Status: `done`, `next`, `in progress`, `planned`, `blocked`, `cut`.
 Estimates are hours of build time; reforecast when a task passes twice its estimate.
 
 **Stop rule:** if the spine (T1 to T9) does not work end to end by the night of
@@ -47,7 +47,7 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 |---|---|---|---|---|---|
 | T10 | Merge profiles (spike `a2a`, else share card) | Merged pick never violates a hard veto; explains fit per person | 3 | planned | After hands-on spine testing. |
 | T11 | Order card | Top dishes with evidence counts; local text; no safety promises | 2 | planned | |
-| T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 3 | in progress | Current-time/stated-location correction implemented: explicit override, destination zones, fresh selection checks and missing-location/pin prompt. 198 tests: 197 local passes + host-only skip; all 198 pass on Hermes 3.14.9; doctor/validate, Ruff, standards and clock mutation check pass. Isolated profile/root deleted and absence independently verified; public-source upload trashed. Changed-input and privacy review found no new endpoint, persistence or cross-session access. Remaining orchestration, discovery, onboarding, presentation repairs and live chat delivery are incomplete; no retest invitation yet. |
+| T12 | Fresh install, failure cases, privacy controls | PRD section 9 checks pass on a clean profile | 8 | in progress | Reforecast for owner-approved D-018 repairs. Dining transaction, bounded web/map recovery, meal relevance, distinct brands, saved explanations, selectable onboarding, ride links and canonical delivery implemented. 213 tests run locally (one host-only skip); 12-tool doctor/validate passes on isolated Hermes. Live Tokyo uses spoon_dine and returns three options; a first-use welcome interruption was found and corrected. SF, fallback and full personalization conversations plus final cleanup remain under verification. |
 | T13 | README disclosures and catalog entry draft | Every host, stored item and capability listed | 1 | planned | Pilot network/privacy disclosures present. Resolve shared Overpass backend suitability before public release; [operator policy](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html). |
 | T14 | Security review at the public boundary | Owner chooses run, later or decline | 1 | planned | |
 | T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | blocked | Owner decision |

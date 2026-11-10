@@ -3,9 +3,10 @@
 from functools import partial
 
 from .spoonmaster.companions import COMPANIONS_SCHEMA, CompanionService
+from .spoonmaster.dining import DINE_SCHEMA, Dining
 from .spoonmaster.ledger import LedgerStore
 from .spoonmaster.locales import LOCALE_SCHEMA, LocaleService
-from .spoonmaster.onboarding import Onboarding
+from .spoonmaster.onboarding import ONBOARD_SCHEMA, Onboarding
 from .spoonmaster.outing import dining_context
 from .spoonmaster.plugin import (
     CANDIDATES_SCHEMA,
@@ -23,6 +24,7 @@ from .spoonmaster.plugin import (
     verify_hours,
     why,
 )
+from .spoonmaster.recovery import Recovery
 from .spoonmaster.reviews import ReviewSearch
 from .spoonmaster.taste_service import FEEDBACK_SCHEMA, PROFILE_SCHEMA, TasteService, owner_key
 
@@ -32,10 +34,30 @@ def register(ctx):
     # even when the host supplies identical conversation IDs in those scopes.
     store = LedgerStore()
     taste = TasteService(lambda: getattr(getattr(ctx, "state", None), "data_dir", None), store)
-    onboarding = Onboarding(taste, getattr(ctx, "ask_choice", None))
+    onboarding = Onboarding(
+        taste, getattr(ctx, "ask_choice", None), dispatch=getattr(ctx, "dispatch_tool", None)
+    )
     companions = CompanionService(taste)
     locales = LocaleService(taste, getattr(ctx, "dispatch_tool", None))
     reviews = ReviewSearch(locales)
+
+    # Resolve the host model lazily, only after an explicitly requested search needs recovery.
+    def complete(**arguments):
+        return ctx.llm.complete_structured(**arguments)
+
+    dining = Dining(
+        store,
+        taste,
+        reviews,
+        Recovery(getattr(ctx, "dispatch_tool", None), complete),
+        getattr(ctx, "post_message", None),
+    )
+    ctx.register_tool(
+        name="spoon_dine",
+        toolset="spoonmaster",
+        schema=DINE_SCHEMA,
+        handler=dining.tool,
+    )
     ctx.register_tool(
         name="spoon_candidates",
         toolset="spoonmaster",
@@ -63,6 +85,7 @@ def register(ctx):
         ),
     )
     for schema, handler in (
+        (ONBOARD_SCHEMA, onboarding.tool),
         (RECOMMEND_SCHEMA, recommend_candidates),
         (SELECT_SCHEMA, select_venue),
     ):
@@ -127,6 +150,8 @@ def register(ctx):
         # Establish CLI/private identity before the onboarding controller reads it.
         recalled = taste.before_turn(**kwargs)
         welcome = onboarding.before_turn(**kwargs)
+        if welcome and welcome.get("action") == "block":
+            return welcome
         party = companions.before_turn(**kwargs)
         locale = locales.before_turn(**kwargs)
         contexts = [

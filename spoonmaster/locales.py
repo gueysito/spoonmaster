@@ -57,7 +57,8 @@ def scout_sources(dispatch, country, city):
                 title, snippet = hit.get("title"), hit.get("description")
                 if not text(title, 500):
                     continue
-                snippet = snippet if text(snippet, 2000) else "No usable snippet."
+                if not text(snippet, 2000):
+                    continue
                 sources.append(
                     {
                         "name": title[:100].strip(),
@@ -376,11 +377,12 @@ class LocaleService:
         except TasteError:
             return None
         return {
-            "context": "Spoonmaster source planning: on onboarding or a new area, establish "
+            "context": "Spoonmaster source planning: for dining in a new area, establish "
             "country and city from explicit user input or attributed location evidence; ask "
-            "if ambiguous. Call spoon_locale get before discovery. For scout_needed or "
-            "review_required, offer a bounded scout, show the proposed sources, and let the "
-            "user confirm/edit. Never infer review text, combine rating scales, or enable "
+            "if ambiguous. Use spoon_dine directly; unknown city ladders never block dining. "
+            "Use spoon_locale to scout/confirm a reusable ladder only for requested source "
+            "planning, separate from meal selection and onboarding. Never infer review text, "
+            "combine rating scales, or enable "
             "source access from a ladder. The existing OSM/venue adapters remain the baseline."
         }
 

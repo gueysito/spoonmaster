@@ -88,6 +88,16 @@ class LedgerStore:
             record["taste_revision"] = taste_revision
             return True
 
+    def replace_candidates(self, session, identifier, result):
+        with self.lock:
+            self._prune()
+            record = self.records.get(session)
+            if not record or record["search_id"] != identifier or record["revision"] != 0:
+                return False
+            record["venues"] = copy.deepcopy(result["candidates"])
+            record["search"]["candidates_in_radius"] = result["candidates_in_radius"]
+            return True
+
     def current(self, session):
         with self.lock:
             self._prune()
@@ -127,16 +137,24 @@ def render_ledger(ledger, page=1):
     ]
     if ledger["not_evaluated"]:
         lines.append(f"{ledger['not_evaluated']} other discovered venues were not evaluated.")
+    if ledger.get("discovery_gaps"):
+        lines.append("Discovery gaps: " + ", ".join(ledger["discovery_gaps"]))
     for entry in entries[(page - 1) * 3 : page * 3]:
         # Names remain data, not formatting or instructions; no control chars or markdown syntax.
         name = re.sub(r"[\x00-\x1f\x7f\[\]()`*_<>]", "", entry["name"] or "Unnamed venue")[:100]
         lines.append(f"\n{name} ({entry['venue_id']}): {entry['disposition']}")
+        meal = entry.get("meal_fit")
+        if meal and meal["result"] != "pass":
+            lines.append(f"  requested food: {meal['result']} - {meal['reason']}")
+        for review in entry.get("review_evidence", []):
+            lines.append(f"  Review: {review['publisher']} ({review['kind']}) {review['url']}")
         for check in entry["checks"]:
             if check["result"] != "pass":
                 lines.append(f"  {check['gate']}: {check['result']} - {check['reason']}")
     if page < pages:
         lines.append(f"Next: /why {page + 1}")
     lines.append("Full check details and source links: ask for spoon_ledger.")
+    lines.append("A restaurant absent from this ledger was not evaluated, not rejected on quality.")
     return "\n".join(lines)
 
 

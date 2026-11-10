@@ -51,6 +51,14 @@ def dining_context(*, now=None):
     now = now or datetime.now(timezone.utc)
     return {
         "context": (
+            "For restaurant recommendations ALWAYS call spoon_dine. It owns discovery, "
+            "fallback, requested-food fit, reviews, all three cards and /why. Never recommend "
+            "from an ad hoc web search or stop after spoon_candidates/spoon_evaluate. "
+            "Use meal for the user's current food request, not their stored tastes. "
+            "Do not narrow noodles to ramen or BBQ to generic restaurants. "
+            "Use spoon_onboard for personalization so choices are selectable. "
+            "If dining output says delivered=true, cards are already posted; do not replace "
+            "them with a single pick. Otherwise relay its full text with all options. "
             f"Spoonmaster current clock (UTC): {now.astimezone(timezone.utc).isoformat()}. "
             "For dining, use the current time unless the user explicitly states another time. "
             "Omit expected_arrival for now; the plugin reads its clock on every evaluation "
