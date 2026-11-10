@@ -67,7 +67,9 @@ map-name-only evidence. Local suite: 224 tests with one host-only skip. Final me
 replay recovered one independently mapped and source-backed Shibuya tonkatsu option
 despite the primary map-service error (22.6-second dining call); hours remained
 unconfirmed and empty slots stayed explicit. Exact-name matches now survive model
-omission/failure; 225 local tests run with one host-only skip. Final host suite follows.
+omission/failure. Code `d33a18d`: all 225 tests pass on Hermes 3.14.9, doctor/validate
+and scanner pass, isolated root cleanup verified. Installed in the retained test
+profile; saved tastes unchanged. Local suite has one host-only skip.
 
 | ID | Question | How | Status |
 |---|---|---|---|

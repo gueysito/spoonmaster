@@ -10,7 +10,7 @@ remain unverified. T9a/T9b pass. Updated 2026-11-10.
 - Standards kit adopted; commit-message and pre-commit hooks active.
 - `spoon_candidates` and `spoon_verify_hours`: finalist checks, selected refresh, sourced call links.
 - `spoon_evaluate`, `spoon_ledger` and `/why`: all ten gates, explicit failures/unknowns, full paging.
-- 221 local tests pass plus one host-only skip; all 222 pass on Hermes 3.14.9; Ruff passes.
+- 224 local tests pass plus one host-only skip; all 225 pass on Hermes 3.14.9; Ruff passes.
 - [Live probe](docs/data-gate.md): three venue attempts, two prose-hours extracts, selected recheck.
 - Real Hermes doctor/validate pass with twelve tools/three hooks; profiles, upload and roots removed.
 - `spoon_recommend` / `spoon_select`: provisional cards, call guidance, empty slots and stale-choice guards.
