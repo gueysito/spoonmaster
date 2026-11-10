@@ -20,10 +20,11 @@ INTRO = (
     "choice/reminder status, not tastes."
 )
 FIND_NOW = (
-    "Let's find food. I'll use the current time unless you specify another time. "
-    "Tell me your neighborhood or a nearby landmark, the city, and what you'd like to eat. "
-    "A city alone is too broad for a nearby search."
+    "Let's find you some food. Tell me where you are or plan to be, or drop a location "
+    "pin if your chat supports it. What sounds good? I'll use the current time unless "
+    "you specify another time. If you've already told me, I'll use that context."
 )
+
 REMINDER = (
     "Want more personal picks? Say ‘get me onboarded’ anytime. "
     "A few quick questions, then I learn from your choices and feedback."
@@ -170,7 +171,10 @@ class Onboarding:
                 f"Kept {len(diff['retained_existing'])} existing matching preferences unchanged. "
                 "These are tentative likes, not dislikes of the other choices. "
                 "View or change them with /spoon profile. "
-                "Any dietary restrictions for this outing? Optional; health details aren't saved."
+                "You can also tell me in your own words about favorite meals, usual companions "
+                "or children, budget, drinks or dessert. Any dietary needs can stay specific "
+                "to this outing; saving health details needs separate consent. Skip any of this "
+                "and find food whenever you like."
             )
 
     def selected(self, session):
@@ -366,7 +370,10 @@ class Onboarding:
             result = self.taste.command(
                 raw_args, source=source, platform=platform, session_id=session_id, **kwargs
             )
-            if parts == ["delete", "confirm"] and '"deleted": true' in result:
+            if (
+                parts == ["delete", "confirm"]
+                and result == "Your saved taste profile and companions have been deleted."
+            ):
                 owner = owner_key(source, platform)
                 path = self.taste.state_directory() / "taste.sqlite3"
                 with self.lock:

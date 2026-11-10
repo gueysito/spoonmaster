@@ -1,5 +1,11 @@
 # Source ladders
 
+D-020 supersedes the map-first primary workflow described in historical sections below.
+The current source-led flow, boundaries and verification status are documented in
+[README](../README.md#source-led-dining-d-020-undergoing-live-verification) and
+[TRACKER T12c](../TRACKER.md#owner-approved-experience-replacement-d-020).
+
+
 A ladder is the ordered list of sources to consult for one place: which to trust for
 food quality, which for current facts, which for bookings and which for local opinion.
 Choosing the right sources for the place is the core of good recommendations. The

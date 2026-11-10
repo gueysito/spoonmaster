@@ -28,8 +28,9 @@ class HermesTasteTests(unittest.TestCase):
         self.assertTrue(state.data_dir.resolve().is_relative_to(home))
         service = TasteService(lambda: state.data_dir, LedgerStore())
         source = SimpleNamespace(platform="telegram", chat_type="dm", user_id="synthetic-one")
-        result = json.loads(service.command("enable", source=source, session_id="old"))
-        revision = result["after"]["revision"]
+        result = service.command("enable", source=source, session_id="old")
+        self.assertIn("Taste memory", result)
+        revision = service.read("old")["revision"]
         args = {"changes": [pref()], "provenance": "feedback", "expected_revision": revision}
         self.assertTrue(json.loads(service.feedback_tool(args, session_id="old"))["saved"])
         service = TasteService(lambda: state.data_dir, LedgerStore())
@@ -115,7 +116,5 @@ class HermesTasteTests(unittest.TestCase):
             )
         finally:
             clear_session_vars(tokens)
-            result = json.loads(
-                service.command("delete confirm", source=source, session_id="cleanup")
-            )
-            self.assertTrue(result["deleted"])
+            result = service.command("delete confirm", source=source, session_id="cleanup")
+            self.assertIn("have been deleted", result)

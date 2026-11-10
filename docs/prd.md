@@ -1,5 +1,11 @@
 # Spoonmaster product spec
 
+D-020 supersedes the map-first primary workflow described in historical sections below.
+The current source-led flow, boundaries and verification status are documented in
+[README](../README.md#source-led-dining-d-020-undergoing-live-verification) and
+[TRACKER T12c](../TRACKER.md#owner-approved-experience-replacement-d-020).
+
+
 Status: approved direction, 2026-11-08. Planned behavior unless marked otherwise.
 Implementation status lives in [TRACKER.md](../TRACKER.md).
 

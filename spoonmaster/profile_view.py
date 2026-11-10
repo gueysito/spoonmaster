@@ -41,7 +41,11 @@ def render_profile(profile):
         ]
     lines += [
         'To adjust your tastes, tell me something like "I prefer quiet places now."',
-        "Controls: /spoon enable to resume, /spoon pause to pause, /spoon export for full data.",
+        (
+            "Controls: /spoon pause stops using saved tastes; /spoon export downloads full data."
+            if profile["enabled"]
+            else "Controls: /spoon enable resumes tastes; /spoon export gives full data."
+        ),
         "Use /spoon help for correction and deletion commands.",
     ]
     return "\n".join(lines)

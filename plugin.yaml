@@ -4,6 +4,8 @@ description: Provisional dining cards, progressive hours checks and private reje
 requires_hermes: ">=0.21.5"
 provides_tools:
   - spoon_dine
+  - spoon_research
+  - spoon_present
   - spoon_onboard
   - spoon_candidates
   - spoon_verify_hours

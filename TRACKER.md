@@ -81,3 +81,10 @@ profile; saved tastes unchanged. Local suite has one host-only skip.
 | V5 | Tabelog terms on automated access | Official terms | planned |
 | V6 | Host web tool names for `dispatch_tool` | `web_search` with `query` and `limit` verified from the installed schema; public dispatcher/response contract inspected at 2bd378ed1b8d. Live provider call remains unverified. | done |
 | V7 | `a2a` between two private installs | Spike in T10 | planned |
+
+
+## Owner-approved experience replacement (D-020)
+
+| ID | Task | Acceptance | Est | Status | Evidence |
+|---|---|---|---|---|---|
+| T12c | Source-led research and readable dining experience | Web-supported restaurants survive map failure; native host research tools; retained source comparison; meaningful progress and replacement requests; area locations; readable controls; relevant free-form tastes and host-transcribed input; independent live-city checks before owner handoff | 6 | in progress | 240 local tests pass with one host-only skip; new tests cover absent maps, unsupported citations, budget exhaustion, source failure, branch deduplication, known closure/conflict, replacement requests and profile changes. Real host checks and live searches are running. |

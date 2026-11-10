@@ -12,34 +12,51 @@ doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
 
-## Repaired dining flow
+## Source-led dining (D-020, undergoing live verification)
 
-Ask for food with a stated area or shared location pin. `spoon_dine` now owns the
-whole search, current-food matching, bounded fallback, reviews, three distinct options
-and `/why`. It uses current time unless you specify another time. An unknown city's
-source-ladder setup never blocks dinner. Unavailable sources and empty slots are
-reported rather than filled with invented options.
+Tell Spoonmaster where you are or plan to be and what sounds good. A city or
+neighborhood is sufficient for an area search; a pin is optional. Current time is
+used unless you specify another time. Saved tastes and onboarding are optional.
 
-`/spoon personalize` uses Hermes's native picker. Natural requests such as “get me
-onboarded” use `spoon_onboard` with the native `clarify` tool, so enable the `clarify`
-toolset alongside `web` and `spoonmaster`. Each question offers consistent 1/2 choices,
-Skip, Back and Find food now. Unsupported surfaces retain a short typed fallback.
+`spoon_dine` starts a short research workflow. The host researches local reviews,
+guides and official information through `spoon_research`, using its available
+`research_search`, `research_read`, `web_search`, `web_extract` or `browser_exec`.
+No OSM match is required. Existing host permissions, provider allowances and source
+access restrictions still apply; no service is installed or enabled automatically.
+Public queries should contain only food/area/venue facts, never health details or
+private addresses. Browser use is subject to the host's own controls.
 
-`/spoon profile` shows a readable summary grouped by food, flavors/textures and
-atmosphere, including tentative preferences and paused status. `/spoon export`
-retains the complete JSON data. City-only replies ask for a neighborhood or landmark
-instead of inventing a city-center origin.
+`spoon_present` records the actual comparison and returns normal readable text,
+with up to three distinct businesses, named-place Maps links, source links and
+specific gaps. `/why` explains the compared candidates. Quoted evidence and URLs
+must occur in retained tool output. The host model remains responsible for source
+meaning, branch identity, hard-constraint interpretation and honest ranking; quote
+matching is not a guarantee of truth. Known closure/conflict cannot fill a slot.
 
-The recovery path adds the public Photon geocoder and one bounded host-model
-extraction when needed. No additional account or paid API is required; the existing
-host model/search provider allowance still applies. Public area/food and venue names
-are sent to those services; keep private addresses and health details out of the
-public area/meal fields. See [source boundaries](docs/source-ladders.md#t12-discovery-recovery-and-ride-links).
-During map-service outages, Photon can also receive a coarse location bias (coordinates
-rounded to two decimals) to find map leads for source verification. Map names alone
-never qualify a recommendation.
-Ride links beyond half a mile open country-appropriate services; enter the destination
-there. No ride is booked and no fare or pickup is prefilled.
+The agent explains what it is checking between calls. Received new context cancels
+unfinished work and starts a replacement request. Host delivery of interruptions
+may be queued. A research round allows up to 12 calls and stops initiating work
+when its 75-second budget is exhausted; an in-flight call uses host-owned timeouts.
+Evidence is in-memory, scoped to the current conversation and expires after 30m.
+No recommendation notification is treated as proof that the user saw a card.
+
+Say what you like in your own words, including dishes, flavors, atmosphere,
+budget, drinks/dessert or usual companions. Six optional picker questions remain a
+starting point. Save only opted-in tastes; household and sensitive details retain
+separate consent. For a single meal, constraints can stay outing-only. The model
+connects preferences to source-supported menu/venue facts and must explain that fit.
+
+`/spoon enable` resumes saved taste memory; it does not enable restaurant search.
+`/spoon pause` stops using saved tastes without deleting them. `/spoon profile`
+shows readable preferences; `/spoon export` intentionally returns full data.
+
+Host-transcribed voice messages use the same workflow as text. Spoonmaster does
+not configure microphones or transcription providers. Actual voice-note delivery
+requires a host/channel with speech-to-text working; no terminal audio setup is
+required for testing. Ambiguous dietary transcription must be clarified.
+
+The lower-level map tools documented below remain optional diagnostics, not the
+primary dining sequence. Earlier map-first implementation receipts are historical.
 
 ## What it will do
 

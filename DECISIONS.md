@@ -190,3 +190,29 @@ when to revisit. Agent recommendations are noted as such.
 - Limits: the cache is in-process and public venue data only; retrieval times stay
   truthful, so cached venues age out of the 15-minute evidence window on their own.
   A slow endpoint still costs up to 45 seconds on a cold cell.
+
+
+## D-020: Source-led dining and portable replies (2026-11-10)
+
+- Owner approved replacing map-dependent admission after hands-on testing. The host
+  agent researches through its available search/read/browser tools in short steps;
+  Spoonmaster retains attributed evidence and comparisons, optional tastes and controls.
+- `spoon_dine` starts/replaces a request, `spoon_research` invokes allowlisted public
+  host tools, and `spoon_present` validates retained quotes/URLs and renders the reply.
+  Maps support location/navigation; area searches need no coordinates. Exact distance,
+  branch identity, opening times and hard needs still require relevant evidence.
+- Model judgment interprets sources and ranks fit. Code does not certify semantic
+  truth merely because a quote matches. Current facts, independent quality evidence,
+  inference and missing information must remain distinct. No cross-platform averaging.
+- Native host transcription feeds the same natural-language workflow. No voice
+  service is installed or enabled. CLI voice setup is not an owner acceptance duty.
+- Meaningful progress and steering occur between short host calls. A host that queues
+  input cannot be promised immediate interruption; received new input invalidates an
+  unfinished request. Retained results are process-local, bounded and expire after 30m.
+- Source lesson: Asia travel repo `cd061a2`, location/maps and family-profile workflows;
+  Yuki canon `411b6d7`, June restaurant-triage lesson. Application: source-led dining,
+  actionable portable replies and progressive preferences. Expected benefit: preserve
+  useful alternatives during map outages and improve situational relevance. Private
+  memories were inspected only; no private trip material or source writeback is included.
+- Supersedes D-018/D-019 as the primary dining path. Low-level map tools remain for
+  explicit spatial investigation. No new accounts, paid provider or permission bypass.

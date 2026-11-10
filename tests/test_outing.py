@@ -29,9 +29,9 @@ class Evidence:
 
 
 class OutingTests(unittest.TestCase):
-    def test_city_only_reply_asks_for_neighborhood_without_searching(self):
+    def test_city_and_neighborhood_are_valid_research_scopes(self):
         for value in ("Tokyo", "I am in New York", "SF"):
-            self.assertEqual(location_clarification(value)["action"], "block")
+            self.assertIsNone(location_clarification(value))
         for value in ("Shibuya, Tokyo", "Find noodles near Shinjuku Station", "1", "sushi"):
             self.assertIsNone(location_clarification(value))
 

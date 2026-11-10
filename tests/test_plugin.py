@@ -219,7 +219,8 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
     class Context:
         def register_tool(self, *, name, toolset, schema, handler):
             assert name == schema['name']
-            assert name in ('spoon_dine', 'spoon_onboard', 'spoon_candidates', 'spoon_verify_hours',
+            assert name in ('spoon_dine', 'spoon_research', 'spoon_present',
+                            'spoon_onboard', 'spoon_candidates', 'spoon_verify_hours',
                             'spoon_evaluate', 'spoon_ledger', 'spoon_recommend', 'spoon_select',
                             'spoon_profile', 'spoon_feedback', 'spoon_companions', 'spoon_locale')
             assert toolset == 'spoonmaster'
@@ -227,8 +228,12 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
                         else 'invalid_arguments')
             if name == 'spoon_profile':
                 expected = 'private_context_required'
-            if name in ('spoon_candidates', 'spoon_dine'):
+            if name == 'spoon_candidates':
                 expected = 'location_required'
+            if name == 'spoon_dine':
+                expected = 'conversation_context_required'
+            if name == 'spoon_present':
+                expected = 'request_changed_or_expired'
             if name == 'spoon_onboard':
                 expected = 'private_context_required'
             assert json.loads(handler({}))['error'] == expected
@@ -263,6 +268,6 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             result.stdout.strip(),
-            "spoon_dine\nspoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_onboard\nspoon_recommend\nspoon_select\nspoon_profile\nspoon_feedback\nspoon_companions\nspoon_locale\n/spoon\n/why",
+            "spoon_dine\nspoon_research\nspoon_present\nspoon_candidates\nspoon_verify_hours\nspoon_evaluate\nspoon_ledger\nspoon_onboard\nspoon_recommend\nspoon_select\nspoon_profile\nspoon_feedback\nspoon_companions\nspoon_locale\n/spoon\n/why",
         )
         self.assertEqual(before, after)

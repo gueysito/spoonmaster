@@ -3,7 +3,6 @@
 from functools import partial
 
 from .spoonmaster.companions import COMPANIONS_SCHEMA, CompanionService
-from .spoonmaster.dining import DINE_SCHEMA, Dining
 from .spoonmaster.ledger import LedgerStore
 from .spoonmaster.locales import LOCALE_SCHEMA, LocaleService
 from .spoonmaster.onboarding import ONBOARD_SCHEMA, Onboarding
@@ -24,7 +23,7 @@ from .spoonmaster.plugin import (
     verify_hours,
     why,
 )
-from .spoonmaster.recovery import Recovery
+from .spoonmaster.research_flow import PRESENT, RESEARCH, START, ResearchFlow
 from .spoonmaster.reviews import ReviewSearch
 from .spoonmaster.taste_service import FEEDBACK_SCHEMA, PROFILE_SCHEMA, TasteService, owner_key
 
@@ -41,23 +40,18 @@ def register(ctx):
     locales = LocaleService(taste, getattr(ctx, "dispatch_tool", None))
     reviews = ReviewSearch(locales)
 
-    # Resolve the host model lazily, only after an explicitly requested search needs recovery.
-    def complete(**arguments):
-        return ctx.llm.complete_structured(**arguments)
-
-    dining = Dining(
-        store,
-        taste,
-        reviews,
-        Recovery(getattr(ctx, "dispatch_tool", None), complete),
-        getattr(ctx, "post_message", None),
-    )
-    ctx.register_tool(
-        name="spoon_dine",
-        toolset="spoonmaster",
-        schema=DINE_SCHEMA,
-        handler=dining.tool,
-    )
+    dining = ResearchFlow(getattr(ctx, "dispatch_tool", None), taste)
+    for research_schema, handler in (
+        (START, dining.start),
+        (RESEARCH, dining.research),
+        (PRESENT, dining.present),
+    ):
+        ctx.register_tool(
+            name=research_schema["name"],
+            toolset="spoonmaster",
+            schema=research_schema,
+            handler=handler,
+        )
     ctx.register_tool(
         name="spoon_candidates",
         toolset="spoonmaster",
@@ -118,7 +112,7 @@ def register(ctx):
             return companions.command(raw_args, **kwargs)
         result = onboarding.command(raw_args, **kwargs)
         if isinstance(raw_args, str) and raw_args.split() == ["delete", "confirm"]:
-            if '"deleted": true' in result:
+            if result == "Your saved taste profile and companions have been deleted.":
                 owner = owner_key(kwargs.get("source"), kwargs.get("platform"))
                 path = taste.state_directory() / "taste.sqlite3"
                 with companions.lock:
@@ -132,9 +126,15 @@ def register(ctx):
         description="Optional onboarding, immediate food search and private taste controls",
         args_hint="start|now|profile|help",
     )
+
+    def explain(raw_args, **kwargs):
+        return dining.why(raw_args, **kwargs) or why(
+            raw_args, _ledger_store=store, _taste_service=taste, **kwargs
+        )
+
     ctx.register_command(
         "why",
-        handler=partial(companions.wrap, partial(why, _ledger_store=store, _taste_service=taste)),
+        handler=explain,
         description="Show dining exclusions and unresolved checks",
         args_hint="[page]",
     )
@@ -148,6 +148,7 @@ def register(ctx):
         locales.forget(session_id)
 
     def before_turn(**kwargs):
+        dining.observe(**kwargs)
         # Establish CLI/private identity before the onboarding controller reads it.
         recalled = taste.before_turn(**kwargs)
         welcome = onboarding.before_turn(**kwargs)

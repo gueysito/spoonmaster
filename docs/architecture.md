@@ -1,5 +1,11 @@
 # Spoonmaster architecture
 
+D-020 supersedes the map-first primary workflow described in historical sections below.
+The current source-led flow, boundaries and verification status are documented in
+[README](../README.md#source-led-dining-d-020-undergoing-live-verification) and
+[TRACKER T12c](../TRACKER.md#owner-approved-experience-replacement-d-020).
+
+
 Status: target design, 2026-11-08. Discovery, progressive verification, all ten gate
 outcomes, provisional cards and a conversation-scoped reject ledger exist. Weekly arrival math is separate
 from unverified date-specific availability. Opt-in taste persistence and evidence-based preference ranking are implemented;

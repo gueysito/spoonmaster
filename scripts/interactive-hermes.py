@@ -146,7 +146,7 @@ def main() -> None:
     if args.action == "stop":
         cli(home, "gateway", "stop")
         return
-    arguments = ["chat", "--ignore-rules", "-t", "web,spoonmaster,clarify"]
+    arguments = ["chat", "--ignore-rules", "-t", "web,browser,spoonmaster,clarify"]
     if args.action == "check":
         arguments += ["--oneshot", "-q", args.query or "Reply with TEST_READY only."]
     cli(home, *arguments)

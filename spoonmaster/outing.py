@@ -6,7 +6,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from .meal import words
 
 LOCATION_PROMPT = (
-    "Where should I look? Tell me a city and area, address, or nearby landmark, "
+    "Let's find you some food. Tell me where you are or plan to be: a city, area, "
+    "address or landmark, "
     "or drop a location pin if your chat app supports it."
 )
 
@@ -36,20 +37,8 @@ def broad_origin(area, city):
 
 
 def location_clarification(message):
-    if not isinstance(message, str):
-        return None
-    value = words(message)
-    for prefix in ("i am in ", "i m in ", "im in "):
-        if value.startswith(prefix):
-            value = value[len(prefix) :]
-            break
-    if value in {city for _, city in CITY_ZONES}:
-        return {
-            "action": "block",
-            "message": "Which neighborhood or nearby landmark should I use, and what would "
-            "you like to eat? A city alone is too broad for a nearby search. "
-            "You can also share a location pin if your chat app supports it.",
-        }
+    # Broad areas are valid research scopes. Only the conversational model can
+    # decide whether ambiguity matters; never block a city/neighborhood by name.
     return None
 
 
@@ -78,14 +67,28 @@ def dining_context(*, now=None):
     now = now or datetime.now(timezone.utc)
     return {
         "context": (
-            "For restaurant recommendations ALWAYS call spoon_dine. It owns discovery, "
-            "fallback, requested-food fit, reviews, all three cards and /why. Never recommend "
-            "from an ad hoc web search or stop after spoon_candidates/spoon_evaluate. "
-            "Use meal for the user's current food request, not their stored tastes. "
-            "Do not narrow noodles to ramen or BBQ to generic restaurants. "
-            "Use spoon_onboard for personalization so choices are selectable. "
-            "If dining output says delivered=true, cards are already posted; do not replace "
-            "them with a single pick. Otherwise relay its full text with all options. "
+            "For dining use spoon_dine to start source-led research, spoon_research for "
+            "available host search/read/browser tools, then spoon_present for the full answer "
+            "and /why. Maps are optional supporting evidence, not candidate admission. "
+            "Do not call the legacy map-first spoon_recommend for this flow. "
+            "Compare several genuinely relevant businesses using independent local sources "
+            "and official menus/hours. Never turn missing map data into no restaurants. "
+            "Narrate meaningful progress BETWEEN calls and explain delays. New user context "
+            "replaces the active request via spoon_dine; cancel means stop. Host interruption "
+            "delivery can vary, so never claim a cancellation until received. "
+            "Return recommendations in normal final text, with every alternative and link. "
+            "Accept typed or host-transcribed voice input identically. Clarify consequential "
+            "transcription ambiguity, especially dietary needs; no microphone setup is needed "
+            "for typed use. Never claim transcription is enabled without host evidence. "
+            "Ask at most the most useful missing question, never a prerequisite questionnaire. "
+            "Offer optional free-form personalization: favorite meals/places, usual companions "
+            "and children, diet/allergies, budget, drinks/dessert and travel/wait tolerance. "
+            "Reuse stated information. Current party is not necessarily the usual party. "
+            "Use spoon_feedback for explicitly opted-in non-sensitive taste learning, with "
+            "a plain-language saved-change receipt. Use spoon_companions only with its separate "
+            "saving and sensitive-data consent. Dietary needs can remain outing-only. "
+            "Use native clarify choices for either/or questions when available. Six optional "
+            "taste choices are a starting point, not a complete personal profile. "
             f"Spoonmaster current clock (UTC): {now.astimezone(timezone.utc).isoformat()}. "
             "For dining, use the current time unless the user explicitly states another time. "
             "Omit expected_arrival for now; the plugin reads its clock on every evaluation "
@@ -99,8 +102,8 @@ def dining_context(*, now=None):
             "or previous outings. If missing or ambiguous, ask: "
             + LOCATION_PROMPT
             + " An area/landmark is a search anchor, not a claim of exact user position. "
-            "A city alone is not an origin: ask for a neighborhood or landmark; never "
-            "look up a generic city-center coordinate. Keep area to the plain place name, "
+            "A city or neighborhood is sufficient for area research; do not demand a landmark "
+            "or invent exact coordinates. Keep area to the plain place name, "
             "without explanations or disclaimers. "
             "Do not request a pin on a terminal; offer the typed alternatives. "
             "Do not ask for location for unrelated questions or personalization."

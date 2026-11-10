@@ -206,10 +206,32 @@ class TasteService:
                             del self.bindings[session]
             if action == "profile":
                 return render_profile(profile)
-            return json.dumps(result, ensure_ascii=False)
+            if action == "export":
+                return json.dumps(result, ensure_ascii=False)
+            if action == "enable":
+                already = (
+                    result.get("before", {}).get("enabled", False)
+                    and result.get("before", {}).get("revision", 0) > 0
+                )
+                return (
+                    "Taste memory is already on. " if already else "Taste memory is now on. "
+                ) + (
+                    "I'll use your saved preferences when relevant. This remembers tastes locally "
+                    "for future chats; it does not turn restaurant search on or off. "
+                    "You can search "
+                    "without saving anything. Use /spoon profile to view or /spoon pause to pause."
+                )
+            if action == "pause":
+                return (
+                    "Taste memory is paused. Saved tastes are kept but won't influence picks. "
+                    + ("Food search still works. Use /spoon enable to resume taste memory.")
+                )
+            if action == "delete":
+                return "Your saved taste profile and companions have been deleted."
+            return "Your preference has been updated.\n\n" + render_profile(store.read(owner))
         except (TasteError, OSError, RuntimeError) as error:
             code = str(error) if isinstance(error, TasteError) else "storage_unavailable"
-            return json.dumps({"error": code, "saved": False})
+            return f"I could not update your taste memory ({code}). Nothing was saved."
 
     def profile_tool(self, args, **kwargs):
         if args != {}:

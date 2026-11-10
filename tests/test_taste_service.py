@@ -134,7 +134,7 @@ class TasteServiceTests(unittest.TestCase):
         self.feedback([pref()])
         self.assertIn("ramen", self.command("export"))
         self.assertNotIn("deleted", self.command("delete"))
-        self.assertTrue(json.loads(self.command("delete confirm"))["deleted"])
+        self.assertIn("have been deleted", self.command("delete confirm"))
         self.assertEqual(
             json.loads(self.service.profile_tool({}, session_id="first"))["error"],
             "private_context_required",

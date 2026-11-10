@@ -44,7 +44,7 @@ class OnboardingTests(unittest.TestCase):
         self.assertFalse(self.path.exists())
 
     def test_skip_starts_search_without_profile_and_reminds_once_across_restart(self):
-        self.assertIn("Let's find food", self.command("now"))
+        self.assertIn("Let's find you some food", self.command("now"))
         self.assertIsNone(self.store.read("local-cli"))
         self.assertEqual(self.flow.selected("chat"), REMINDER)
         restarted = Onboarding(self.taste)

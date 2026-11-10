@@ -98,7 +98,7 @@ class RegistrationScopeTests(unittest.TestCase):
                 self.assertIn("location pin", result["context"])
                 self.assertFalse(data_dir.exists())
                 self.assertIn(
-                    "Let's find food",
+                    "Let's find you some food",
                     context.commands["spoon"]("now", session_id="first", platform="cli"),
                 )
                 implementation = sys.modules[name + ".spoonmaster.plugin"]
@@ -222,7 +222,7 @@ class RegistrationScopeTests(unittest.TestCase):
                 self.assertIn("Companion 1 likes sushi", result["cards"][0]["fit"])
                 chosen = {"search_id": found["search_id"], "venue_id": "osm:node:2"}
                 self.assertTrue(tool("spoon_select", chosen)["proceed"])
-                self.assertTrue(json.loads(command("delete confirm"))["deleted"])
+                self.assertIn("have been deleted", command("delete confirm"))
                 self.assertEqual(tool("spoon_select", chosen)["error"], "search_not_available")
                 hook(session_id="party", platform="cli", user_message="hello")
                 self.assertEqual(tool("spoon_companions", {"action": "list"})["groups"], [])
@@ -294,7 +294,7 @@ class RegistrationScopeTests(unittest.TestCase):
                 result = context.commands["spoon"](
                     "delete confirm", platform="cli", session_id="later"
                 )
-                self.assertTrue(json.loads(result)["deleted"])
+                self.assertIn("have been deleted", result)
                 hook(session_id="later", platform="cli", user_message="hello")
                 self.assertEqual(
                     call({"action": "get", "country_code": "PT", "city": "Lisbon"}, "later")[

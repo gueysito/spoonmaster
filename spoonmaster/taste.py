@@ -187,6 +187,8 @@ class TasteStore:
                 profile = {"version": 1, "revision": 0, "enabled": True, "prefs": []}
             before = json.loads(json.dumps(profile))
             if action in ("enable", "pause"):
+                if profile["revision"] > 0 and profile["enabled"] == (action == "enable"):
+                    return {"before": before, "after": profile}
                 profile["enabled"] = action == "enable"
             else:
                 target = next((p for p in profile["prefs"] if p["id"] == item_id), None)
