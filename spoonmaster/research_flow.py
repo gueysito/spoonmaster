@@ -4,7 +4,6 @@ The host model judges source meaning and branch identity. Code owns session isol
 retained quotations, limits, stale-work rejection and portable output, not restaurant truth.
 """
 
-import contextvars
 import copy
 import json
 import secrets
@@ -126,6 +125,10 @@ CANDIDATE = {
         "evidence",
     ],
 }
+CANDIDATE["properties"]["name"] = {
+    "type": "string",
+    "description": "Business and branch name only, no ranking or commentary.",
+}
 PRESENT = schema(
     "spoon_present",
     (
@@ -183,24 +186,30 @@ def flatten(value):
 
 
 class ResearchFlow:
-    def __init__(self, dispatch, taste, clock=time.monotonic, post=None):
+    def __init__(self, dispatch, taste, clock=time.monotonic):
         self.dispatch, self.taste, self.clock = dispatch, taste, clock
-        self.post = post
         self.requests = {}
         self.messages = {}
+        self.turns = {}
         self.lock = threading.RLock()
 
     def forget(self, session_id=None, **kwargs):
         with self.lock:
-            old = self.requests.pop(session_id, None)
-            if old:
-                old["done"].set()
+            self.requests.pop(session_id, None)
             self.messages.pop(session_id, None)
+            self.turns.pop(session_id, None)
 
-    def observe(self, session_id=None, user_message="", **kwargs):
+    def observe(self, session_id=None, user_message="", turn_id=None, **kwargs):
         if session_key(session_id) is None or not isinstance(user_message, str) or not user_message:
             return
         with self.lock:
+            if turn_id and self.turns.get(session_id) != turn_id:
+                self.turns[session_id] = turn_id
+                existing = self.requests.get(session_id)
+                if existing:
+                    existing.pop("pending_output", None)
+            while len(self.turns) > 100:
+                self.turns.pop(next(iter(self.turns)))
             previous = self.messages.get(session_id)
             self.messages[session_id] = user_message
             while len(self.messages) > 100:
@@ -208,7 +217,6 @@ class ResearchFlow:
             record = self.requests.get(session_id)
             if record and record["result"] is None and previous and previous != user_message:
                 self.requests.pop(session_id, None)
-                record["done"].set()
 
     def _get(self, session, identifier=None):
         for key in list(self.requests):
@@ -250,22 +258,11 @@ class ResearchFlow:
                 "result": None,
                 "profile": profile,
                 "inflight": False,
-                "done": threading.Event(),
             }
-            old = self.requests.pop(session_id, None)
-            if old:
-                old["done"].set()
+            self.requests.pop(session_id, None)
             self.requests[session_id] = record
             while len(self.requests) > 100:
                 self.requests.pop(next(iter(self.requests)))
-        if self.post is not None:
-            context = contextvars.copy_context()
-            threading.Thread(
-                target=context.run,
-                args=(self._progress, session_id, record),
-                daemon=True,
-                name="spoon-dining-progress",
-            ).start()
         # Public source priorities are guidance, never an access grant or membership gate.
         ladders = json.loads(DATA.read_text())
         return json.dumps(
@@ -300,34 +297,6 @@ class ResearchFlow:
             },
             ensure_ascii=False,
         )
-
-    def _progress(self, session, record):
-        # Only the initiating call's copied host context can route these messages.
-        # This worker has no network/search authority and never starts another model turn.
-        for _ in range(9):
-            if record["done"].wait(20):
-                return
-            with self.lock:
-                if self.requests.get(session) is not record or record["result"] is not None:
-                    return
-                completed = len(record["evidence"])
-                phase = (
-                    "Waiting for the current research source to respond."
-                    if record["inflight"]
-                    else "Comparing the gathered evidence and preparing the recommendations."
-                )
-                message = (
-                    f"Still working on {plain(record['request']['meal'])} in "
-                    f"{plain(record['request']['location'])}: {phase} "
-                    f"{completed} research steps completed. "
-                    "You can add context or change the request while I work."
-                )
-            try:
-                handle = self.post(message)
-                if not getattr(handle, "ok", False):
-                    return
-            except Exception:
-                return  # Progress failure must not lose the normal final response.
 
     def research(self, args, session_id=None, **kwargs):
         try:
@@ -472,13 +441,15 @@ class ResearchFlow:
                     raise ValueError("preferences_changed_restart_with_current_context")
                 result = render(args, record["request"])
                 record["result"] = copy.deepcopy(args)
-                record["done"].set()
+                record["pending_output"] = (self.turns.get(session_id), result)
             return json.dumps(
                 {
                     "text": result,
                     "delivered": False,
-                    "instruction": "Show this text in your NORMAL final response. "
-                    "No separate cards were posted. Do not omit alternatives.",
+                    "instruction": (
+                        "Display the returned text verbatim as your normal final response. "
+                        "No separate cards were posted. Do not omit alternatives."
+                    ),
                 },
                 ensure_ascii=False,
             )
@@ -486,6 +457,35 @@ class ResearchFlow:
             return json.dumps(
                 {"error": str(error) if isinstance(error, ValueError) else "invalid_arguments"}
             )
+
+    def finish_output(self, response_text="", session_id=None, turn_id=None, **kwargs):
+        """Restore missing place links only for this turn; never hold global streaming."""
+        if not isinstance(response_text, str) or not turn_id:
+            return None
+        with self.lock:
+            try:
+                record = self._get(session_id)
+            except ValueError:
+                return None
+            pending = record.pop("pending_output", None)
+            if not pending or pending[0] != turn_id:
+                return None
+            try:
+                if self.taste.read(session_id) != record["profile"]:
+                    return None
+            except (TasteError, OSError, RuntimeError):
+                return None
+            additions, label = [], "Restaurant"
+            for line in pending[1].splitlines():
+                if line.startswith("**"):
+                    label = line.strip("*")
+                if line.startswith("Google Maps: "):
+                    url = line.removeprefix("Google Maps: ")
+                    if url not in response_text:
+                        additions.append(f"- [{label}]({url})")
+            if not additions:
+                return None
+            return response_text.rstrip() + "\n\n**Google Maps**\n\n" + "\n".join(additions)
 
     def why(self, raw_args="", session_id=None, **kwargs):
         try:
@@ -511,7 +511,10 @@ class ResearchFlow:
                         plain(item["name"]),
                         plain(item["rejection"] or item["why"], 1500),
                     ]
-                    lines += [f"Source: {e['url']}" for e in item["evidence"]]
+                    lines += [
+                        f"Source: {url}"
+                        for url in dict.fromkeys(e["url"] for e in item["evidence"])
+                    ]
                 return "\n\n".join(line for line in lines if line)
         except ValueError:
             return None

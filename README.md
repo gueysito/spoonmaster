@@ -12,7 +12,7 @@ doctor/validate in an isolated profile, which was then deleted.
 Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
 The repository is private until submission, then public.
 
-## Source-led dining (D-020, undergoing live verification)
+## Source-led dining (D-020)
 
 Tell Spoonmaster where you are or plan to be and what sounds good. A city or
 neighborhood is sufficient for an area search; a pin is optional. Current time is
@@ -33,14 +33,18 @@ must occur in retained tool output. The host model remains responsible for sourc
 meaning, branch identity, hard-constraint interpretation and honest ranking; quote
 matching is not a guarantee of truth. Known closure/conflict cannot fill a slot.
 
-The agent explains what it is checking between calls. During longer work a task-scoped
-status message reports the actual waiting/comparison phase every 20 seconds, for up
-to three minutes, stopping on completion or replacement where host posting works. Received new context cancels
-unfinished work and starts a replacement request. Host delivery of interruptions
-may be queued. A research round allows up to 12 calls and stops initiating work
+The agent explains what it is checking between calls, including why more research
+is useful. These are normal streamed updates. Timed plugin notifications are not
+used: this Hermes CLI queued them until completion in live testing. Received new
+context replaces unfinished work; host delivery of interruptions may be queued.
+A research round allows up to 12 calls and stops initiating work
 when its 75-second budget is exhausted; an in-flight call uses host-owned timeouts.
 Evidence is in-memory, scoped to the current conversation and expires after 30m.
-No recommendation notification is treated as proof that the user saw a card.
+No recommendation notification is treated as proof that the user saw a card. A final-output
+hook restores any omitted place links only in the current dining turn, without
+holding streams or rewriting unrelated replies. Live comparisons took about two
+to three minutes including model synthesis; the research budget is not a total
+response deadline.
 
 Say what you like in your own words, including dishes, flavors, atmosphere,
 budget, drinks/dessert or usual companions. Six optional picker questions remain a

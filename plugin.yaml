@@ -21,6 +21,7 @@ provides_hooks:
   - on_session_reset
   - on_session_finalize
   - pre_llm_call
+  - transform_llm_output
 capabilities: []
 requires_env: []
 python_dependencies: []

@@ -3,7 +3,6 @@
 import json
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
 from urllib.parse import parse_qs, urlsplit
 
 from spoonmaster.research_flow import ResearchFlow
@@ -237,19 +236,14 @@ class ResearchFlowTests(unittest.TestCase):
         self.flow.observe(session_id="owner", user_message="Actually we are in Bali now")
         self.assertEqual(self.present([self.candidate()])["error"], "request_changed_or_expired")
 
-    def test_progress_reports_actual_stage_and_stops_on_completion(self):
-        record = self.flow.requests["owner"]
-        record["done"] = Mock()
-        record["done"].wait.side_effect = [False, True]
-        self.flow.post = Mock(return_value=SimpleNamespace(ok=True))
-        self.flow._progress("owner", record)
-        self.assertIn("0 research steps completed", self.flow.post.call_args.args[0])
-        self.assertIn("Comparing the gathered evidence", self.flow.post.call_args.args[0])
-        self.flow.post.reset_mock()
-        record["done"].wait.side_effect = [False]
-        record["result"] = {}
-        self.flow._progress("owner", record)
-        self.flow.post.assert_not_called()
+    def test_why_keeps_reasons_without_repeating_same_source(self):
+        self.research()
+        item = self.candidate()
+        item["evidence"].append(dict(item["evidence"][0]))
+        self.present([item])
+        result = self.flow.why(session_id="owner")
+        self.assertIn(item["why"], result)
+        self.assertEqual(result.count("https://example.com/noodles"), 1)
 
     def test_country_ride_links_only_with_supported_distance(self):
         self.request = json.loads(
@@ -276,3 +270,26 @@ class ResearchFlowTests(unittest.TestCase):
             item["evidence"][0]["evidence_id"] = "e" + str(len(self.calls))
             item["evidence"][0]["url"] = url
             self.assertIn("text", self.present([item]))
+
+    def test_final_response_restores_links_only_for_same_dining_turn_once(self):
+        self.flow.observe(session_id="owner", user_message="Find noodles", turn_id="turn1")
+        self.research()
+        self.present([self.candidate()])
+        self.assertIsNone(self.flow.finish_output("Unrelated", session_id="other", turn_id="turn1"))
+        result = self.flow.finish_output(
+            "Three options above.", session_id="owner", turn_id="turn1"
+        )
+        self.assertTrue(result.startswith("Three options above."))
+        self.assertIn("google.com/maps/search", result)
+        self.assertIsNone(self.flow.finish_output("Follow-up", session_id="owner", turn_id="turn1"))
+        self.present([self.candidate()])
+        self.flow.observe(session_id="owner", user_message="Thanks", turn_id="turn2")
+        self.assertIsNone(self.flow.finish_output("Welcome", session_id="owner", turn_id="turn2"))
+
+    def test_final_response_does_not_duplicate_existing_place_links(self):
+        self.flow.observe(session_id="owner", user_message="Find noodles", turn_id="turn1")
+        self.research()
+        result = self.present([self.candidate()])
+        self.assertIsNone(
+            self.flow.finish_output(result["text"], session_id="owner", turn_id="turn1")
+        )

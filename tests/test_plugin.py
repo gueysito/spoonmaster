@@ -243,7 +243,8 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
             assert handler('')
             print('/' + name)
         def register_hook(self, name, handler):
-            assert name in ('on_session_reset', 'on_session_finalize', 'pre_llm_call')
+            assert name in ('on_session_reset', 'on_session_finalize', 'pre_llm_call',
+                            'transform_llm_output')
             handler(session_id='synthetic')
     fixture_plugin.register(Context())
 """

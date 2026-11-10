@@ -2,7 +2,7 @@
 
 D-020 supersedes the map-first primary workflow described in historical sections below.
 The current source-led flow, boundaries and verification status are documented in
-[README](../README.md#source-led-dining-d-020-undergoing-live-verification) and
+[README](../README.md#source-led-dining-d-020) and
 [TRACKER T12c](../TRACKER.md#owner-approved-experience-replacement-d-020).
 
 

@@ -41,9 +41,7 @@ def register(ctx):
     locales = LocaleService(taste, getattr(ctx, "dispatch_tool", None))
     reviews = ReviewSearch(locales)
 
-    dining = ResearchFlow(
-        getattr(ctx, "dispatch_tool", None), taste, post=getattr(ctx, "post_message", None)
-    )
+    dining = ResearchFlow(getattr(ctx, "dispatch_tool", None), taste)
     for research_schema, handler in (
         (START, dining.start),
         (RESEARCH, dining.research),
@@ -178,3 +176,4 @@ def register(ctx):
     ctx.register_hook("on_session_reset", clear_context)
     ctx.register_hook("on_session_finalize", clear_context)
     ctx.register_hook("pre_llm_call", before_turn)
+    ctx.register_hook("transform_llm_output", dining.finish_output)

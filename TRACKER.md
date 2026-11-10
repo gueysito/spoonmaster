@@ -87,4 +87,27 @@ profile; saved tastes unchanged. Local suite has one host-only skip.
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T12c | Source-led research and readable dining experience | Web-supported restaurants survive map failure; native host research tools; retained source comparison; meaningful progress and replacement requests; area locations; readable controls; relevant free-form tastes and host-transcribed input; independent live-city checks before owner handoff | 6 | in progress | 247 local tests pass with one host-only skip; new tests cover absent maps, unsupported citations, budget exhaustion, source failure, branch deduplication, known closure/conflict, replacement requests and profile changes. Hermes doctor/validate pass. Live Tokyo evidence replay preserves six candidates and three links after citation normalization; El Paso/Canggu discover real distinct alternatives. SF/NYC exposed public HTTP citation handling, now covered by regression tests; final live reruns remain in progress. |
+| T12c | Source-led research and readable dining experience | Web-supported restaurants survive map failure; native host research tools; retained source comparison; meaningful progress and replacement requests; area locations; readable controls; relevant free-form tastes and host-transcribed input; independent live-city checks before owner handoff | 6 | done | 249 tests run locally with one host-only skip; all 249 pass on Hermes 3.14.9. Ruff/standards/diff checks, doctor/validate pass with 14 tools and four hooks. Live Tokyo/Canggu/SF/NYC/El Paso comparisons produce distinct alternatives without map admission. Native terminal verifies readable profile/enable, source-backed alternatives, restored Maps links, same-session /why and child/mild-food steering during research. Retained test profile adopted with exact code hashes and unchanged taste DB checksum; connection returns TEST_READY. Disposable profile/root cleanup independently verified. |
+
+T12c verification detail (2026-11-10): Tokyo excludes a documented closed venue;
+SF distinguishes Chubby Noodle's current address from older branch reviews; NYC
+connects bright/tangy preferences to actual dishes and flags atmosphere tradeoffs.
+El Paso retains four compared places, shows three distinct businesses and incorporates
+a child/mild-food update received during research. `/why` preserves that update.
+Observed final runs take roughly two to three minutes including model synthesis.
+CLI delivery queued timed notices until the answer ended, so the timer worker was
+removed; real model updates between research calls remain. The obsolete worker
+test was replaced by a regression for repeated URLs in `/why`. A scoped final-output
+hook restores omitted Maps links without holding streaming or changing other turns.
+
+Changed-boundary review: session isolation, expiry/reset/replacement, profile changes,
+bounded arguments/evidence/calls, source-text handling and host-tool allowlisting
+checked. Existing consent and local taste ownership remain; no new credentials,
+providers, dependencies, payments, public ingress or core patches. Quote matching
+does not certify source meaning; live reviews cover that separate model responsibility.
+This is local-pilot verification, not the broad public-boundary audit at T14.
+Native audio ingestion and Telegram display still need their respective surfaces;
+the owner does not need terminal audio setup. Browser delegation is implemented
+but this isolated CLI exposed web search/extract, so browser execution is not claimed
+as live-verified. The native launcher completed dependency bookkeeping on first use;
+the verified Hermes source revision remained `2bd378ed1b8d`.

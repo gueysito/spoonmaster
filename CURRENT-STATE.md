@@ -1,21 +1,24 @@
 # Current state
 
-The owner-approved source-led dining replacement (D-020/T12c) is being verified.
+The owner-approved source-led dining replacement (D-020/T12c) is ready for CLI testing.
 It removes map-dependent restaurant admission and uses normal readable replies.
-Do not ask the owner to retest until live search and retained-profile adoption pass.
+The retained owner test profile loads the verified code; saved tastes are unchanged.
 
 ## Current verification
 
-- 247 local tests pass with one host-only skip; Ruff passes.
-- Isolated Hermes validation and live city searches are in progress.
+- 249 tests run locally with one host-only skip; all 249 pass on Hermes.
+- Ruff, standards, doctor/validate pass with 14 tools and four hooks.
+- Live Tokyo, Canggu, SF, NYC and El Paso comparisons return distinct alternatives.
+- Native terminal checks cover readable controls, Maps links, /why and mid-turn steering.
+- Research can take two to three minutes. Progress uses streamed model updates;
+  timed plugin notices were removed because this CLI delivered them after completion.
 - Voice remains supported through host transcription, not a new audio service.
 - Telegram delivery and voice-note ingestion need their respective surfaces; the
   owner is not required to set up terminal audio or reproduce engineering tests.
 
 ## Next action
 
-Verify research quality and actual terminal output, then adopt the verified plugin
-in the retained test profile without changing tastes or conversations.
+Optional owner CLI feedback, then remaining T12 channel checks and T10 when approved.
 
 ## Baseline and limits
 
