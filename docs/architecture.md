@@ -491,3 +491,29 @@ Application: Spoonmaster dining/onboarding control outside model prose, bounded 
 and failure-replay tests. Expected benefit: prevent omitted tool stages and invented
 state transitions. Implementation and test evidence live in this repository; this is
 not yet proof of sustained recommendation quality. No research-canon writeback.
+
+#### Verification receipt, 2026-11-10
+
+Code revision `49d02ed`: 219 tests on Python 3.14.9, all passing in an isolated real
+Hermes runtime (`2bd378ed1b8d`). Local Python 3.13 passes 218 with the host identity
+check skipped. Ruff format/lint, standards, diff checks, plugin doctor and validation
+pass; registration is 12 tools and three hooks. The host scanner reports safe and no
+core overrides. Changed-boundary review covers fixed network targets, response/input
+bounds, quoted-source grounding, conversation isolation, reset/deletion and stale
+answers. No new auth, ingress, uploads, billing, dependency or CORS surface was added;
+this does not replace the separate public-release security review.
+
+Live synthetic CLI checks: Tokyo produced three distinct options; six native picker
+answers completed and saved, including selecting the second choice; same-session
+`/why` returned the actual ledger. SF and El Paso exercised provider-outage/empty
+coverage paths without immediate map retries or fallback approval. Bali recovered
+a Korean BBQ match from web evidence and independent mapping, with Maps, Grab and
+Gojek links. Exact-current-time defaults remain covered by the prior runtime checks
+and regression suite. Both temporary profiles, copied plugins, conversations, staging
+and validation roots were deleted and their absence independently verified.
+
+Limitations: sources can still fail or return fewer than three supported matches;
+the SF runs did not establish a complete noodle inventory. Reviews and hours remain
+unknown when branch-specific evidence is absent. This is workflow and failure-path
+verification, not proof of restaurant quality. Telegram button/link taps and actual
+ride booking are untested; ride links open the service rather than prefill a trip.
