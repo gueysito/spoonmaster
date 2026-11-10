@@ -3,6 +3,7 @@
 import re
 
 ALIASES = {
+    "tonkatsu": {"tonkatsu", "pork cutlet", "pork cutlets", "pork katsu"},
     "noodles": {"noodle", "noodles", "ramen", "udon", "soba", "pho", "pasta", "mein"},
     "bbq": {"bbq", "barbecue", "barbeque", "brisket", "smoked meat", "ribs"},
     "kbbq": {"kbbq", "korean bbq", "korean barbecue", "korean barbeque"},

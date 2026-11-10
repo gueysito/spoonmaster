@@ -64,7 +64,10 @@ taste-database checksum; readable profile and immediate city clarification verif
 in the native terminal. A subsequent replay exposed unmapped web-only discoveries;
 bounded map-led recovery now targets the existing second web query without accepting
 map-name-only evidence. Local suite: 224 tests with one host-only skip. Final meal
-replay and exact-revision host verification follow.
+replay recovered one independently mapped and source-backed Shibuya tonkatsu option
+despite the primary map-service error (22.6-second dining call); hours remained
+unconfirmed and empty slots stayed explicit. Exact-name matches now survive model
+omission/failure; 225 local tests run with one host-only skip. Final host suite follows.
 
 | ID | Question | How | Status |
 |---|---|---|---|

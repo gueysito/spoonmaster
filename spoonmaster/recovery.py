@@ -247,6 +247,8 @@ class Recovery:
         self.trace["usable_hits"] = len(hits)
         if not hits:
             return [], failures + ["no_usable_search_excerpts"]
+        venues = grounded_seeds(seeds, hits, request)
+        self.trace["seed_evidence_matches"] = self.trace["mapped"] = len(venues)
         try:
             response = self.complete(
                 instructions=(
@@ -269,11 +271,10 @@ class Recovery:
             parsed = response.parsed
             items = parsed.get("venues", []) if isinstance(parsed, dict) else []
             if not isinstance(items, list):
-                return [], ["invalid_discovery_extraction"]
+                return list(venues.values()), failures + ["invalid_discovery_extraction"]
             self.trace["extracted"] = len(items[:6])
         except (ValueError, TypeError, RuntimeError, OSError, AttributeError):
-            return [], ["discovery_extraction_unavailable"]
-        venues = {}
+            return list(venues.values()), failures + ["discovery_extraction_unavailable"]
         for item in items[:6]:
             if not isinstance(item, dict) or type(item.get("hit")) is not int:
                 continue
@@ -324,3 +325,27 @@ class Recovery:
             failures.append("no_additional_grounded_mapped_matches")
         self.trace["mapped"] = len(venues)
         return list(venues.values()), failures
+
+
+def grounded_seeds(seeds, hits, request):
+    """Keep exact mapped-name/source matches even when model extraction omits them."""
+    venues = {}
+    for feature in seeds:
+        name = feature["properties"]["name"]
+        matched = False
+        for hit in hits:
+            description = hit["description"]
+            for start in range(0, len(description), 300):
+                quote = description[start : start + 600]
+                if (" " + words(name) + " ") not in (
+                    " " + words(hit["title"] + " " + quote) + " "
+                ) or not matches(request["meal"], quote):
+                    continue
+                venue = mapped(feature, {"name": name, "quote": quote}, hit, request)
+                if venue:
+                    venues[venue["venue_id"]] = venue
+                    matched = True
+                    break
+            if matched:
+                break
+    return venues

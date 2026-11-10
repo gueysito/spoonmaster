@@ -12,7 +12,7 @@ from spoonmaster.cards import ride_links
 from spoonmaster.dining import Dining, message_chunks
 from spoonmaster.discovery import DiscoveryError
 from spoonmaster.ledger import LedgerStore
-from spoonmaster.recovery import Geocoder, Recovery, mapped
+from spoonmaster.recovery import Geocoder, Recovery, grounded_seeds, mapped
 from spoonmaster.verification import Verifier
 from tests.test_gates import venue
 
@@ -274,7 +274,25 @@ class RecoveryTests(unittest.TestCase):
         self.assertIn("example bbq", dispatch.call_args_list[1].args[1]["query"])
         geocoder.lookup.assert_not_called()
         complete.return_value.parsed = {"venues": []}
+        self.assertEqual(len(recovery.discover(request(meal="bbq"), seed=True)[0]), 1)
+        complete.side_effect = RuntimeError("host unavailable")
+        self.assertEqual(len(recovery.discover(request(meal="bbq"), seed=True)[0]), 1)
+        dispatch.return_value = json.dumps({"success": True, "data": {"web": []}})
         self.assertFalse(recovery.discover(request(meal="bbq"), seed=True)[0])
+
+    def test_exact_map_lead_cannot_borrow_another_branches_food_evidence(self):
+        feature = {
+            **self.feature,
+            "properties": {**self.feature["properties"], "name": "Example BBQ North"},
+        }
+        wrong = {
+            **self.hit,
+            "title": "Example BBQ South",
+            "description": "Example BBQ South serves brisket.",
+        }
+        self.assertFalse(grounded_seeds([feature], [wrong], request(meal="bbq")))
+        no_food = {**self.hit, "title": "Example BBQ North", "description": "Open for lunch."}
+        self.assertFalse(grounded_seeds([feature], [no_food], request(meal="bbq")))
 
     def test_wrong_country_name_radius_and_invalid_coordinate_are_rejected(self):
         for feature in (
