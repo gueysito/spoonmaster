@@ -161,11 +161,34 @@ profile and does not change live agents.
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T12e | Source discovery, durable opt-in and lean evidence | Credible unfamiliar-city sources; broader alternatives; meaningful delay updates; relevant source guidance and nonduplicated previews; concise comparison; private opt-in city memory with advisory host-memory offer; focused checks and one long mixed-city replay | 4 | in progress | Implementation checkpoint: consent/revocation/deletion, source reuse, later search leads, detailed reads and indexed citations covered. Native replay and final checks next. |
+| T12e | Source discovery, durable opt-in and lean evidence | Credible unfamiliar-city sources; broader alternatives; meaningful delay updates; relevant source guidance and nonduplicated previews; concise comparison; private opt-in city memory with advisory host-memory offer; focused checks and one long mixed-city replay | 4 | blocked | Runtime through `084d030`; 116 local tests (one host-only skip), native 115 plus final 13 locale tests, Ruff/standards/doctor/validate pass. Seven replay requests completed; eighth failed after compaction with provider HTTP 400. Publication/adoption withheld; next diagnose this rejection. |
 
-Final preview review preserves explicit publication-date metadata and reminds the model
-to fill cuisine/neighborhood gaps in saved lists without overwriting useful city coverage.
-115 local tests (one host-only skip), Ruff and standards pass; native replay underway.
-Native validation passed all 115 tests and the terminal choice enabled source memory.
-The replay exposed an opaque rejection for query-bearing reusable-source URLs. Repair
-now identifies invalid entries and directs stable-source links without weakening URL rules.
+One resumed CLI conversation completed seven requests: Tokyo sushi 154s (CLI-reported),
+Tokyo tonkatsu 117.6s, Mexico City 120.9s, Canggu 169.0s, Rome 142.1s,
+Paris 234.8s and El Paso tacos 162.3s (wall time including startup). Each retained
+five comparisons, Paris six. Sources were saved after opt-in; the initial Tokyo
+query-bearing URL rejection prompted the separately verified repair in `084d030`.
+Replay runtime was `d91da3d`; no mid-replay plugin replacement or restaurant seeding.
+
+The eighth request, El Paso Chinese, compacted context, independently discovered
+China Town, then ended with provider HTTP 400 / Bad Request before presenting.
+Its last four research responses were valid JSON without top-level plugin errors;
+this does not prove the cause of the provider rejection. No successful final Chinese
+comparison or PF Chang's coverage is claimed. The recorder's initial session-source
+filter was corrected from local to oneshot without repeating the first request.
+
+The first seven turns returned about 1.065M tool-response characters. Narrower source
+guidance and deduplicated previews pass focused checks, but broader detailed research
+still accumulates substantial context. The earlier owner chat is not a controlled
+matched benchmark; these measurements do not establish a speedup. Closure, branch,
+menu-price and hours uncertainty were explained during research. Host compaction and
+provider latency remain unresolved. No automatic short-circuit was added to hide them.
+
+Changed-boundary checks cover local consent, owner isolation, opt-out/deletion,
+transaction rechecks, retained stale leads, source bounds and citation validation.
+No new dependencies, endpoints, credentials or external memory writes. Native local
+source opt-in worked; external memory destination/sharing remains advisory and needs
+separate consent. T14's broad public audit and channel-specific tests remain separate.
+
+Disposable validation/replay profiles, staging and upload were removed with independent
+absence checks. The retained owner test profile was preserved and not upgraded.
