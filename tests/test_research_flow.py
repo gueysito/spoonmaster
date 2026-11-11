@@ -1,7 +1,9 @@
 """Source-led workflow regressions, including outages, steering and truthful evidence."""
 
 import json
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
@@ -158,9 +160,11 @@ class ResearchFlowTests(unittest.TestCase):
     def test_budget_preserves_usable_evidence_for_final_answer(self):
         self.research()
         self.now = 76
+        for _ in range(11):
+            self.assertIn("evidence_id", self.research())
         self.assertEqual(self.research()["status"], "research_budget_reached")
         self.assertIn("text", self.present([self.candidate()]))
-        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(len(self.calls), 12)
 
     def test_failed_search_does_not_manufacture_a_candidate(self):
         self.flow.dispatch = lambda *_: (_ for _ in ()).throw(RuntimeError("outage"))
@@ -230,11 +234,38 @@ class ResearchFlowTests(unittest.TestCase):
         self.assertEqual(result["citation_index"], 0)
         self.assertIn("Quotation missing", result["repair"])
 
-    def test_received_steering_or_cancel_invalidates_unfinished_research(self):
+    def test_acknowledgement_keeps_work_and_explicit_cancel_discards_it(self):
         self.flow.observe(session_id="owner", user_message="Find noodles")
         self.research()
-        self.flow.observe(session_id="owner", user_message="Actually we are in Bali now")
+        self.flow.observe(session_id="owner", user_message="ok")
+        self.assertIn("text", self.present([self.candidate()]))
+        self.flow.observe(session_id="owner", user_message="stop please!")
         self.assertEqual(self.present([self.candidate()])["error"], "request_changed_or_expired")
+
+    def test_overlapping_research_reserves_distinct_evidence_ids(self):
+        barrier = threading.Barrier(2)
+
+        def dispatch(*_):
+            barrier.wait(timeout=5)
+            return self.body
+
+        self.flow.dispatch = dispatch
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda _: self.research(), range(2)))
+        self.assertEqual({r["evidence_id"] for r in results}, {"e1", "e2"})
+        self.assertEqual(set(self.flow.requests["owner"]["evidence"]), {"e1", "e2"})
+
+    def test_urls_are_indexed_before_excerpt_clipping(self):
+        self.body = (
+            "Noodle House serves hand-pulled noodles in the Marina. "
+            + "x" * 17000
+            + " https://example.com/noodles."
+        )
+        result = self.research()
+        self.assertTrue(result["truncated"])
+        self.assertNotIn("https://", result["untrusted_text"])
+        self.assertEqual(result["sources"], [])
+        self.assertIn("text", self.present([self.candidate()]))
 
     def test_why_keeps_reasons_without_repeating_same_source(self):
         self.research()

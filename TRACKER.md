@@ -111,3 +111,9 @@ the owner does not need terminal audio setup. Browser delegation is implemented
 but this isolated CLI exposed web search/extract, so browser execution is not claimed
 as live-verified. The native launcher completed dependency bookkeeping on first use;
 the verified Hermes source revision remained `2bd378ed1b8d`.
+
+## Owner-approved source-led consolidation (D-021)
+
+| ID | Task | Acceptance | Est | Status | Evidence |
+|---|---|---|---|---|---|
+| T12d | Research fan-out and one source-led path | Three-entry context-preserving host batches; narrow cancellation; citation indexing before clipping; confirmed companions and reusable source lists; eight tools/four hooks; obsolete pipeline removed; native verification and matched five-city latency/quality before owner handoff | 6 | in progress | First checkpoint: 20 research-flow tests pass, including overlapping calls, elapsed-time budget, acknowledgement/cancel and URL truncation. Baseline measurements running in a disposable host profile. |

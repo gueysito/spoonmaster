@@ -1,6 +1,6 @@
 # Current state
 
-The owner-approved source-led dining replacement (D-020/T12c) is ready for CLI testing.
+The owner-approved source-led consolidation (D-021/T12d) is in progress.
 It removes map-dependent restaurant admission and uses normal readable replies.
 The retained owner test profile loads the verified code; saved tastes are unchanged.
 
@@ -18,7 +18,8 @@ The retained owner test profile loads the verified code; saved tastes are unchan
 
 ## Next action
 
-Optional owner CLI feedback, then remaining T12 channel checks and T10 when approved.
+Finish T12d fan-out, companion/source-list migration and legacy removal; verify
+matched city runs and native installation before updating the owner test profile.
 
 ## Baseline and limits
 

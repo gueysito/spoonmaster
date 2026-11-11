@@ -207,8 +207,9 @@ when to revisit. Agent recommendations are noted as such.
 - Native host transcription feeds the same natural-language workflow. No voice
   service is installed or enabled. CLI voice setup is not an owner acceptance duty.
 - Meaningful progress and steering occur between short host calls. A host that queues
-  input cannot be promised immediate interruption; received new input invalidates an
-  unfinished request. Retained results are process-local, bounded and expire after 30m.
+  input cannot be promised immediate interruption. Explicit cancellation clears work;
+  the model applies changed intent through a replacement request (D-021). Retained
+  results are process-local, bounded and expire after 30m.
 - Source lesson: Asia travel repo `cd061a2`, location/maps and family-profile workflows;
   Yuki canon `411b6d7`, June restaurant-triage lesson. Application: source-led dining,
   actionable portable replies and progressive preferences. Expected benefit: preserve
@@ -216,3 +217,23 @@ when to revisit. Agent recommendations are noted as such.
   memories were inspected only; no private trip material or source writeback is included.
 - Supersedes D-018/D-019 as the primary dining path. Low-level map tools remain for
   explicit spatial investigation. No new accounts, paid provider or permission bypass.
+
+## D-021: One source-led path with research fan-out (2026-11-10)
+
+- Owner approved T12d from the reviewed v2 proposal, including preserved reusable
+  city source lists. Three independent host searches/reads may run in one call;
+  browser operations remain ordered per conversation. Each worker copies runtime
+  context and forwards host context. Errors are isolated per entry.
+- Reserve IDs and call allowance under a short lock, dispatch outside it, then
+  reject stale results on replacement/cancellation. Keep 12 calls and 30-minute
+  expiry; elapsed time guides the model rather than silently blocking research.
+- Index public citation URLs before clipping excerpts. Structured source/excerpt
+  pairs are best-effort information, not an additional citation admission rule.
+- Code recognizes a short exact cancellation list. The model interprets new cities
+  and constraints through spoon_dine; hooks do not parse dining intent.
+- Migrate companions to the current request with reviewed party confirmation,
+  selected-member needs and revision checks. Keep source-list review/edit through
+  a surviving tool and private controls. Remove obsolete map pipeline and parsers,
+  leaving eight tools and four hooks. T13/T14 retain their existing scope.
+- Verify native host fan-out, isolation and five matched city comparisons before
+  owner handoff. Report measured latency and quality, not an assumed speedup.
