@@ -234,6 +234,55 @@ class ResearchFlowTests(unittest.TestCase):
         self.assertEqual(result["citation_index"], 0)
         self.assertIn("Quotation missing", result["repair"])
 
+    def test_indexed_citations_resolve_without_weakening_quote_checks(self):
+        self.research()
+        candidate = self.candidate()
+        citation = candidate["evidence"][0]
+        citation.pop("url")
+        citation["source_index"] = 1
+        self.assertIn("https://example.com/noodles", self.present([candidate])["text"])
+        citation["quote"] = "Unsupported food claim"
+        self.assertEqual(self.present([candidate])["error"], "citation_not_in_retrieved_evidence")
+        citation["source_index"] = 99
+        self.assertEqual(self.present([candidate])["error"], "invalid_source_index")
+
+    def test_search_previews_preserve_later_candidates_and_full_read_depth(self):
+        self.body = {
+            "data": {
+                "web": [
+                    {"url": "https://example.com/first", "text": "First review. " * 1500},
+                    {"url": "https://example.com/later", "text": "Promising later restaurant."},
+                ]
+            }
+        }
+        result = self.research()
+        self.assertIn("Promising later restaurant.", result["untrusted_text"])
+        self.assertLess(len(json.dumps(result)), 4000)
+        self.assertNotIn("text", result["sources"][0])
+        read = json.loads(
+            self.flow.research(
+                {
+                    "request_id": self.request,
+                    "tool": "web_extract",
+                    "arguments_json": '{"urls":["https://example.com/first"]}',
+                },
+                session_id="owner",
+            )
+        )
+        self.assertEqual(len(read["untrusted_text"]), 16000)
+
+    def test_start_returns_only_relevant_source_guidance(self):
+        result = json.loads(
+            self.flow.start(
+                {"location": "Tokyo", "country_code": "JP", "city": "Tokyo", "meal": "lunch"},
+                session_id="owner",
+            )
+        )
+        self.assertIn("Tabelog", json.dumps(result["source_priorities"]))
+        self.assertNotIn("Wongnai", json.dumps(result))
+        self.assertNotIn("Eater New York", json.dumps(result))
+        self.assertLess(len(json.dumps(result)), 6500)
+
     def test_acknowledgement_keeps_work_and_explicit_cancel_discards_it(self):
         self.flow.observe(session_id="owner", user_message="Find noodles")
         self.research()

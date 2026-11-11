@@ -241,3 +241,23 @@ when to revisit. Agent recommendations are noted as such.
   leaving eight tools and four hooks. T13/T14 retain their existing scope.
 - Verify native host fan-out, isolation and five matched city comparisons before
   owner handoff. Report measured latency and quality, not an assumed speedup.
+
+## D-022: Better discovery with reusable sources and less repeated context (2026-11-10)
+
+- Owner approved automatic unfamiliar-city/cuisine source discovery, broad candidate
+  discovery including chains, follow-up of promising alternatives and useful delay
+  explanations. These remain model judgments, not restaurant admission gates.
+- Return only relevant source guidance. Structured search responses show labelled
+  previews up to 2,400 characters per source within the existing 16k response allowance;
+  detailed reads retain 16k. Full-response URL indexing and internal source pairs remain.
+  Do not repeat source excerpts in multiple response fields. Read originals when needed.
+- Optional indexed citations and concise optional candidate fields reduce repeated
+  answer preparation without removing quote validation, output fields or /why.
+- A direct one-time local city-source opt-in permits automatic public-source list
+  updates with receipts. Off stops updates; lists remain readable/removable. Stale lists
+  remain leads requiring research refresh. Whole-profile deletion removes the opt-in.
+- Probe host memory only through public enabled-plugin detection; the model may inspect
+  exposed memory tools and offer their actual destination/scope. Local consent never
+  authorizes host-memory writes. No custom backend, synchronization or cross-agent claims.
+- Verify proportionately: focused behavior/privacy checks, required project/native gates
+  and one long mixed-city replay. Do not repeat the whole earlier acceptance exercise.

@@ -24,6 +24,12 @@ those exchanges. It does not guarantee a fixed answer time. The agent reports wh
 is checking and why between calls. Host-delivered steering replaces the request; explicit
 cancellation clears it. Some hosts queue user input during a running call.
 
+Unfamiliar cities trigger local/cuisine-source discovery alongside broad restaurant
+research. Promising alternatives, including chains, deserve comparison before finalists.
+Extra investigation should explain its specific reason. Discovery uses source-labelled
+previews up to 2,400 characters each within a 16k response; detailed reads keep 16k.
+Only relevant city/country guidance is sent, without duplicate source excerpts.
+
 The model interprets quality, branch identity and fit. Code checks retained quotations
 and URLs, excludes declared closure/conflict, avoids repeated brands and renders the
 comparison. Matching a quote is not proof that the interpretation is correct. Area
@@ -78,6 +84,15 @@ within 30 days. `/spoon locale show <country> <city>` displays it and
 `/spoon locale forget <country> <city>` removes it. Source-list management is optional
 and never blocks finding food. A saved list is guidance, not website access permission.
 Details and source references: [source ladders](docs/source-ladders.md).
+
+`/spoon locale memory` offers a one-time choice to remember public city-source knowledge
+across chats. `/spoon locale remember on|off` is the text fallback. On permits automatic
+list updates with a saved-change notice; off preserves existing lists but stops updates.
+Stale lists remain research leads, with refresh needed after 30 days. No meal history or
+personal needs belong in these lists. Profile deletion removes this choice and the lists.
+If a host memory plugin is enabled, the agent can inspect exposed memory tools and offer
+their actual destination/access scope. Local consent does not authorize external memory
+writes, and no cross-agent sharing or synchronization is assumed.
 
 ## Data and privacy
 

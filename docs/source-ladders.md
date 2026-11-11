@@ -98,10 +98,16 @@ an unvisited directory entry, a booking listing and a venue's own marketing.
 On request, research suitable sources and use `spoon_profile` with `sources_propose`,
 country_code, city and the complete proposed sources. Explain names, URLs, roles,
 reasons and changes in readable prose. Only a direct `/spoon locale confirm <token>`
-saves the preview. Review again after 30 days. `sources_get` reads the current list;
+saves the preview, unless the user has opted into automatic local city-source saving
+through `/spoon locale memory` or `/spoon locale remember on`. Automatic updates require
+a brief visible receipt. `remember off` stops updates without deleting lists. Include
+coverage, credibility, evidence dates and limitations in each source reason; never user
+details. Review again after 30 days, keeping stale lists as leads. `sources_get` reads the current list;
 `/spoon locale show <country> <city>` is the readable command fallback. Corrections
 use a new replacement preview; `forget` removes one city. Whole-profile deletion also
-removes that identity's source lists. No auto-scout onboarding is required.
+removes that identity's source lists and opt-in. Automatic source discovery is part of
+meal research, not an onboarding requirement. Host-memory offers require verified exposed
+tools and explicit destination/access disclosure plus separate consent, not custom sync.
 
 Public HTTPS list URLs have no credentials, queries or fragments. Citation evidence
 can contain public HTTP(S) URLs including query strings/parenthesized paths. Both are

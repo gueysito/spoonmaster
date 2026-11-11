@@ -156,3 +156,9 @@ Telegram rendering need those surfaces. The owner need not set up terminal audio
 Earlier checkpoint detail remains in the incremental commits. Native validation
 profiles were deleted with independent absence checks; owner testing uses its retained
 profile and does not change live agents.
+
+## Owner-approved research quality and context efficiency (D-022)
+
+| ID | Task | Acceptance | Est | Status | Evidence |
+|---|---|---|---|---|---|
+| T12e | Source discovery, durable opt-in and lean evidence | Credible unfamiliar-city sources; broader alternatives; meaningful delay updates; relevant source guidance and nonduplicated previews; concise comparison; private opt-in city memory with advisory host-memory offer; focused checks and one long mixed-city replay | 4 | in progress | Implementation checkpoint: consent/revocation/deletion, source reuse, later search leads, detailed reads and indexed citations covered. Native replay and final checks next. |

@@ -177,3 +177,68 @@ class LocaleTests(unittest.TestCase):
         with patch.object(LocaleStore, "save_city", side_effect=TasteError("storage_unavailable")):
             self.assertFalse(self.confirm(pending)["saved"])
         self.assertTrue(self.confirm(pending)["saved"])
+
+    def test_opt_in_persists_and_automatic_saving_stops_on_opt_out(self):
+        self.assertEqual(self.store.memory_mode("local-cli"), "unset")
+        self.assertFalse(self.path.exists())
+        self.service.command("locale remember on", platform="cli", session_id="chat")
+        result = self.tool("propose", "PT", "Lisbon", sources=SOURCES)
+        self.assertTrue(result["saved"])
+        self.taste.bind("later", "local-cli")
+        later = LocaleService(self.taste)
+        context = later.source_context("PT", "Lisbon", "later")
+        self.assertEqual(context["memory"], "on")
+        self.assertEqual(context["sources"], SOURCES)
+        later.command("locale remember off", platform="cli", session_id="later")
+        proposed = self.tool("propose", "ES", "Madrid", sources=SOURCES)
+        self.assertEqual(proposed["status"], "proposed")
+        self.assertIsNone(self.store.read_city("local-cli", place("ES", "Madrid")))
+        self.assertIsNotNone(self.store.read_city("local-cli", place("PT", "Lisbon")))
+        TasteStore(self.store.path).control("local-cli", "delete")
+        self.assertEqual(self.store.memory_mode("local-cli"), "unset")
+
+    def test_source_opt_in_is_private_and_cannot_be_granted_by_tool_arguments(self):
+        from types import SimpleNamespace
+
+        group = SimpleNamespace(chat_type="group", platform="telegram", user_id="fixture")
+        self.assertIn(
+            "private", self.service.command("locale remember on", source=group, session_id="chat")
+        )
+        self.assertEqual(
+            self.tool("propose", sources=SOURCES, remember=True)["error"], "invalid_arguments"
+        )
+        self.taste.bind("other", "other-owner")
+        self.service.command("locale remember on", platform="cli", session_id="chat")
+        self.assertEqual(self.service.source_context("PT", "Lisbon", "other")["memory"], "unset")
+        self.assertEqual(self.store.memory_mode("other-owner"), "unset")
+
+    def test_revocation_checked_in_write_transaction_and_memory_offer_is_advisory(self):
+        item = {"country_code": "PT", "city": "Lisbon", "sources": SOURCES, "retrieved_at": None}
+        self.store.set_memory("local-cli", True)
+        self.store.set_memory("local-cli", False)
+        with self.assertRaisesRegex(TasteError, "source_memory_not_enabled"):
+            self.store.save_city("local-cli", item, automatic=True)
+        service = LocaleService(self.taste, has_plugin=lambda name: name == "memory")
+        self.assertIn("Separate user", service.before_turn(session_id="chat")["context"])
+        self.assertIsNone(self.store.read_city("local-cli", place("PT", "Lisbon")))
+
+    def test_choice_opt_in_and_stale_sources_remain_refreshable_leads(self):
+        choices = []
+
+        def choose(question, options):
+            choices.extend(options)
+            return options[0]
+
+        service = LocaleService(self.taste, ask_choice=choose)
+        self.assertIn(
+            "memory is on", service.command("locale memory", platform="cli", session_id="chat")
+        )
+        self.assertEqual(len(choices), 2)
+        self.tool("propose", "PT", "Lisbon", sources=SOURCES)
+        with self.store.transaction() as db:
+            value = json.loads(db.execute("SELECT data FROM locales").fetchone()[0])
+            value["reviewed_at"] = (datetime.now(timezone.utc) - timedelta(days=31)).isoformat()
+            db.execute("UPDATE locales SET data=?", (json.dumps(value),))
+        context = service.source_context("PT", "Lisbon", "chat")
+        self.assertEqual(context["status"], "review_required")
+        self.assertEqual(context["sources"], SOURCES)

@@ -174,6 +174,10 @@ class TasteStore:
                         "SELECT 1 FROM sqlite_master WHERE type='table' AND name='locales'"
                     ).fetchone():
                         db.execute("DELETE FROM locales WHERE owner=?", (owner,))
+                    if db.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='source_memory'"
+                    ).fetchone():
+                        db.execute("DELETE FROM source_memory WHERE owner=?", (owner,))
                 return {
                     "deleted": True,
                     "note": "Hermes transcripts and external backups are separate.",

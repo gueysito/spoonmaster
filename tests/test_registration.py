@@ -181,7 +181,7 @@ with patch('urllib.request.OpenerDirector.open', side_effect=AssertionError('une
             "spoon_dine",
             {"location": "Lisbon", "city": "Lisbon", "country_code": "PT", "meal": "noodles"},
         )
-        self.assertEqual(result["city_source_priorities"], SOURCES)
+        self.assertEqual(result["source_priorities"]["sources"], SOURCES)
         self.command("locale forget PT Lisbon")
         self.assertIsNone(
             self.tool(

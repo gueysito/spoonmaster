@@ -1,7 +1,7 @@
 # Current state
 
-T12d is implemented and verified for the next owner test. The handoff receipt
-identifies the published commit and matching retained test installation.
+T12e is implementing the owner-approved discovery, city-source memory and context
+efficiency improvements. The retained owner test install remains unchanged until verified.
 
 ## Current verification
 
@@ -15,8 +15,8 @@ identifies the published commit and matching retained test installation.
 
 ## Next action
 
-Collect owner feedback from the retained test profile. Publication and installation
-are checked separately at handoff; saved tastes remain intact. No mandatory test script.
+Finish focused checks and one long mixed-city replay, then publish/adopt the verified
+build. Saved tastes remain intact; owner testing is optional.
 
 ## Boundaries
 

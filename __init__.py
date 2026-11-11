@@ -17,7 +17,9 @@ def register(ctx):
     onboarding = Onboarding(
         taste, getattr(ctx, "ask_choice", None), dispatch=getattr(ctx, "dispatch_tool", None)
     )
-    locales = LocaleService(taste)
+    locales = LocaleService(
+        taste, getattr(ctx, "ask_choice", None), getattr(ctx, "has_plugin", None)
+    )
     dining = ResearchFlow(getattr(ctx, "dispatch_tool", None), taste, locales=locales)
     taste.invalidate_context = dining.invalidate_tastes
     companions = CompanionService(taste, dining)

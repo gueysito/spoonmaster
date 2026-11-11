@@ -41,8 +41,13 @@ or count copied recommendations as independent agreement.
 
 Source priorities apply across all cities. Bundled lists cover Japan, Thailand,
 Indonesia, NYC and SF; new cities use fresh research immediately. Reusable private lists
-remain reviewable/editable, with human confirmation before saving. Source management
+remain reviewable/editable, with human confirmation or one-time private local opt-in
+before saving. Source management
 never blocks meal selection and never authorizes additional website access.
+For unfamiliar cities, find credible local/cuisine sources alongside broad discovery.
+Investigate worthwhile alternatives instead of polishing a prematurely chosen shortlist.
+Explain extra investigation and its reason. Return less duplicated context, not fewer
+useful sources; fetch detailed pages when discovery previews do not establish a claim.
 
 ## Personalization and company
 

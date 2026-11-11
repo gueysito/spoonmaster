@@ -46,7 +46,7 @@ After workers finish, the lock protects the current-request and companion checks
 storage. Replacement, cancellation or changed company discards the stale batch.
 Host timeouts remain host-owned; elapsed time is guidance, not a 75-second cutoff.
 
-Each successful result retains a 16,000-character excerpt, public URLs indexed
+Each successful result retains up to a 16,000-character excerpt, public URLs indexed
 before clipping, best-effort source/excerpt pairs and retrieval time. Pairings are
 informational. Present requires a retained quote and URL but does not certify semantic
 truth or correspondence between them. Citation URL acceptance grants no fetch permission.
@@ -54,6 +54,11 @@ The model must reconcile branches, distinguish independent praise from marketing
 check published hours for the actual date/time. Unknowns remain visible. Known closures,
 constraint conflicts and duplicate brands cannot fill the three displayed positions.
 All compared/rejected candidates remain available through `/why`.
+Structured search previews allocate up to 2,400 characters per source so early long
+results do not hide later leads. Original-page reads retain the 16k allowance. Source
+pairs remain internal; tool responses avoid repeating their text. Indexed citations
+resolve against retained URLs before the same quote checks. Optional candidate fields
+default to unknown/empty, particularly for rejected alternatives.
 
 ## Private memory and companions
 
@@ -78,6 +83,12 @@ Bundled source priorities cover Japan, Thailand, Indonesia, NYC and SF. Optional
 private city lists. Direct `/spoon locale confirm` commits a preview. Confirmed lists
 guide `spoon_dine` when established city/country are supplied; expired/unavailable lists
 never block a meal. `/spoon locale show` and `forget` are readable controls.
+Only relevant source guidance is returned. A private direct city-memory opt-in is stored
+in the same SQLite database, scoped by verified owner. Automatic list replacement checks
+the opt-in within its transaction and keeps revision checks. Opt-out stops updates;
+whole-profile deletion removes the setting. Stale lists remain refreshable leads. Host
+memory detection uses public has_plugin and is advisory only; the model must establish
+exposed tool support, destination and separate user approval before any host-memory write.
 
 Final recommendations are normal assistant text with named-place Maps links, source
 links and gaps. A same-turn output hook restores omitted Maps links without holding
