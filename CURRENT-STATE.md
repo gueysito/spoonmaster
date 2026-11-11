@@ -1,7 +1,7 @@
 # Current state
 
-T12e is approved for the retained owner test profile with known long-chat limitations.
-The owner approved publication and adoption after reviewing the bounded verification.
+The source-led pilot is installed in the retained owner test profile. The repository
+is public under MIT. Long-chat limitations remain documented.
 
 ## Current verification
 
@@ -15,13 +15,12 @@ The owner approved publication and adoption after reviewing the bounded verifica
 
 ## Next action
 
-Publish and adopt the verified build in the retained test profile, then offer optional
-owner testing. The recorded provider rejection is not a release gate; investigate from
-captured evidence if pursued. No full replay or consistent-speed guarantee is required.
+Prepare the demo and open the catalog PR after owner approval. The recorded provider
+rejection is not a release gate. No full replay or consistent-speed guarantee is required.
 
 ## Boundaries
 
 Model judgment interprets sources and ranks; code retains evidence and enforces
 consent, bounded work and conversation isolation. Reusable city source lists remain.
-T13/T14 and public submission are separate. No live-agent installation is included.
+T14 and public submission are separate. No live-agent installation is included.
 Voice ingestion, Telegram display and external host-memory writes are not live-verified.

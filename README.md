@@ -103,6 +103,11 @@ No direct map endpoint, custom page scraper, telemetry, background job, model cl
 or shell tool is part of plugin runtime. The development scripts invoke Hermes only
 inside owned test profiles.
 
+At runtime Spoonmaster reads its bundled source guidance and its own Hermes profile
+data. It does not read credential stores or write to other memory plugins. Public
+research can reach search providers and venue or publisher sites through the enabled
+Hermes tools. Which providers and sites are contacted depends on the host and the request.
+
 Evidence and requests are process-local: at most 100 conversations, 12 operations each,
 16,000 excerpt characters per operation, indexed citation URLs and 16 best-effort source
 pairs. Requests expire after 30 minutes and clear on reset/finalization/replacement.
@@ -147,6 +152,9 @@ test profiles are removed after testing ends; disposable engineering profiles ar
 removed after verification. Live agents are not changed by these scripts.
 
 Eight tools and four hooks are documented in [architecture](docs/architecture.md).
+The manifest declares Hermes `>=0.21.5`; compatibility was checked on an installed
+Hermes build, without testing the minimum version separately. The CLI was exercised
+live. Telegram display and voice ingestion need verification on those surfaces.
 Read [AGENTS](AGENTS.md), [product spec](docs/prd.md), [decisions](DECISIONS.md) and
 [tracker](TRACKER.md) before code work. Current native and channel verification limits
 are explicit in the tracker. Public release/catalog submission, accounts, paid APIs
