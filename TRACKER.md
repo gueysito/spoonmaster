@@ -116,53 +116,43 @@ the verified Hermes source revision remained `2bd378ed1b8d`.
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T12d | Research fan-out and one source-led path | Three-entry context-preserving host batches; narrow cancellation; citation indexing before clipping; confirmed companions and reusable source lists; eight tools/four hooks; obsolete pipeline removed; native verification and matched five-city latency/quality before owner handoff | 6 | in progress | First checkpoint: 20 research-flow tests pass, including overlapping calls, elapsed-time budget, acknowledgement/cancel and URL truncation. Baseline measurements running in a disposable host profile. |
+| T12d | Research fan-out and one source-led path | Three-entry context-preserving batches; narrow cancellation; full citation indexing; confirmed companions and reusable source lists; eight tools/four hooks; obsolete pipeline removed; native checks and matched five-city comparison | 6 | done | Runtime through `28bf417`; 108 tests locally (one host-only skip), all 108 on Hermes; Ruff, standards, doctor/validate and diff checks pass. Native steering, cancellation and selected-companion replacement pass; measurements below. Publication/adoption verified separately at handoff. |
 
-T12d fan-out checkpoint: 25 focused tests pass. Real worker threads demonstrate
-three-way overlap, independent contextvars plus forwarded host kwargs, partial
-allowance at the 12-call limit, exception/structured-error isolation, stale-batch
-rejection and per-conversation browser serialization across overlapping batches.
-Native provider verification and measurements remain required before handoff.
+Five-city comparison: baseline `5d9d31c`, candidate `7e40d80`, corrected SF replay
+`97d745c`, same Hermes `2bd378ed1b8d` and configured gpt-6.1-sol. Times include CLI
+startup and final answer; one matched sample each, not a statistical guarantee.
 
-T12d consolidation checkpoint: 104 tests run locally, one host-only skip; Ruff passes.
-Registration now exposes eight tools/four hooks. Confirmed companions follow the active
-source-led request, including individual dietary needs; tests cover preview-only recall,
-subset selection, replacement, another-process deletion and consent. Reusable source
-lists remain reviewable/editable through spoon_profile and readable locale commands.
-Owner identity swaps and deletion after binding eviction invalidate research context.
-Removed tests exercise the deleted discovery/gating/hour-parser pipeline, not current
-acceptance. Surviving privacy, SQLite, onboarding, household validation, text/link,
-source-list and directory-entrypoint coverage is retained or migrated. Old architecture
-and data-gate receipts are archived; current docs describe only the source-led runtime.
-Native verification, city comparison and owner-profile adoption remain pending.
+| City/request | Seconds before → after | Research calls before → after | Distinct businesses compared before → after | Pick source spot-check |
+|---|---|---|---|---|
+| Shibuya tonkatsu | 218.8 → 154.2 | 11 → 4 | 5 → 6 | Nagi → Genkatsu: food review plus menu/hours; dated review pricing identified |
+| Canggu family lunch | 89.3 → 149.2 | 5 → 3 | 5 → 5 | Milk & Madu Berawa: independent food/family coverage and official branch facts |
+| SF Marina noodles | 114.0 → 104.7 | 8 → 3 | 5 → 3 | Chubby → Hinodeya: current branch facts; older/other-branch praise distinguished; Chubby retained at Silver Cloud |
+| Greenwich Village vegetarian | 150.6 → 132.4 | 11 → 4 | 5 → 6 | Ananda: vegetarian/tangy dishes supported; older quiet-lunch review does not guarantee quiet dinner |
+| El Paso tacos near Redd/Westwind | 184.6 → 134.8 | 8 → 4 | 5 → 5 | El Beso → Elemi West Side: independent food coverage plus current branch menu/location |
 
-T12d expiry review: confirmed-party expiry now rejects a caller's earlier request
-snapshot instead of allowing it to render as solo. Added regressions for that case
-and for not injecting stored dietary fields into public query arguments; 18 companion
-tests pass. Initial native run at `7e40d80` passed all 104 tests, doctor/validate with
-eight tools/four hooks, and script teardown. Final expiry change needs native rerun.
+Median 150.6 → 134.8 seconds (10.5% lower); Canggu became slower. Research round
+trips fell 43 → 18, while actual research operations rose 43 → 51. Every final run
+showed three distinct picks. Spot-checks compared material claims with retained
+host source excerpts, not calls to venues. The first SF candidate took 129.5 seconds
+and wrongly excluded Chubby using an old closed address. General current-operation
+instructions fixed that replay; restaurant judgment still requires live evaluation.
 
-The native rerun at `cb58b46` passed all 106 tests plus doctor/validate; both validation
-roots were independently confirmed absent. Final source-heavy-page review reproduced
-a URL-index cutoff at 128 links, contrary to the approved full-response indexing rule.
-Removed that cutoff and added a 131-URL citation regression; 26 focused research tests
-pass. Five-city requests use the same code path and no confirmed party; their receipt
-identifies the measured revision separately from these boundary corrections.
+Native acceptance: three-search batches returned separate evidence IDs; partial/error
+and context isolation also pass threaded tests. Mid-research “ok” preserved work;
+city and peanut-allergy updates replaced the request and reached final text and /why.
+Terminal redirection bypasses the input hook, so the existing dine tool now accepts
+request-scoped cancellation; the live “stop please” replay cleared /why. A synthetic
+saved child's subset reached research only after confirmation; replacement returned
+no confirmed party. Full-response indexing covers the reproduced 131-URL case.
 
-Five-city replay found a model coverage regression: SF excluded a user-named venue
-using an older closed address. General research guidance now prioritizes checking
-moves/reopenings/shared kitchens before exclusion. The same SF request then retained
-the newer operation and three distinct options in 104.7 seconds with three research
-batches. No restaurant-specific code or new admission gate was added.
-
-Native steering checkpoint: acknowledgement preserved the request; city and child-allergy
-updates each produced a replacement, and the final answer and /why retained both.
-Mid-turn cancellation stopped the model but left plugin state because the native host
-does not rerun pre_llm_call for redirects. Added request-scoped cancellation to the existing
-spoon_dine tool, with stale-ID and late-result regression coverage; 22 focused flow tests
-pass. Native cancellation replay remains pending. Bundled venue source instructions now
-refer to host tools instead of the removed website adapter.
-
-Native companion check confirmed a selected child's stored dietary field reaches research
-only after direct confirmation. Removed obsolete guidance asking for a separate solo command
-before replacement; replacement already clears the previous attachment by request identity.
+Changed-boundary review (`5d9d31c` → `28bf417`, 2026-11-10/11): checked owner/session
+isolation, consent, expiry/deletion/replacement, stale concurrent results, bounded
+calls/inputs, tool allowlisting, untrusted source handling and sanitized errors.
+Found and fixed party-expiry reuse, URL cutoff, redirect cancellation and obsolete
+companion instructions. No unresolved findings in this scope; no new dependencies,
+public endpoints, credentials, payments or uploads. The broad public audit remains T14.
+Browser ordering is thread-tested, not live-provider verified; voice ingestion and
+Telegram rendering need those surfaces. The owner need not set up terminal audio.
+Earlier checkpoint detail remains in the incremental commits. Native validation
+profiles were deleted with independent absence checks; owner testing uses its retained
+profile and does not change live agents.
