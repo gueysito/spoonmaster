@@ -1,8 +1,7 @@
 # Current state
 
-T12e changes are implemented locally. Publication and owner-test adoption are blocked
-by a provider HTTP 400 after compaction in the long mixed-city acceptance replay.
-The retained owner test install remains on the previously published build.
+T12e is approved for the retained owner test profile with known long-chat limitations.
+The owner approved publication and adoption after reviewing the bounded verification.
 
 ## Current verification
 
@@ -16,8 +15,9 @@ The retained owner test install remains on the previously published build.
 
 ## Next action
 
-Diagnose the host/provider rejection after compaction before publishing or updating
-the retained owner test install. Do not repeat the full city benchmark by default.
+Publish and adopt the verified build in the retained test profile, then offer optional
+owner testing. The recorded provider rejection is not a release gate; investigate from
+captured evidence if pursued. No full replay or consistent-speed guarantee is required.
 
 ## Boundaries
 

@@ -161,7 +161,7 @@ profile and does not change live agents.
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T12e | Source discovery, durable opt-in and lean evidence | Credible unfamiliar-city sources; broader alternatives; meaningful delay updates; relevant source guidance and nonduplicated previews; concise comparison; private opt-in city memory with advisory host-memory offer; focused checks and one long mixed-city replay | 4 | blocked | Runtime through `084d030`; 116 local tests (one host-only skip), native 115 plus final 13 locale tests, Ruff/standards/doctor/validate pass. Seven replay requests completed; eighth failed after compaction with provider HTTP 400. Publication/adoption withheld; next diagnose this rejection. |
+| T12e | Source discovery, durable opt-in and lean evidence | Credible unfamiliar-city sources; broader alternatives; meaningful delay updates; relevant source guidance and nonduplicated previews; concise comparison; private opt-in city memory with advisory host-memory offer; focused checks and one long mixed-city replay | 4 | done | Runtime through `084d030`; 116 local tests (one host-only skip), native 115 plus final 13 locale tests, Ruff/standards/doctor/validate pass. Seven replay requests completed; eighth failed after compaction with provider HTTP 400. Owner accepted the recorded limitations and authorized publication/adoption; installation readiness is checked separately. |
 
 One resumed CLI conversation completed seven requests: Tokyo sushi 154s (CLI-reported),
 Tokyo tonkatsu 117.6s, Mexico City 120.9s, Canggu 169.0s, Rome 142.1s,
@@ -192,3 +192,7 @@ separate consent. T14's broad public audit and channel-specific tests remain sep
 
 Disposable validation/replay profiles, staging and upload were removed with independent
 absence checks. The retained owner test profile was preserved and not upgraded.
+
+Owner clarified acceptance: no repeated long replay or consistent-speed gate. The
+recorded HTTP 400 remains unresolved, not an established plugin defect. Publish the
+verified implementation and adopt it with bounded native installation/startup checks.
