@@ -3,18 +3,13 @@
 import json
 import tempfile
 import unittest
-from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from spoonmaster import plugin
-from spoonmaster.ledger import LedgerStore
+from spoonmaster.research_flow import ResearchFlow
 from spoonmaster.taste import TasteError
 from spoonmaster.taste_service import TasteService, owner_key, runtime_owner
-from spoonmaster.venue_web import PageError
-from spoonmaster.verification import Verifier
-from tests.test_gates import SEARCH, venue
 from tests.test_taste import pref
 
 
@@ -29,11 +24,16 @@ class TasteServiceTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
-        self.ledgers = LedgerStore()
         self.identity = None
-        self.service = TasteService(
-            lambda: self.root, self.ledgers, identity=lambda s: self.identity
-        )
+        self.service = TasteService(lambda: self.root, identity=lambda s: self.identity)
+
+        self.dining = ResearchFlow(None, self.service)
+        self.service.invalidate_context = self.dining.invalidate_tastes
+
+    def start(self):
+        return json.loads(
+            self.dining.start({"location": "Tokyo", "meal": "noodles"}, session_id="first")
+        )["request_id"]
 
     def command(self, value, session="first", source=None, platform="telegram"):
         return self.service.command(
@@ -59,9 +59,7 @@ class TasteServiceTests(unittest.TestCase):
         self.assertTrue(saved["saved"])
         self.service.forget("first")
         # Host metadata identifies the same person in a new session, without a reconnect command.
-        restarted = TasteService(
-            lambda: self.root, self.ledgers, identity=lambda s: owner_key(dm(), None)
-        )
+        restarted = TasteService(lambda: self.root, identity=lambda s: owner_key(dm(), None))
         result = json.loads(restarted.profile_tool({}, session_id="new-session"))
         self.assertEqual(result["profile"]["prefs"], saved["diff"]["added"])
         self.assertIn("taste memory", restarted.before_turn(session_id="new-session")["context"])
@@ -148,43 +146,6 @@ class TasteServiceTests(unittest.TestCase):
         self.assertFalse(result["saved"])
         self.assertNotIn("diff", result)
 
-    def test_feedback_changes_next_pick_and_invalidates_old_choices(self):
-        self.command("enable")
-        self.feedback([pref("sushi")])
-        now = datetime.now(timezone.utc).isoformat()
-        venues = [
-            venue("osm:node:1", cuisine="ramen", retrieved_at=now),
-            venue(
-                "osm:node:2",
-                name="Other Dining",
-                latitude=35.001,
-                cuisine="sushi",
-                retrieved_at=now,
-            ),
-        ]
-        found = self.ledgers.remember(
-            "first", {"candidates": venues, "candidates_in_radius": 2}, SEARCH
-        )
-        verifier = Verifier(
-            fetch=lambda url: (_ for _ in ()).throw(PageError("network_unavailable"))
-        )
-        verifier.remember(venues)
-        with patch.object(plugin, "verifier", verifier):
-            result = json.loads(
-                plugin.recommend_candidates(
-                    {"search_id": found, "origin_confirmed": True},
-                    session_id="first",
-                    _ledger_store=self.ledgers,
-                    _taste_service=self.service,
-                )
-            )
-        self.assertEqual(result["cards"][0]["venue_id"], "osm:node:2")
-        self.assertIn("tentative like for sushi", result["cards"][0]["fit"])
-        self.feedback([pref("ramen")])
-        self.assertIsNotNone(self.ledgers.search("first", found))
-        self.assertIsNone(self.ledgers.latest("first"))
-        self.assertIsNone(self.ledgers.search("first", found)["presentation"])
-
     def test_runtime_adapter_uses_task_context_and_rejects_mismatch(self):
         values = {
             "HERMES_SESSION_KEY": "route",
@@ -208,51 +169,9 @@ class TasteServiceTests(unittest.TestCase):
     def test_profile_paths_never_cross_registration_scopes(self):
         self.command("enable")
         self.feedback([pref()])
-        second = TasteService(
-            lambda: self.root / "other", LedgerStore(), identity=lambda s: owner_key(dm(), None)
-        )
+        second = TasteService(lambda: self.root / "other", identity=lambda s: owner_key(dm(), None))
         self.assertIsNone(json.loads(second.profile_tool({}, session_id="first"))["profile"])
         self.assertFalse((self.root / "other").exists())
-
-    def test_delete_clears_cached_tastes_even_after_binding_eviction(self):
-        self.command("enable")
-        self.feedback([pref()])
-        search = self.ledgers.remember(
-            "first", {"candidates": [], "candidates_in_radius": 0}, SEARCH
-        )
-        self.ledgers.save(
-            "first",
-            search,
-            {"private_reason": "ramen"},
-            taste_scope=self.service.scope("first"),
-            taste_revision=self.service.read("first")["revision"],
-        )
-        self.service.bindings.pop("first")
-        self.command("delete confirm", session="new")
-        self.assertIsNone(self.ledgers.latest("first"))
-        self.assertIsNotNone(self.ledgers.search("first", search))
-
-    def test_another_process_deletion_cannot_leak_old_ledger_on_read(self):
-        self.command("enable")
-        self.feedback([pref()])
-        search = self.ledgers.remember(
-            "first", {"candidates": [], "candidates_in_radius": 0}, SEARCH
-        )
-        self.ledgers.save(
-            "first",
-            search,
-            {"private_reason": "ramen"},
-            taste_scope=self.service.scope("first"),
-            taste_revision=self.service.read("first")["revision"],
-        )
-        other = TasteService(lambda: self.root, LedgerStore(), identity=lambda s: None)
-        other.command("delete confirm", source=dm(), session_id="other")
-        result = json.loads(
-            plugin.ledger(
-                {}, session_id="first", _ledger_store=self.ledgers, _taste_service=self.service
-            )
-        )
-        self.assertEqual(result["error"], "no_current_ledger")
 
     def test_memory_controls_explain_effect_without_json_and_enable_is_idempotent(self):
         self.assertIn("Taste memory is now on", self.command("enable"))
@@ -263,3 +182,40 @@ class TasteServiceTests(unittest.TestCase):
         self.assertEqual(before, self.service.read("first"))
         self.assertIn("Food search still works", self.command("pause"))
         self.assertFalse(self.service.read("first")["enabled"])
+
+    def test_feedback_enters_next_request_and_invalidates_old_work(self):
+        self.command("enable")
+        self.feedback([pref("sushi")])
+        self.start()
+        self.assertEqual(self.dining.requests["first"]["profile"]["prefs"][0]["item"], "sushi")
+        self.feedback([pref("ramen")])
+        self.assertNotIn("first", self.dining.requests)
+
+    def test_delete_clears_requests_even_after_binding_eviction(self):
+        self.command("enable")
+        self.feedback([pref()])
+        self.start()
+        self.service.bindings.pop("first")
+        self.command("delete confirm", session="new")
+        self.assertNotIn("first", self.dining.requests)
+
+    def test_other_process_delete_cannot_return_old_reason(self):
+        self.command("enable")
+        self.feedback([pref()])
+        self.start()
+        other = TasteService(lambda: self.root, identity=lambda s: None)
+        other.command("delete confirm", source=dm(), session_id="other")
+        self.assertIn("preferences changed", self.dining.why(session_id="first"))
+        self.assertNotIn("first", self.dining.requests)
+
+    def test_identity_swap_without_taste_profiles_cannot_reuse_evidence(self):
+        self.command("profile")
+        identifier = self.start()
+        self.identity = owner_key(dm("two"), None)
+        result = json.loads(
+            self.dining.research(
+                {"request_id": identifier, "tool": "web_search", "arguments_json": "{}"},
+                session_id="first",
+            )
+        )
+        self.assertEqual(result["error"], "private_context_changed")

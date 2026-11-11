@@ -1,9 +1,6 @@
-"""Current-time defaults and explicit-location guidance, without device inference."""
+"""Current-time defaults and explicit-location guidance."""
 
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-
-from .meal import words
 
 LOCATION_PROMPT = (
     "Let's find you some food. Tell me where you are or plan to be: a city, area, "
@@ -11,66 +8,14 @@ LOCATION_PROMPT = (
     "or drop a location pin if your chat app supports it."
 )
 
-# City-specific entries avoid treating multi-zone countries as a single timezone.
-CITY_ZONES = {
-    ("JP", "tokyo"): "Asia/Tokyo",
-    ("TH", "bangkok"): "Asia/Bangkok",
-    ("TH", "chiang mai"): "Asia/Bangkok",
-    ("ID", "bali"): "Asia/Makassar",
-    ("ID", "denpasar"): "Asia/Makassar",
-    ("ID", "ubud"): "Asia/Makassar",
-    ("ID", "canggu"): "Asia/Makassar",
-    ("US", "new york city"): "America/New_York",
-    ("US", "new york"): "America/New_York",
-    ("US", "nyc"): "America/New_York",
-    ("US", "san francisco"): "America/Los_Angeles",
-    ("US", "sf"): "America/Los_Angeles",
-    ("US", "el paso"): "America/Denver",
-}
-
-
-def broad_origin(area, city):
-    area, city = words(area), words(city)
-    return area == city or any(
-        phrase in area for phrase in ("city center", "city centre", "approximate city")
-    )
-
-
-def location_clarification(message):
-    # Broad areas are valid research scopes. Only the conversational model can
-    # decide whether ambiguity matters; never block a city/neighborhood by name.
-    return None
-
-
-def valid_zone(value):
-    if not isinstance(value, str) or not 1 <= len(value) <= 100:
-        return False
-    try:
-        ZoneInfo(value)
-        return True
-    except (ZoneInfoNotFoundError, ValueError):
-        return False
-
-
-def with_timezone(request):
-    """Resolve only an established city; never the machine's timezone or location."""
-    result = dict(request)
-    if "venue_timezone" not in result:
-        city = " ".join(result.get("city", "").casefold().split())
-        zone = CITY_ZONES.get((result.get("country_code"), city))
-        if zone:
-            result["venue_timezone"] = zone
-    return result
-
 
 def dining_context(*, now=None):
     now = now or datetime.now(timezone.utc)
     return {
         "context": (
             "For dining use spoon_dine to start source-led research, spoon_research for "
-            "available host search/read/browser tools, then spoon_present for the full answer "
+            "batches of independent search/read/browser calls, then spoon_present for the answer "
             "and /why. Maps are optional supporting evidence, not candidate admission. "
-            "Do not call legacy map-first spoon_recommend or spoon_select for this flow. "
             "When a user chooses a researched place, check fresh hours using a new source-led "
             "request focused on that place; keep its previous context and source references. "
             "Compare several genuinely relevant businesses using independent local sources "
@@ -93,9 +38,8 @@ def dining_context(*, now=None):
             "taste choices are a starting point, not a complete personal profile. "
             f"Spoonmaster current clock (UTC): {now.astimezone(timezone.utc).isoformat()}. "
             "For dining, use the current time unless the user explicitly states another time. "
-            "Omit expected_arrival for now; the plugin reads its clock on every evaluation "
-            "and selected-venue recheck. Do not ask the user what time it is. "
-            "Use the established destination's IANA venue_timezone, never the host timezone. "
+            "The plugin supplies current UTC when a request starts. Do not ask the user "
+            "what time it is. Convert to the destination timezone, never the host timezone. "
             "Resolve an explicit local meal time against that destination and date; clarify "
             "only an ambiguous requested time. Current time is not a travel ETA. "
             "Use only an outing location stated by the user or a location pin they shared. "

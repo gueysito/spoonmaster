@@ -7,9 +7,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from spoonmaster.companions import CompanionService
-from spoonmaster.ledger import LedgerStore
 from spoonmaster.locales import LocaleService
 from spoonmaster.onboarding import Onboarding
+from spoonmaster.research_flow import ResearchFlow
 from spoonmaster.taste_service import TasteService
 from tests.test_taste import pref
 
@@ -26,14 +26,14 @@ class HermesTasteTests(unittest.TestCase):
         state = PluginState("spoonmaster-taste-test")
         home = Path(os.environ["HERMES_HOME"]).resolve()
         self.assertTrue(state.data_dir.resolve().is_relative_to(home))
-        service = TasteService(lambda: state.data_dir, LedgerStore())
+        service = TasteService(lambda: state.data_dir)
         source = SimpleNamespace(platform="telegram", chat_type="dm", user_id="synthetic-one")
         result = service.command("enable", source=source, session_id="old")
         self.assertIn("Taste memory", result)
         revision = service.read("old")["revision"]
         args = {"changes": [pref()], "provenance": "feedback", "expected_revision": revision}
         self.assertTrue(json.loads(service.feedback_tool(args, session_id="old"))["saved"])
-        service = TasteService(lambda: state.data_dir, LedgerStore())
+        service = TasteService(lambda: state.data_dir)
         tokens = set_session_vars(
             platform="telegram",
             chat_type="dm",
@@ -54,7 +54,7 @@ class HermesTasteTests(unittest.TestCase):
                 completed = onboarding.command(f"pick {step} 1", source=source, session_id="new")
             self.assertIn("You're set", completed)
             self.assertEqual(len(service.read("new")["prefs"]), 6)
-            companions = CompanionService(service)
+            companions = CompanionService(service, ResearchFlow(None, service))
             preview = json.loads(
                 companions.tool(
                     {
@@ -73,7 +73,7 @@ class HermesTasteTests(unittest.TestCase):
                 )
             )
             self.assertTrue(saved["saved"])
-            reconnected = CompanionService(service)
+            reconnected = CompanionService(service, ResearchFlow(None, service))
             self.assertEqual(
                 json.loads(reconnected.tool({"action": "list"}, session_id="new"))["groups"],
                 ["coworkers"],

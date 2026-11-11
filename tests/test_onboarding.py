@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import Mock
 
-from spoonmaster.ledger import LedgerStore
 from spoonmaster.onboarding import INTRO, REMINDER, Onboarding
 from spoonmaster.onboarding_store import OnboardingStore
 from spoonmaster.taste import TasteError, TasteStore
@@ -21,7 +20,7 @@ class OnboardingTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name) / "data"
-        self.taste = TasteService(lambda: self.path, LedgerStore(), identity=lambda s: None)
+        self.taste = TasteService(lambda: self.path, identity=lambda s: None)
         self.flow = Onboarding(self.taste)
         self.taste.bind("chat", "local-cli")
         self.store = OnboardingStore(self.path / "taste.sqlite3")
@@ -147,27 +146,6 @@ class OnboardingTests(unittest.TestCase):
                 )
             )
         self.assertEqual(sorted(results), [False, True])
-
-    def test_selected_tool_reminder_only_follows_successful_selection(self):
-        self.command("now")
-
-        def handler(args, **kwargs):
-            return json.dumps({"error": "venue_not_presented"})
-
-        self.assertNotIn(
-            "onboarding_reminder",
-            json.loads(self.flow.selection_tool(handler, {}, session_id="chat")),
-        )
-
-        def handler(args, **kwargs):
-            return json.dumps({"card": {"text": "Selected"}, "proceed": True})
-
-        result = json.loads(self.flow.selection_tool(handler, {}, session_id="chat"))
-        self.assertIn(REMINDER, result["card"]["text"])
-        self.assertNotIn(
-            "onboarding_reminder",
-            json.loads(self.flow.selection_tool(handler, {}, session_id="chat")),
-        )
 
     def test_store_failure_does_not_block_search_or_claim_saved_tastes(self):
         from unittest.mock import patch

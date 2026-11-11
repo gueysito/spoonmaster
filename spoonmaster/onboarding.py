@@ -397,12 +397,3 @@ class Onboarding:
             return "Use /spoon start, /spoon now or /spoon pick <question> 1|2|skip."
         except TasteError as error:
             return "Nothing new was saved: " + str(error) + ". You can still use /spoon now."
-
-    def selection_tool(self, handler, args, **kwargs):
-        result = json.loads(handler(args, **kwargs))
-        if result.get("card") and result.get("proceed"):
-            reminder = self.selected(kwargs.get("session_id"))
-            if reminder:
-                result["onboarding_reminder"] = reminder
-                result["card"]["text"] += "\n\n" + reminder
-        return json.dumps(result, ensure_ascii=False)

@@ -53,6 +53,11 @@ START = schema(
         "constraints": STRING,
         "requested_time": STRING,
         "country_code": {"type": "string", "pattern": "^[A-Z]{2}$"},
+        "city": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Established city for reusable source priorities; optional.",
+        },
     },
     ["location", "meal"],
 )
@@ -249,8 +254,9 @@ def retained_evidence(raw, parameters):
 
 
 class ResearchFlow:
-    def __init__(self, dispatch, taste, clock=time.monotonic):
+    def __init__(self, dispatch, taste, clock=time.monotonic, locales=None):
         self.dispatch, self.taste, self.clock = dispatch, taste, clock
+        self.locales = locales
         self.requests = {}
         self.messages = {}
         self.turns = {}
@@ -258,6 +264,33 @@ class ResearchFlow:
         # Retain only locks used by active callers. Replacement must not create a
         # second browser lock while the old request still owns the browser session.
         self.browser_locks = {}
+        self.party_context = lambda session, request_id=None: None
+
+    def current(self, session, identifier=None):
+        with self.lock:
+            try:
+                record = self._get(session, identifier)
+                return {"id": record["id"], "request": copy.deepcopy(record["request"])}
+            except ValueError:
+                return None
+
+    def invalidate_result(self, session, identifier):
+        with self.lock:
+            record = self._get(session, identifier)
+            record["result"] = None
+            record.pop("pending_output", None)
+
+    def invalidate_tastes(self, scope, sessions):
+        with self.lock:
+            for session, record in list(self.requests.items()):
+                if session in sessions or record.get("owner_scope") == scope:
+                    self.requests.pop(session, None)
+
+    def _scope(self, session):
+        try:
+            return self.taste.scope(session)
+        except (TasteError, AttributeError, OSError, RuntimeError):
+            return None
 
     def forget(self, session_id=None, **kwargs):
         with self.lock:
@@ -293,6 +326,9 @@ class ResearchFlow:
         record = self.requests.get(session)
         if not record or (identifier is not None and record["id"] != identifier):
             raise ValueError("request_changed_or_expired")
+        if record.get("owner_scope") != self._scope(session):
+            self.requests.pop(session, None)
+            raise ValueError("private_context_changed")
         return record
 
     def start(self, args, session_id=None, **kwargs):
@@ -325,6 +361,7 @@ class ResearchFlow:
                 "calls": 0,
                 "result": None,
                 "profile": profile,
+                "owner_scope": self._scope(session_id),
             }
             self.requests.pop(session_id, None)
             self.requests[session_id] = record
@@ -332,6 +369,14 @@ class ResearchFlow:
                 self.requests.pop(next(iter(self.requests)))
         # Public source priorities are guidance, never an access grant or membership gate.
         ladders = json.loads(DATA.read_text())
+        saved_sources = None
+        if self.locales and args.get("city") and args.get("country_code"):
+            try:
+                saved_sources, _ = self.locales.review_sources(
+                    args["country_code"], args["city"], session_id
+                )
+            except TasteError:
+                pass  # Optional, expired or unavailable lists never block dining.
         return json.dumps(
             {
                 "request_id": record["id"],
@@ -339,8 +384,10 @@ class ResearchFlow:
                 "current_utc": datetime.now(timezone.utc).isoformat(),
                 "taste_profile": profile if profile and profile.get("enabled") else None,
                 "source_priorities": ladders,
+                "city_source_priorities": saved_sources,
                 "instruction": (
-                    "Research through spoon_research using available host tools. Start with local "
+                    "Research through spoon_research using batches of independent host calls. "
+                    "Start with local "
                     "review/editorial sources and menu relevance, then check finalists against "
                     "official menus/hours and recent independent evidence. No OSM "
                     "lookup is required. "
@@ -417,6 +464,7 @@ class ResearchFlow:
                 parsed.append((entry["tool"], parameters))
             with self.lock:
                 record = self._get(session_id, args["request_id"])
+                party = self.party_context(session_id, record["id"])
                 count = min(len(parsed), 12 - record["calls"])
                 identifiers = [f"e{record['calls'] + i + 1}" for i in range(count)]
                 record["calls"] += count
@@ -457,6 +505,8 @@ class ResearchFlow:
             with self.lock:
                 if self._get(session_id, args["request_id"]) is not record:
                     raise ValueError("request_changed_or_expired")
+                if self.party_context(session_id, record["id"]) != party:
+                    raise ValueError("companions_changed")
                 elapsed = round(self.clock() - record["started"])
                 for i in range(count):
                     captured = results[i]
@@ -485,12 +535,20 @@ class ResearchFlow:
             if not batch and count == 0:
                 return json.dumps({"status": "research_budget_reached", "instruction": instruction})
             return json.dumps(
-                {**({"results": results} if batch else results[0]), "instruction": instruction},
+                {
+                    **({"results": results} if batch else results[0]),
+                    "instruction": instruction,
+                    "confirmed_party": party,
+                },
                 ensure_ascii=False,
             )
-        except (ValueError, TypeError, KeyError) as error:
+        except (ValueError, TypeError, KeyError, TasteError) as error:
             return json.dumps(
-                {"error": str(error) if isinstance(error, ValueError) else "invalid_arguments"}
+                {
+                    "error": str(error)
+                    if isinstance(error, (ValueError, TasteError))
+                    else "invalid_arguments"
+                }
             )
         finally:
             if browser_lock is not None:
@@ -503,6 +561,7 @@ class ResearchFlow:
         try:
             with self.lock:
                 record = self._get(session_id, args.get("request_id"))
+                party = self.party_context(session_id, record["id"])
                 candidates = args["candidates"]
                 if not isinstance(candidates, list) or len(candidates) > 12:
                     raise ValueError("invalid_candidates")
@@ -570,6 +629,8 @@ class ResearchFlow:
                 if profile != record["profile"]:
                     raise ValueError("preferences_changed_restart_with_current_context")
                 result = render(args, record["request"])
+                if party:
+                    result += "\n\nConfirmed company for this meal: " + party_summary(party)
                 record["result"] = copy.deepcopy(args)
                 record["pending_output"] = (self.turns.get(session_id), result)
             return json.dumps(
@@ -583,9 +644,13 @@ class ResearchFlow:
                 },
                 ensure_ascii=False,
             )
-        except (ValueError, TypeError, KeyError, AttributeError) as error:
+        except (ValueError, TypeError, KeyError, AttributeError, TasteError) as error:
             return json.dumps(
-                {"error": str(error) if isinstance(error, ValueError) else "invalid_arguments"}
+                {
+                    "error": str(error)
+                    if isinstance(error, (ValueError, TasteError))
+                    else "invalid_arguments"
+                }
             )
 
     def finish_output(self, response_text="", session_id=None, turn_id=None, **kwargs):
@@ -595,7 +660,8 @@ class ResearchFlow:
         with self.lock:
             try:
                 record = self._get(session_id)
-            except ValueError:
+                self.party_context(session_id, record["id"])
+            except (ValueError, TasteError):
                 return None
             pending = record.pop("pending_output", None)
             if not pending or pending[0] != turn_id:
@@ -621,6 +687,7 @@ class ResearchFlow:
         try:
             with self.lock:
                 record = self._get(session_id)
+                party = self.party_context(session_id, record["id"])
                 try:
                     current_profile = self.taste.read(session_id)
                 except (TasteError, OSError, RuntimeError):
@@ -635,6 +702,8 @@ class ResearchFlow:
                     f"Compared {len(result['candidates'])} places, not every restaurant nearby.",
                     plain(result["coverage"], 1500),
                 ]
+                if party:
+                    lines.append("Confirmed company: " + party_summary(party))
                 for item in result["candidates"]:
                     lines += [
                         "",
@@ -646,8 +715,26 @@ class ResearchFlow:
                         for url in dict.fromkeys(e["url"] for e in item["evidence"])
                     ]
                 return "\n\n".join(line for line in lines if line)
-        except ValueError:
+        except (ValueError, TasteError):
             return None
+
+
+def party_summary(party):
+    members = []
+    for i, member in enumerate(party["members"], 1):
+        details = []
+        for key, value in member.items():
+            details.append(
+                key.replace("_", " ")
+                + ": "
+                + (", ".join(value) if isinstance(value, list) else str(value))
+            )
+        members.append(f"Person {i} (" + "; ".join(details) + ")")
+    rules = [
+        f"{r['kind'].replace('_', ' ')}: {r['value']} ({r['strength']})"
+        for r in party.get("rules", [])
+    ]
+    return plain("; ".join(members + rules), 8000)
 
 
 def render(result, request):

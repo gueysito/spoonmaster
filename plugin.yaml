@@ -1,22 +1,16 @@
 name: spoonmaster
 version: "0.1.0"
-description: Provisional dining cards, progressive hours checks and private reject ledger
+description: Source-led dining comparisons, parallel research and optional private tastes
 requires_hermes: ">=0.21.5"
 provides_tools:
   - spoon_dine
   - spoon_research
   - spoon_present
   - spoon_onboard
-  - spoon_candidates
-  - spoon_verify_hours
-  - spoon_evaluate
   - spoon_ledger
-  - spoon_recommend
-  - spoon_select
   - spoon_profile
   - spoon_feedback
   - spoon_companions
-  - spoon_locale
 provides_hooks:
   - on_session_reset
   - on_session_finalize

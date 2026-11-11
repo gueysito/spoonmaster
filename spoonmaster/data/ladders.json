@@ -5,28 +5,25 @@
   "baseline": [
     {
       "name": "TripAdvisor",
-      "roles": ["local_opinion"],
-      "domains": ["tripadvisor.com"],
+      "roles": [
+        "local_opinion"
+      ],
+      "domains": [
+        "tripadvisor.com"
+      ],
       "access": "search_or_user_content",
       "reason": "Cross-city crowd references when no reviewed local ladder exists; branch-match evidence, original scale and count remain required. No direct scraping."
     },
     {
       "name": "Yelp",
-      "roles": ["local_opinion"],
-      "domains": ["yelp.com"],
-      "access": "search_or_user_content",
-      "reason": "Optional cross-city crowd reference; missing regional coverage is unknown, not negative. No direct scraping or account/API access."
-    },
-    {
-      "name": "OpenStreetMap",
       "roles": [
-        "discovery"
+        "local_opinion"
       ],
       "domains": [
-        "openstreetmap.org"
+        "yelp.com"
       ],
-      "access": "existing_adapter",
-      "reason": "Keyless nearby discovery; community claims need verification."
+      "access": "search_or_user_content",
+      "reason": "Optional cross-city crowd reference; missing regional coverage is unknown, not negative. No direct scraping or account/API access."
     },
     {
       "name": "Venue website",
@@ -35,8 +32,8 @@
         "booking"
       ],
       "domains": [],
-      "access": "existing_adapter",
-      "reason": "Existing bounded linked-venue checks; identity, robots and network safety still apply."
+      "access": "host_permitted",
+      "reason": "Current branch menus and published hours through available host tools with normal access controls."
     },
     {
       "name": "Google Maps",

@@ -4,7 +4,6 @@ import copy
 import json
 import re
 import secrets
-import threading
 
 from .household import HOUSEHOLD_SCHEMA, valid_household
 from .ledger import session_key
@@ -105,23 +104,25 @@ class CompanionStore(TasteStore):
 
 
 class CompanionService:
-    def __init__(self, taste):
+    def __init__(self, taste, dining):
         self.taste = taste
+        self.dining = dining
         self.pending = {}
         self.active = {}
-        self.lock = threading.RLock()
+        self.lock = dining.lock
+        dining.party_context = self.context
 
     def _prune(self):
         for mapping in (self.pending, self.active):
             for session in list(mapping):
                 if self.taste.clock() - mapping[session]["time"] >= 900:
                     if mapping is self.active:
-                        self.taste.ledgers.forget(session)
+                        self.dining.forget(session)
                     del mapping[session]
             while len(mapping) > 100:
                 session = next(iter(mapping))
                 if mapping is self.active:
-                    self.taste.ledgers.forget(session)
+                    self.dining.forget(session)
                 del mapping[session]
 
     def forget(self, session_id=None, **kwargs):
@@ -138,7 +139,7 @@ class CompanionService:
         for mapping in (self.active, self.pending):
             for session in list(mapping):
                 if mapping[session]["binding"] == (owner, path):
-                    self.taste.ledgers.forget(session)
+                    self.dining.forget(session)
                     del mapping[session]
 
     def tool(self, args, **kwargs):
@@ -172,8 +173,8 @@ class CompanionService:
                     preview = {"before": old["household"] if old else None, "after": household}
                     extra = {"sensitive": sensitive}
                 elif action == "recall" and set(args) in (
-                    {"action", "label", "search_id", "members"},
-                    {"action", "label", "search_id", "members", "rules"},
+                    {"action", "label", "request_id", "members"},
+                    {"action", "label", "request_id", "members", "rules"},
                 ):
                     group = groups.get(label)
                     indices = args["members"]
@@ -188,8 +189,8 @@ class CompanionService:
                         or len(set(indices)) != len(indices)
                     ):
                         raise TasteError("invalid_party")
-                    if self.taste.ledgers.search(session, args["search_id"]) is None:
-                        raise TasteError("search_not_available")
+                    if self.dining.current(session, args["request_id"]) is None:
+                        raise TasteError("request_not_available")
                     household = copy.deepcopy(group["household"])
                     household["members"] = [household["members"][i - 1] for i in indices]
                     if "rules" in args:
@@ -206,7 +207,7 @@ class CompanionService:
                             raise TasteError("invalid_party")
                         household["rules"] = [saved_rules[i - 1] for i in rules]
                     revision = group["revision"]
-                    extra = {"search_id": args["search_id"]}
+                    extra = {"request_id": args["request_id"]}
                     preview = {"selected_member_numbers": indices, "household": household}
                 else:
                     raise TasteError("invalid_arguments")
@@ -263,7 +264,7 @@ class CompanionService:
                     return json.dumps({"groups": store.read(owner), "help": HELP})
                 if parts == ["companions", "solo"]:
                     self.forget(session_id)
-                    self.taste.ledgers.forget(session_id)
+                    self.dining.forget(session_id)
                     return "Companion context cleared. Start a new search for this outing."
                 if (
                     len(parts) == 4
@@ -294,13 +295,10 @@ class CompanionService:
                     group = store.read(owner).get(draft["label"])
                     if not group or group["revision"] != draft["revision"]:
                         raise TasteError("companions_changed")
-                    record = self.taste.ledgers.search(session_id, draft["search_id"])
+                    record = self.dining.current(session_id, draft["request_id"])
                     if not record:
-                        raise TasteError("search_not_available")
-                    if not self.taste.ledgers.save(
-                        session_id, draft["search_id"], None, expected_revision=record["revision"]
-                    ):
-                        raise TasteError("search_changed_or_expired")
+                        raise TasteError("request_not_available")
+                    self.dining.invalidate_result(session_id, draft["request_id"])
                     self.active[session_id] = {**draft, "time": self.taste.clock()}
                     self.pending.pop(session_id)
                     return "Confirmed companions for this search only. Recommend again."
@@ -308,56 +306,29 @@ class CompanionService:
         except TasteError as error:
             return json.dumps({"error": str(error), "saved": False})
 
-    def _party(self, session, search_id=None):
+    def _party(self, session, request_id=None):
         self._prune()
         party = self.active.get(session)
         if not party:
             return None
         owner, path, store = self._access(session)
         group = store.read(owner).get(party["label"])
-        record = self.taste.ledgers.current(session)
+        record = self.dining.current(session)
         if party["binding"] != (owner, path) or not group or group["revision"] != party["revision"]:
-            self.taste.ledgers.forget(session)
+            self.dining.forget(session)
             self.active.pop(session, None)
             raise TasteError("companions_changed")
-        if not record or record["search_id"] != party["search_id"]:
+        if not record or record["id"] != party["request_id"]:
             self.active.pop(session, None)
             return None
-        if search_id is not None and search_id != party["search_id"]:
+        if request_id is not None and request_id != party["request_id"]:
             return None
         return party
 
-    def wrap(self, handler, args, **kwargs):
-        session = kwargs.get("session_id")
-        try:
-            with self.lock:
-                party = copy.deepcopy(
-                    self._party(session, args.get("search_id") if isinstance(args, dict) else None)
-                )
-            merged = args
-            if party and isinstance(args, dict) and "origin_confirmed" in args:
-                if "household" in args:
-                    return json.dumps(
-                        {
-                            "error": "party_already_confirmed",
-                            "action": "Use companions solo and search again to replace this party.",
-                        }
-                    )
-                merged = {**args, "household": party["household"]}
-            result = handler(merged, **kwargs)
-            with self.lock:
-                if party != self._party(session):
-                    return json.dumps(
-                        {
-                            "error": "companions_changed",
-                            "action": "Confirm companions and recommend again.",
-                        }
-                    )
-            return result
-        except TasteError as error:
-            return json.dumps(
-                {"error": str(error), "action": "Confirm companions again in a private chat."}
-            )
+    def context(self, session, request_id=None):
+        with self.lock:
+            party = self._party(session, request_id)
+            return copy.deepcopy(party["household"]) if party else None
 
     def before_turn(self, session_id=None, user_message="", **kwargs):
         try:
@@ -373,7 +344,7 @@ class CompanionService:
                 + ". When the user references dining with a person/group, use spoon_companions "
                 "to view the group and confirm who is joining and which saved needs apply. "
                 "Never assume every member is attending. Recall stages a preview, not consent. "
-                "A direct /spoon companions use command activates it for the current search only. "
+                "A direct /spoon companions use command activates it for the current request only. "
                 "For solo or changed company, ask the user to clear the old party with "
                 "/spoon companions solo before a new search. "
                 "Never use saved companions for unrelated outings."
@@ -388,7 +359,7 @@ COMPANIONS_SCHEMA = {
     "Use only for user-requested companion management or when they mention dining with a saved "
     "family, coworker or friend group. Never infer attendance. Prepare replaces a full group; "
     "include only user-supplied details and preserve unrelated members. Dietary fields require "
-    "direct sensitive-save consent. Recall requires current search_id and explicit 1-based member "
+    "direct sensitive-save consent. Recall requires current request_id and explicit 1-based member "
     "numbers; optional rules selects 1-based group rule numbers for this outing (omit for all). "
     "Only omit rules the user says do not apply. Relay the exact preview and human confirmation "
     "command; tools cannot commit it. "
@@ -401,7 +372,7 @@ COMPANIONS_SCHEMA = {
             "action": {"type": "string", "enum": ["list", "view", "prepare", "recall"]},
             "label": {"type": "string", "pattern": "^" + LABEL + "$"},
             "household": HOUSEHOLD_SCHEMA,
-            "search_id": {"type": "string", "maxLength": 24},
+            "request_id": {"type": "string", "maxLength": 24},
             "members": {
                 "type": "array",
                 "minItems": 1,

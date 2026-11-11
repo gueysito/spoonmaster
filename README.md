@@ -1,463 +1,138 @@
 # Spoonmaster
 
-A Hermes Agent plugin that helps you decide where to eat right now. It learns your
-taste, checks the right local sources for where you are, shows the reasoning behind
-its pick, and improves from what actually happened at the table.
+A Hermes plugin for choosing where to eat using local reviews, current venue facts
+and your optional tastes. Status: local pilot, not a released catalog plugin.
+Current implementation and verification: [CURRENT-STATE](CURRENT-STATE.md) and [TRACKER](TRACKER.md).
 
-Status: pre-alpha. Discovery, provisional recommendation cards, progressive hours checks and a reject
-ledger work locally. Optional onboarding, opt-in taste memory, feedback diffs and
-supported taste ranking, confirmed companions and locale source ladders are implemented.
-The plugin passed real-host
-doctor/validate in an isolated profile, which was then deleted.
-Built for the Hermes Agent Plugin Hackathon (submission due 2026-11-11, 17:00 EST).
-The repository is private until submission, then public.
+Tell the agent where you are or plan to be and what sounds good. A city or neighborhood
+is enough; a location pin is optional where supported. It uses the current time unless
+you specify another time. It does not infer your location from your device or IP.
 
-## Source-led dining (D-020)
+The agent compares relevant places using independent local recommendations and official
+menus/hours, then returns a pick and up to two distinct alternatives with food, budget,
+published hours, caveats, sources and clickable named-place Google Maps links. Missing
+facts stay unconfirmed. `/why` explains the actual comparison, including rejected places;
+it does not claim every nearby restaurant was evaluated.
 
-Tell Spoonmaster where you are or plan to be and what sounds good. A city or
-neighborhood is sufficient for an area search; a pin is optional. Current time is
-used unless you specify another time. Saved tastes and onboarding are optional.
+## How it works
 
-`spoon_dine` starts a short research workflow. The host researches local reviews,
-guides and official information through `spoon_research`, using its available
-`research_search`, `research_read`, `web_search`, `web_extract` or `browser_exec`.
-No OSM match is required. Existing host permissions, provider allowances and source
-access restrictions still apply; no service is installed or enabled automatically.
-Public queries should contain only food/area/venue facts, never health details or
-private addresses. Browser use is subject to the host's own controls.
+`spoon_dine` starts or replaces a request. `spoon_research` runs up to three independent
+host searches/reads together, retaining evidence for `spoon_present`. Single operations
+still work. A request permits 12 research operations and expires after 30 minutes.
+A model round trip is one exchange needed to choose and invoke a tool; batching reduces
+those exchanges. It does not guarantee a fixed answer time. The agent reports what it
+is checking and why between calls. Host-delivered steering replaces the request; explicit
+cancellation clears it. Some hosts queue user input during a running call.
 
-`spoon_present` records the actual comparison and returns normal readable text,
-with up to three distinct businesses, named-place Maps links, source links and
-specific gaps. `/why` explains the compared candidates. Quoted evidence and URLs
-must occur in retained tool output. The host model remains responsible for source
-meaning, branch identity, hard-constraint interpretation and honest ranking; quote
-matching is not a guarantee of truth. Known closure/conflict cannot fill a slot.
+The model interprets quality, branch identity and fit. Code checks retained quotations
+and URLs, excludes declared closure/conflict, avoids repeated brands and renders the
+comparison. Matching a quote is not proof that the interpretation is correct. Area
+searches require no map match. Exact distance or travel-time claims require evidence.
+When a supported distance exceeds half a mile, country-appropriate ride-service links
+may appear. They open the service, with no fare, pickup or booking prefilled.
 
-The agent explains what it is checking between calls, including why more research
-is useful. These are normal streamed updates. Timed plugin notifications are not
-used: this Hermes CLI queued them until completion in live testing. Received new
-context replaces unfinished work; host delivery of interruptions may be queued.
-A research round allows up to 12 calls and stops initiating work
-when its 75-second budget is exhausted; an in-flight call uses host-owned timeouts.
-Evidence is in-memory, scoped to the current conversation and expires after 30m.
-No recommendation notification is treated as proof that the user saw a card. A final-output
-hook restores any omitted place links only in the current dining turn, without
-holding streams or rewriting unrelated replies. Live comparisons took about two
-to three minutes including model synthesis; the research budget is not a total
-response deadline.
+Available host routes are `research_search`, `research_read`, `web_search`, `web_extract`
+and `browser_exec`. Actual availability varies by installation. Host permissions,
+provider allowances, website terms and access restrictions still apply. The plugin
+adds no credentials, subscriptions or provider configuration and never bypasses logins
+or bot protection. Browser operations are serialized per conversation.
 
-Say what you like in your own words, including dishes, flavors, atmosphere,
-budget, drinks/dessert or usual companions. Six optional picker questions remain a
-starting point. Save only opted-in tastes; household and sensitive details retain
-separate consent. For a single meal, constraints can stay outing-only. The model
-connects preferences to source-supported menu/venue facts and must explain that fit.
+## Personalization and controls
 
-`/spoon enable` resumes saved taste memory; it does not enable restaurant search.
-`/spoon pause` stops using saved tastes without deleting them. `/spoon profile`
-shows readable preferences; `/spoon export` intentionally returns full data.
+Food search works without saving anything. `/spoon now` starts that path.
+`/spoon personalize` offers six optional 1/2 choices. You can also describe favorite
+meals, flavors, atmosphere, budget, drinks/dessert and usual company in your own words.
+Host-transcribed voice uses the same flow; this plugin does not set up microphones or
+speech services. Ambiguous dietary transcription must be clarified.
 
-Host-transcribed voice messages use the same workflow as text. Spoonmaster does
-not configure microphones or transcription providers. Actual voice-note delivery
-requires a host/channel with speech-to-text working; no terminal audio setup is
-required for testing. Ambiguous dietary transcription must be clarified.
+- `/spoon enable`: turns on optional taste memory and learning, not restaurant search.
+- `/spoon profile`: shows readable saved tastes. `/spoon export` returns full structured data.
+- `/spoon pause`: stops saved-taste use/learning while preserving the profile.
+- `/spoon confirm <id>`: makes a tentative preference lasting.
+- `/spoon correct <id> like|dislike|neutral` or `/spoon remove <id>`: edits one preference.
+- `/spoon delete confirm`: removes this identity's tastes, companions, city lists and
+  onboarding records. Hermes transcripts and backups are separate.
 
-The lower-level map tools documented below remain optional diagnostics, not the
-primary dining sequence. Earlier map-first implementation receipts are historical.
+Taste feedback has a visible change receipt. Unchosen onboarding choices never become
+dislikes. One meal's needs can remain temporary. Health/allergy data must not enter
+taste fields; saving dietary needs requires separate companion consent.
 
-## What it will do
+## Companions and reusable sources
 
-- **Decide.** "Dinner nearby, nothing fussy" plus a location pin returns one pick, a
-  runner-up and a wildcard. Each is a card with a map link, hours at arrival, ETA,
-  realistic cost, what to order and the one caveat that matters.
-- **Show its work.** The reject ledger lists every place considered and the check
-  that removed it: closed at arrival, too far, diet conflict, poor fit, unverifiable.
-- **Learn.** Tell it what worked; it shows the exact taste change it saved and
-  separates lasting preferences from one-night circumstances.
-- **Eat together.** Merge household or friends' profiles to answer "what do we
-  all want tonight?" with shared favorites and hard vetoes respected.
-- **Know where to look.** Per-country source ladders pick the right evidence for the
-  place you are in: Tabelog in Japan, Wongnai in Thailand, local guides in Bali.
+Ask to prepare a family/friend/coworker group, review the full preview, then use its
+`/spoon companions save <token>` command. Dietary fields require `save-sensitive`.
+When eating together, the agent previews exactly who is attending and which rules apply.
+`/spoon companions use <token>` confirms that party for the current request only.
+Starting a new request clears the attachment. Selected members' ages, dietary needs,
+likes/dislikes and selected group rules inform the model; allergy safety is never
+established by a menu or review. Confirm handling directly with the venue.
 
-## Start here
+`/spoon companions list` views groups; `delete <label> confirm` removes a group;
+`/spoon companions solo` clears current company and the request without deleting groups.
+Corrections use a full replacement preview. Cross-agent profile merging remains planned.
 
-| Read | For |
-|---|---|
-| [docs/prd.md](docs/prd.md) | Product spec: experience, features, rules, scope |
-| [docs/architecture.md](docs/architecture.md) | Hermes surfaces, components, data model |
-| [docs/source-ladders.md](docs/source-ladders.md) | Per-country evidence ladders and the locale scout |
-| [docs/data-gate.md](docs/data-gate.md) | Shibuya spike results, source limits and reproduction |
-| [docs/demo.md](docs/demo.md) | 90-second demo spine and alternative flows |
-| [DECISIONS.md](DECISIONS.md) | Settled choices and their alternatives |
-| [docs/idea-register.md](docs/idea-register.md) | Every idea: adopted, roadmap, maybe, postponed, dismissed |
-| [TRACKER.md](TRACKER.md) / [CURRENT-STATE.md](CURRENT-STATE.md) | Tasks and current truth |
-| [AGENTS.md](AGENTS.md) | Rules for anyone, human or agent, working here |
+Bundled source lists cover Japan, Thailand, Indonesia, NYC and SF; the same research
+principles apply elsewhere. Ask to view or edit a city's sources. The profile tool can
+stage an attributed replacement; `/spoon locale confirm <token>` saves it for review
+within 30 days. `/spoon locale show <country> <city>` displays it and
+`/spoon locale forget <country> <city>` removes it. Source-list management is optional
+and never blocks finding food. A saved list is guidance, not website access permission.
+Details and source references: [source ladders](docs/source-ladders.md).
 
-## Install
+## Data and privacy
 
-No released or catalog-listed installation yet. Once listed in the Hermes plugin catalog:
-`hermes plugins install spoonmaster`.
+The plugin delegates public food/area/venue queries to installed host tools. Provider
+and website logging/allowances remain host-owned. Instructions prohibit private
+addresses, names and health details in public queries. Source text is untrusted data.
+No direct map endpoint, custom page scraper, telemetry, background job, model client
+or shell tool is part of plugin runtime. The development scripts invoke Hermes only
+inside owned test profiles.
 
-## Development slice
+Evidence and requests are process-local: at most 100 conversations, 12 operations each,
+16,000 excerpt characters per operation, 128 citation URLs and 16 best-effort source
+pairs. Requests expire after 30 minutes and clear on reset/finalization/replacement.
+In-flight host calls finish under host timeouts; their stale results are discarded.
 
-Use Python 3.11-3.14 and uv. The runtime is standard-library only; the dev group
-pins Ruff 0.15.6. The lock uses a 2026-11-01 release cutoff. Install wheels only:
+Optional SQLite data lives in Hermes's profile-specific `ctx.state.data_dir`, with mode
+0600. This is local access control, not encryption. Taste records store item, kind,
+polarity, scope, confidence, provenance, context and timestamps, up to 100 preferences
+per identity and 100 identities. No raw meal diary or exact-location history is stored.
+Onboarding stores status/attempt/reminder markers; draft answers expire after two hours.
+Companions allow 20 groups per identity, 12 members/20 rules per group, up to 20 KB.
+Companion previews/attachments expire after 15 minutes. City lists allow 20 cities per
+identity and eight sources per city, with review/retrieval dates. Confirmation previews
+expire after 15 minutes. Identity is derived from verified private host context; CLI has
+a local identity. Revision checks protect writes; corrupt records fail closed.
+
+Viewing/using private data may put it in Hermes transcripts and the configured model
+provider. Deletion removes local records, not host transcripts, storage-media remnants
+or external backups. Opening Maps or ride links sends information to those services;
+merely generating the links makes no request.
+
+## Development and verification
+
+Runtime uses Python 3.11–3.14 standard library only. Development pins Ruff 0.15.6.
 
 ```sh
 uv sync --frozen --no-build --python 3.13
 .venv/bin/ruff format --check .
 .venv/bin/ruff check .
-.venv/bin/python -m unittest discover -v
+.venv/bin/python -B -m unittest discover -v
 sh .standards/check-standards.sh
 git diff --check
 ```
 
-The public-landmark probe is explicit and performs one network request:
+`scripts/check-hermes.py --source <checkout> --python <venv-python>` creates an isolated
+profile, installs the plugin, runs doctor/validate/tests and removes its test tree.
+`scripts/interactive-hermes.py` supports `prepare`, `chat`, `check`, `stop` and `cleanup`
+with the same runtime arguments plus an owned `--root`. Its profiles stay outside the
+live registry. Only public model/provider/backend names are seeded, never credentials
+or existing conversations. Remote actions require named authorization. Retained owner
+test profiles are removed after testing ends; disposable engineering profiles are
+removed after verification. Live agents are not changed by these scripts.
 
-```sh
-.venv/bin/python -m spoonmaster.probe --live
-```
-
-The provisional `spoon_candidates` tool accepts explicit latitude/longitude,
-radius (1-2,000 metres, default 1,600), and result limit (1-20, default 10). It
-returns distance-sorted evidence, not recommendations. Tool registration is tested
-against a mock context and a separately loaded directory package. The manifest
-targets Hermes >=0.21.5, the package version declared by release `v2026.9.24`.
-Real `hermes plugins doctor . --ci`, `hermes plugins validate . --install-deps` and
-all 190 tests passed on an existing Hermes runtime with Python 3.14.9. Local Python
-3.13 passes 189 tests and skips the one real-host identity test. Profile
-deletion and removal of the copied files and temporary root were verified.
-
-`spoon_verify_hours` accepts `venue_ids` from discovery and `stage` (`finalists` for
-one to three venues, `selected` for exactly one). The card tools below enforce this sequence;
-use this lower-level tool for additional evidence inspection. It attempts the linked venue page, retains source
-URLs and timestamps, and returns confirmed, unknown or conflicting evidence. Selection
-rechecks unresolved or stale evidence; fresh confirmed checks can be reused for
-15 minutes. There is no open-at-arrival guarantee. Known `country_code` values JP, TH,
-ID and KR allow local phone numbers to become international `tel:` links. Missing hours
-produce call advice; missing or ambiguous numbers remain explicit. The visible number
-is a fallback for channels that do not render telephone links. Telegram tap behavior
-has not been tested.
-
-The [source ladder](docs/source-ladders.md#progressive-hours-adapter-t1-pilot) defines
-the exact verification labels and network limits. Unstructured Japanese hours are
-returned as unverified excerpts for host review, not silently treated as a parsed
-schedule. Repeat the live three-venue exercise with
-`.venv/bin/python -m spoonmaster.probe --live --verify-demo`; it also accepts `--input`
-with saved OSM JSON to avoid repeating discovery. The demo then makes live venue reads.
-
-`spoon_evaluate` checks every returned candidate from the latest search using its
-`search_id`, the user's `origin_confirmed` answer, optional explicitly stated
-`dietary_restrictions` and `excluded_venue_ids`. Omit `expected_arrival` to use the
-current clock, refreshed during recommendation and selected-venue checks. Supply an
-offset-aware `expected_arrival` only when the user requests a different time.
-`venue_timezone` is the destination's IANA zone, such as `Asia/Tokyo`, never the host's.
-Known city/zone mappings cover Tokyo, Bangkok/Chiang Mai, Bali, NYC, SF and El Paso;
-other established destinations can supply their IANA zone. An unknown zone leaves
-schedule math unresolved, without asking the user for the current time.
-No ETA is guessed. Weekly matching is not confirmation of
-date-specific availability; last order and other missing facts remain unknown.
-
-The search location must come from the user's stated area, address or landmark, or a
-pin they share. Missing/ambiguous locations prompt for those choices, including a pin
-where supported. Terminal users can type a location. An already stated outing origin
-does not require another confirmation; changing cities replaces it. Device/IP location
-and the host time zone are never used to infer an origin. An area is a search anchor,
-not a claim of precise user position.
-
-Each gate returns pass, fail or unknown with a reason and source links where evidence
-exists. Explicit failures exclude a venue; any unknown leaves it unresolved. The
-summary counts evaluated, excluded and unresolved venues separately and discloses
-discovered venues omitted by the result limit. This does not rank or recommend places.
-
-`/why` lists failures and unknowns, three venues per page (`/why 2` continues).
-`spoon_ledger` returns one complete venue per page with all ten checks and source links;
-follow `next_page` until null for the complete ledger. Both show the original evaluation
-time. Re-run `spoon_evaluate` after hours verification or changed outing constraints.
-`spoon_recommend` accepts the same outing inputs, plus optional `country_code`,
-`travel_mode` and three-letter `home_currency`. It attempts hours verification for
-up to three finalists and returns complete provisional cards with explicit unknowns.
-Ranking uses supported saved cuisine/venue preferences, then attributed editorial support
-and comparable same-source crowd ratings when available, then distance, with a distinct
-listed cuisine for the wildcard. Missing review coverage remains unknown; no quality guarantee is inferred. Tentative tastes
-receive less weight; context-bound preferences apply only to explicitly matching
-`taste_context` tags (season, time, occasion, company). Known failures, duplicate venues
-and weekly-predicted closures cannot fill slots. Missing prices leave requested
-`mode: price_tiers` slots empty rather than inventing spend estimates.
-
-After the user chooses, call `spoon_select` with `search_id` and a displayed `venue_id`.
-It rechecks missing, conflicting or stale hours, retains sourced call links and warns
-against proceeding when a weekly schedule predicts closure. The user initiates any
-call. New recommendation requests invalidate old choices even when verification is
-unavailable; new searches and re-evaluation also invalidate old choices. Outings older
-than 15 minutes require reconfirmation before selection.
-
-These operations require Hermes's conversation context; a model-supplied session ID
-cannot select another conversation's records. Missing context fails closed.
-
-`scripts/check-hermes.py --source <checkout> --python <venv-python>` repeats that
-model-free test using an already installed Hermes runtime. It creates an isolated
-Hermes root, a named profile without aliases or bundled skills, and a plugin copy;
-enables the plugin, runs doctor/validate and the tests, then tears down the profile
-and root even on failure. Child processes receive an explicit environment allowlist
-without inherited credentials. Hermes may prepare dependencies inside that temporary
-root; this can take several minutes. Remote execution still needs named authorization.
-
-For owner hands-on CLI testing, `scripts/interactive-hermes.py` provides `prepare`,
-`chat`, `check` and explicit `cleanup` actions with `--source`, `--python` and
-`--root`. Use a new `spoonmaster-test-*` directory directly under the host's Hermes
-home. It parks a fresh profile under the test root's own `profiles/<name>` folder,
-outside the live named-profile registry, installs
-the plugin and validates it. Only model/provider and web backend names are seeded;
-existing OpenAI Codex login access uses the host's supported root fallback.
-The harness verifies the host resolves that unique profile identity before any
-test-home CLI action; an arbitrary home path would collide with the default gateway.
-No credentials, conversations or memories are copied. Chat exposes only web and
-Spoonmaster tools. The existing host's update pause can block chat startup; do not
-clear that pause as part of testing. Cleanup stops only this profile's runtime,
-deletes its named profile through the isolated registry, and removes both test roots.
-Keep the roots until testing finishes, then run cleanup and verify their absence.
-
-## First use and onboarding
-
-The first supported private conversation offers **Personalize my picks** or **Find
-food now**. Finding food never requires completing a questionnaire. `/spoon start`
-uses Hermes choice buttons where the synchronous command surface supports them;
-otherwise it returns numbered text choices. Automatic first-turn offers use text
-through the documented context hook. End-to-end model/Telegram delivery remains unverified.
-
-- `/spoon now` skips onboarding and continues toward a food search. Only missing
-  outing details are needed; existing locations should not be asked for again.
-- `/spoon personalize`, or saying **“get me onboarded”**, starts six short optional
-  choices about dishes, cuisine, texture, flavor, atmosphere and familiarity.
-- Answer 1, 2 or skip. `/spoon pick <question> 1|2|skip` is the explicit text fallback.
-  An unrelated message pauses natural-answer handling; use those commands to continue
-  or `/spoon start` to restart. `/spoon now` exits without saving partial tastes.
-- Completing all six answers saves selected options as tentative likes in one
-  transaction. Unchosen options never become dislikes; existing tastes stay intact.
-  Individual skips add nothing. Dietary restrictions are asked only optionally for
-  the outing; health details are not stored by onboarding.
-
-After the first successful venue choice following skipped onboarding, the selected
-card includes one brief reminder about later personalization. A persisted marker
-prevents repeated reminders across sessions and restarts. Completing onboarding
-suppresses it. Storage/reminder failures never block a selected venue.
-
-## Review evidence across cities
-
-Pass the explicitly established `country_code` and `city` to `spoon_recommend`.
-The same review path applies to Japan, Thailand, Indonesia, NYC/SF and future
-owner-confirmed city ladders. No city or country is inferred from private coordinates.
-
-Before selecting cards, the plugin checks up to six admissible candidates in
-supported-taste/distance order, with one existing-host `web_search` call per candidate
-and five results per call. Missing mapped street addresses skip that candidate's search.
-Only public venue names, addresses, city/country and source-domain filters leave for
-search. This uses the host provider's configured allowance, without new accounts,
-credentials, provider settings or direct publisher fetches. One batch runs per plugin
-registration at a time, with 60 seconds between batch starts. Host timeouts remain
-host-owned; the plugin does not promise a fixed end-to-end response time.
-
-Evidence must match the restaurant name, mapped street address and city. Basic English
-street abbreviations are normalized; ambiguous branches and incomplete addresses yield
-unknown coverage. Search excerpts are not complete reviews. Explicit editorial
-recommendation labels in result titles can break taste ties; ordinary mentions cannot.
-Crowd ratings require an explicit score, scale and review count in the excerpt and are
-compared only when the whole taste-tied candidate set shares that publisher and scale.
-Scores from different platforms are never averaged. English recommendation labels and
-rating formats are supported initially; other text remains reference-only. Known source
-dates older than 365 days or in the future do not affect ranking. Undated editorial
-signals are provisional and explicitly labeled; retrieval is not publication freshness.
-
-Cards and the full ledger preserve source links, retrieval/publication dates, review
-references and unknowns. Reviews never establish hours, availability, dietary safety,
-prices or dishes. Search failure or missing context falls back to the existing
-provisional flow with an explicit research status. Selection retains evidence without
-re-running search. It expires with the conversation's search/ledger, clears on reset,
-and is not written to disk. Viewing it may put it in Hermes/model-provider transcripts.
-Private source-list access and concurrent reset/deletion guards still apply.
-
-NYC/SF source references include Eater, The Infatuation, local newspaper critics,
-Michelin, Yelp and OpenTable; Google Maps stays link-only. Restricted publishers cannot
-be fetched by the venue-page adapter even if an OSM website field points to them.
-See [source ladders](docs/source-ladders.md) for access limits and evidence selection.
-
-## Optional taste memory
-
-In a private chat or local CLI, `/spoon enable` opts into local structured taste storage.
-`spoon_feedback` records the user's reported preferences and returns the exact saved
-additions/changes, situational items and rejected inferences. The agent must relay that
-diff. Failed writes never claim a saved change. Feedback can affect the next pick when
-it matches a venue's listed cuisine or exact OSM venue ID; dish, attribute and vibe
-preferences await supporting venue evidence. Taste matches never override hard gates.
-
-Saved tastes survive restarts and new sessions. The documented Hermes session-context
-API reconnects a verified private sender automatically; `/spoon profile` is the fallback
-when a surface lacks that context. Local CLI uses its own profile-local identity.
-Different messaging identities, channels and CLI are not silently merged. Shared chats,
-cron context and model-supplied identity are denied; group merging remains T10.
-
-- `/spoon profile` views tastes and their scopes; `/spoon export` returns the same
-  structured profile in the private conversation.
-- `/spoon confirm <id>` makes an item durable. Model requests for durable scope remain
-  tentative until this direct confirmation, so one bad meal is not a permanent dislike.
-- `/spoon correct <id> like|dislike|neutral` corrects polarity; `/spoon remove <id>`
-  removes one item. Remove and report again to change an item's wording or context.
-- `/spoon pause` stops profile use and learning; `/spoon enable` resumes them.
-- `/spoon delete confirm` deletes only that identity's plugin taste profile and clears
-  its in-memory choices. It does not erase Hermes transcripts or external backups.
-
-Health/allergy information must not be saved in taste fields. Companion dietary details
-have separate consent controls below. Profile controls
-are portable text commands; Telegram delivery has not yet been exercised end to end.
-
-## Dining companions and outing rules
-
-Saved groups can represent family, coworkers, a friend or any recurring dining party.
-They belong to your private identity within the current Hermes profile, separate from
-your own taste preferences. Mentioning a group prompts the agent to confirm who is
-joining and which saved needs apply. A solo or unrelated outing does not automatically
-load a saved party. This conversational behavior still needs a live model/channel check.
-
-Ask the agent to prepare a group with numbered members, optional ages, dietary needs,
-cuisine likes/dislikes and explicit cuisine/venue vetoes. `spoon_companions` returns a
-before/after preview and a direct `/spoon companions save <token>` command. Any nonempty
-dietary field requires `/spoon companions save-sensitive <token>` instead. Nothing is
-persisted until that human command; tokens expire after 15 minutes and cannot cross
-conversations, identities or profiles. Do not put diagnoses into preference fields.
-
-- `/spoon companions list` views saved groups. The agent can view one named group.
-- Corrections use a new full replacement preview; unrelated groups remain unchanged.
-- `/spoon companions delete <label> confirm` removes one group; `/spoon delete confirm`
-  also removes all your companion groups along with your taste profile.
-- For a current search, the agent previews the selected member numbers and applicable
-  group rules. `/spoon companions use <token>` confirms that party for that search only.
-  It invalidates older cards. A new search, reset or expiry requires a new confirmation.
-- `/spoon companions solo` clears the current party and search, keeping saved groups.
-
-Typed outing rules support a highchair requirement, parking, maximum queue/travel
-minutes and an arrival-before deadline, each hard or soft. Arrival means reaching the
-venue, not finishing dinner or returning home. The current clock is the default check
-time; a user-supplied planned arrival overrides it. A current-time check does not prove
-arrival-before constraints. The plugin does not invent routes or ETA. Transport mode
-is carried into directions.
-Fresh explicit OSM age/diet/highchair conflicts trigger named ledger rules. Hard
-conflicts exclude; soft conflicts and unsupported facts remain visible warnings.
-Unknown requirements permit provisional cards with confirmation advice. Positive OSM
-tags never establish allergy safety, live availability or overall family suitability.
-Only attending companions' listed-cuisine likes/dislikes affect soft ranking; they
-never override hard vetoes. Unsupported tastes and missing route/menu/queue evidence
-remain unknown. Group sharing and cross-agent merging remain T10.
-
-Companion groups use the existing private SQLite file: up to 20 groups per identity,
-12 members and 20 rules per group, capped at 20 KB serialized per group and 100 owners.
-Stored groups include the exact approved fields and an opaque revision. Previews and
-active parties stay in memory for 15 minutes, capped at 100 conversations. Outing ledgers
-retain anonymous member/rule references and verdicts, not raw ages or dietary strings.
-Viewing/using records may put them in Hermes transcripts and the configured model
-provider. Deletion does not erase those transcripts or backups.
-
-## Locale source ladders
-
-`spoon_locale get` loads source priorities from bundled JSON for Japan (Tokyo pilot),
-Thailand and Indonesia, plus city-specific New York City and San Francisco ladders.
-NYC/New York and SF are explicit aliases; other U.S. cities still require scouting.
-Use an explicitly established country code and city; if the
-place is ambiguous, the agent asks. Location resolution stays with the user or the
-host's existing tools; this plugin adds no reverse-geocoding endpoint.
-
-For an unfamiliar city, `spoon_locale scout` makes at most two `web_search` calls
-through the existing Hermes dispatcher, requesting five results each. It sends only
-city/country and fixed dining-source queries, not coordinates, tastes or companion data.
-The existing provider may consume its configured allowance; no provider, account or
-subscription is added or reconfigured. One scout runs per registration at a time,
-with 60 seconds between starts. Provider timeouts, caching and fallback remain host-owned.
-Only bounded titles, public HTTPS links and snippets are used; no candidate page is fetched.
-
-The result is a proposed source list, with provisional roles and reasons to review.
-Search position is not proof of quality or local trust. The agent can use
-`spoon_locale propose` to submit an edited list of attributed sources, including
-user-supplied sources when host search is unavailable. No fabricated fallback list is
-returned after failed searches. Direct `/spoon locale confirm <token>` saves the
-displayed list for 30 days; stale or future-dated reviews require renewed review.
-`/spoon locale forget <country> <city>` removes one saved list; profile deletion removes
-all of that identity's city lists. Pending confirmations expire after 15 minutes.
-
-City lists are owner-private in the existing SQLite file, capped at 20 cities per
-identity and 100 owners. They store city/country, up to eight source names/URLs/roles/
-reasons, review time and search retrieval time when known. This is coarse city context,
-not coordinate history. Tools can expose it to Hermes transcripts/model providers.
-Source URLs with credentials, queries, fragments or non-public-looking hosts are refused.
-These are links only; source access is never authorized merely by approving a ladder.
-
-Bundled Tabelog and similar entries allow permitted snippets or user-provided content;
-direct scraping remains disabled. HotPepper and Places APIs remain disabled pending
-their separate account/free-tier checks. Source ladders guide the agent; automated
-venue discovery and hours checks still use the existing OSM/linked-venue adapters.
-Live provider scouting and end-to-end model/Telegram presentation remain unverified.
-
-## Data and privacy
-
-This slice sends coordinates, radius and a restaurant query to
-`https://overpass-api.de/api/interpreter`, plus an identifying Spoonmaster user agent.
-The service receives the caller's IP address. Requests use TLS, one fixed endpoint,
-no redirects, no automatic retries, a 2 MiB response cap and 45-second socket timeout
-with elapsed-time checks between reads (the shared public endpoint measured 33 to 38
-seconds per query on 2026-11-10). DNS and a blocked socket read are not a strict
-whole-request deadline. The tool admits one query at a time per process; a second
-caller waits for the running query, and a query inside the 10-second politeness
-pause waits instead of failing. Each query covers a 100 m cell plus a 150 m margin,
-and its result serves repeat requests in that cell for 10 minutes (failures for 60
-seconds), recentered on the exact origin. Cached venues keep their original retrieval
-time. The dining tool runs this map query beside its web pass rather than ahead of it.
-This is a pilot, not a public-service quota.
-
-Hours verification additionally contacts the OSM-linked venue's HTTPS host, reading
-`robots.txt` and at most one page per pass. Each server receives the caller's IP and
-Spoonmaster user agent. Public-address validation, TLS hostname checks, IP pinning,
-no redirects, 512 KiB caps and eight-second socket timeouts bound this transport.
-One verification call runs at a time; up to three finalist pages are read side by
-side, and a call inside the 10-second per-stage pause waits instead of failing. No
-browser, cookies, login, automatic retry or protection bypass is used.
-
-Plugin code never reads credentials, invokes a model or shell, sends telemetry or
-runs background jobs. Delegated locale search uses the host's configured provider and
-credential handling. The plugin caches up to 200 public venue records in memory for
-30 minutes, plus their verification evidence. Separately, each conversation retains
-its latest search origin, returned candidates, gate ledger and displayed venue IDs
-with arrival/country/travel/currency options in memory, capped at 100
-conversations. Those records expire 30 minutes after discovery; a new search replaces
-the previous one, and session-reset/finalize callbacks clear the reported conversation.
-Expired records are removed on subsequent store access. Raw dietary lists are not retained
-in this cache, but the ledger contains resulting verdicts and any supplied arrival time.
-Taste memory is the separate opt-in persistent store: `taste.sqlite3` in the public
-`ctx.state.data_dir` under the current Hermes profile's plugin data root, never the
-installation tree. The file is created with mode 0600 and stores up to 100 taste identities
-with 100 preferences each: item, kind, polarity, scope, confidence, provenance category,
-context tags and update time. Identity keys hash platform/scope/user IDs; CLI uses a
-separate local key. This is access-controlled local storage, not encryption at rest.
-Before taste opt-in, choosing an onboarding path stores only a status, an opaque
-attempt token while active, and whether the reminder was issued, with at most 100
-identity markers. The welcome read itself creates no file. Draft answers stay in
-memory for at most two hours, capped at 100 conversations, and are cleared on reset
-or finalization. Profile deletion removes its onboarding markers and drafts too.
-No raw feedback transcript or exact location history is written to this database.
-SQLite transactions and revision checks prevent partial/stale writes; corrupt data
-fails closed. Secure deletion clears removed database records; storage media and
-external backups are outside that guarantee. Preferences returned through tools or
-card explanations can enter Hermes transcripts and the configured model provider.
-
-The development host-test script invokes
-the existing Hermes CLI and removes only its own temporary test tree. Network proxy
-settings are not inherited. Hermes may retain tool arguments/results in its
-own transcript, and source services have their own logging policies. Website links are
-source claims about venue identity, not proof of ownership. Source text is untrusted data.
-
-Map and directions links are built from mapped coordinates using
-[Google Maps URLs](https://developers.google.com/maps/documentation/urls/get-started).
-Generating a link makes no Google request. Opening directions shares the origin and
-destination with Google; no travel time is inferred from straight-line distance.
-
-Data is attributed to [OpenStreetMap contributors under ODbL 1.0](https://www.openstreetmap.org/copyright).
-OSM-only hours coverage failed the original data gate; D-013 replaced that acceptance
-with progressive checks of the finalists and selected venue. Open-Meteo, broader site
-parsers, optional APIs and household profile merging remain planned.
+Eight tools and four hooks are documented in [architecture](docs/architecture.md).
+Read [AGENTS](AGENTS.md), [product spec](docs/prd.md), [decisions](DECISIONS.md) and
+[tracker](TRACKER.md) before code work. Current native and channel verification limits
+are explicit in the tracker. Public release/catalog submission, accounts, paid APIs
+and live-agent installation require separate authorization.

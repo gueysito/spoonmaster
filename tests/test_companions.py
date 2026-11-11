@@ -9,11 +9,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from spoonmaster.companions import CompanionService, CompanionStore
-from spoonmaster.ledger import LedgerStore
+from spoonmaster.research_flow import ResearchFlow
 from spoonmaster.taste import TasteError, TasteStore
-from spoonmaster.taste_rank import companion_matches
 from spoonmaster.taste_service import TasteService
-from tests.test_gates import SEARCH, venue
 
 FAMILY = {
     "members": [
@@ -29,15 +27,14 @@ class CompanionTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name) / "data"
         self.clock = [0]
-        self.ledgers = LedgerStore(clock=lambda: self.clock[0])
         self.taste = TasteService(
             lambda: self.directory,
-            self.ledgers,
             clock=lambda: self.clock[0],
             identity=lambda session: None,
         )
         self.taste.bind("chat", "local-cli")
-        self.flow = CompanionService(self.taste)
+        self.dining = ResearchFlow(None, self.taste, clock=lambda: self.clock[0])
+        self.flow = CompanionService(self.taste, self.dining)
         self.store = CompanionStore(self.directory / "taste.sqlite3")
 
     def tool(self, args, session="chat"):
@@ -60,16 +57,16 @@ class CompanionTests(unittest.TestCase):
         return json.loads(self.command(preview["confirmation"].removeprefix("/spoon ")))
 
     def search(self):
-        return self.ledgers.remember(
-            "chat", {"candidates": [venue()], "candidates_in_radius": 1}, SEARCH
-        )
+        return json.loads(
+            self.dining.start({"location": "Tokyo", "meal": "noodles"}, session_id="chat")
+        )["request_id"]
 
     def recall(self, identifier, members=None):
         return self.tool(
             {
                 "action": "recall",
                 "label": "family",
-                "search_id": identifier,
+                "request_id": identifier,
                 "members": members or [1, 2],
             }
         )
@@ -105,7 +102,7 @@ class CompanionTests(unittest.TestCase):
     def test_new_sessions_recall_available_groups_without_activating_them(self):
         self.save()
         self.taste.bind("later", "local-cli")
-        later = CompanionService(self.taste)
+        later = CompanionService(self.taste, self.dining)
         context = later.before_turn(session_id="later", user_message="dinner with family")
         self.assertIn("family", context["context"])
         self.assertNotIn("peanut", context["context"])
@@ -119,18 +116,12 @@ class CompanionTests(unittest.TestCase):
         self.save()
         identifier = self.search()
         preview = self.recall(identifier, [2])
-        args = {"search_id": identifier, "origin_confirmed": True}
-        self.assertNotIn(
-            "household", json.loads(self.flow.wrap(self.capture, args, session_id="chat"))
-        )
+        self.assertIsNone(self.flow.context("chat", identifier))
         self.command(preview["confirmation"].removeprefix("/spoon "))
-        result = json.loads(self.flow.wrap(self.capture, args, session_id="chat"))
-        self.assertEqual(result["household"]["members"], [FAMILY["members"][1]])
+        result = self.flow.context("chat", identifier)
+        self.assertEqual(result["members"], [FAMILY["members"][1]])
         next_id = self.search()
-        result = json.loads(
-            self.flow.wrap(self.capture, {**args, "search_id": next_id}, session_id="chat")
-        )
-        self.assertNotIn("household", result)
+        self.assertIsNone(self.flow.context("chat", next_id))
         self.assertEqual(self.store.read("local-cli")["family"]["household"], FAMILY)
 
     def test_correction_preserves_other_groups_and_returns_exact_diff(self):
@@ -175,34 +166,38 @@ class CompanionTests(unittest.TestCase):
     def test_other_process_deletion_invalidates_active_outing(self):
         identifier = self.activate()
         self.store.delete_group("local-cli", "family")
-        result = json.loads(
-            self.flow.wrap(self.capture, {"search_id": identifier}, session_id="chat")
-        )
-        self.assertEqual(result["error"], "companions_changed")
-        self.assertIsNone(self.ledgers.current("chat"))
+        with self.assertRaisesRegex(TasteError, "companions_changed"):
+            self.flow.context("chat", identifier)
+        self.assertIsNone(self.dining.current("chat"))
 
     def test_concurrent_change_does_not_return_an_old_recommendation(self):
         identifier = self.activate()
 
-        def changed(args, **kwargs):
+        def changed(*args, **kwargs):
             self.store.delete_group("local-cli", "family")
-            return json.dumps({"cards": ["old"]})
+            return "old evidence"
 
-        result = json.loads(self.flow.wrap(changed, {"search_id": identifier}, session_id="chat"))
-        self.assertNotIn("cards", result)
+        self.dining.dispatch = changed
+        result = json.loads(
+            self.dining.research(
+                {"request_id": identifier, "tool": "web_search", "arguments_json": "{}"},
+                session_id="chat",
+            )
+        )
+        self.assertNotIn("evidence_id", result)
         self.assertEqual(result["error"], "companions_changed")
 
     def test_solo_reset_expiry_and_profile_delete_remove_outing_context(self):
         self.activate()
         self.command("companions solo")
         self.assertFalse(self.flow.active)
-        self.assertIsNone(self.ledgers.current("chat"))
+        self.assertIsNone(self.dining.current("chat"))
         self.assertIn("family", self.store.read("local-cli"))
         self.activate()
         self.clock[0] += 901
         self.flow.before_turn(session_id="chat")
         self.assertFalse(self.flow.active)
-        self.assertIsNone(self.ledgers.current("chat"))
+        self.assertIsNone(self.dining.current("chat"))
         TasteStore(self.store.path).control("local-cli", "delete")
         self.assertEqual(self.store.read("local-cli"), {})
 
@@ -221,19 +216,31 @@ class CompanionTests(unittest.TestCase):
         identifier = self.activate()
         self.store.delete_group("local-cli", "family")
         self.store.save_group("local-cli", "family", FAMILY, None)
-        result = json.loads(
-            self.flow.wrap(self.capture, {"search_id": identifier}, session_id="chat")
-        )
-        self.assertEqual(result["error"], "companions_changed")
+        with self.assertRaisesRegex(TasteError, "companions_changed"):
+            self.flow.context("chat", identifier)
 
-    def test_only_attending_companions_contribute_preferences(self):
-        items = [venue(cuisine="ramen"), venue("osm:node:2", cuisine="sushi")]
-        selected = {"members": [FAMILY["members"][1]]}
-        ranked = companion_matches(items, selected, {})
-        self.assertNotIn("osm:node:1", ranked)
-        self.assertEqual(ranked["osm:node:2"]["score"], 2)
-        self.assertIn("Companion 1 likes sushi", ranked["osm:node:2"]["reasons"])
-        self.assertEqual(companion_matches(items, {}, {}), {})
+    def test_selected_member_diet_is_in_research_context_without_group_rules(self):
+        identifier = self.activate()
+        self.dining.dispatch = lambda *a, **k: "menu"
+        result = json.loads(
+            self.dining.research(
+                {"request_id": identifier, "tool": "web_search", "arguments_json": "{}"},
+                session_id="chat",
+            )
+        )
+        self.assertEqual(result["confirmed_party"], FAMILY)
+        presented = json.loads(
+            self.dining.present(
+                {
+                    "request_id": identifier,
+                    "candidates": [],
+                    "coverage": "No supported options yet",
+                },
+                session_id="chat",
+            )
+        )
+        self.assertIn("peanut allergy", presented["text"])
+        self.assertIn("peanut allergy", self.dining.why(session_id="chat"))
 
     def test_outing_can_select_group_rules_without_editing_saved_group(self):
         group = {
@@ -249,7 +256,7 @@ class CompanionTests(unittest.TestCase):
             {
                 "action": "recall",
                 "label": "family",
-                "search_id": identifier,
+                "request_id": identifier,
                 "members": [2],
                 "rules": [2],
             }

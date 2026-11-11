@@ -16,7 +16,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T1 | Progressive hours verification | Attempt hours verification for every displayed finalist (up to three); retain source and retrieval time; distinguish confirmed/unknown/conflicting evidence; recheck the selected venue when missing, conflicting or stale. If hours remain unavailable, explain and encourage calling with a sourced tappable phone number when available. | 2 | done | D-013; `spoon_verify_hours`, 42 tests on Python 3.11/3.13 and Hermes 3.14.9, Ruff/standards, doctor/validate pass; cleanup verified. [Live three-venue probe](docs/data-gate.md) retains prose hours as unknown and produces a sourced selected-venue call link. Core checkpoint `2ecf786`; T4/T5 enforce the sequence in cards; Telegram taps remain V2. |
+| T1 | Progressive hours verification | Attempt hours verification for every displayed finalist (up to three); retain source and retrieval time; distinguish confirmed/unknown/conflicting evidence; recheck the selected venue when missing, conflicting or stale. If hours remain unavailable, explain and encourage calling with a sourced tappable phone number when available. | 2 | done | D-013; `spoon_verify_hours`, 42 tests on Python 3.11/3.13 and Hermes 3.14.9, Ruff/standards, doctor/validate pass; cleanup verified. [Live three-venue probe](docs/history/data-gate.md) retains prose hours as unknown and produces a sourced selected-venue call link. Core checkpoint `2ecf786`; T4/T5 enforce the sequence in cards; Telegram taps remain V2. |
 | T2 | Plugin scaffold, Ruff, mock-ctx tests | `plugin.yaml` and `__init__.py` load; unit tests pass; Ruff clean | 2 | done | `spoon_candidates`, directory-entrypoint test, 20 unit tests and Ruff pass on Python 3.13/3.14. Real-host verification is recorded in T3. |
 | T3 | Throwaway profile scripts (up, down) | Profile created, plugin loads, `doctor` and `validate` pass, teardown leaves nothing (listed) | 1 | done | `scripts/check-hermes.py`: named isolated profile created, plugin enabled; doctor --ci, validate --install-deps and 20 tests pass on runtime 2bd378ed1b8d / Python 3.14.9. Profile, copied files, scratch roots, upload and aliases independently confirmed absent. |
 
@@ -24,7 +24,7 @@ Estimates are hours of build time; reforecast when a task passes twice its estim
 
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
-| T4 | Gates and reject ledger | Every gate returns pass/fail/unknown with reason; `/why` lists eliminations | 3 | done | Core `8146381`; four tools, `/why` and two cleanup hooks. 64 tests pass on Python 3.11/3.13 and real Hermes 3.14.9; doctor/validate, Ruff/standards and cleanup pass. Tests cover cross-chat/registration isolation, expiry, midnight/DST and complete paging; [replay](docs/data-gate.md) evaluates 20 and explicitly leaves 833 unevaluated. Source gaps remain unknown. |
+| T4 | Gates and reject ledger | Every gate returns pass/fail/unknown with reason; `/why` lists eliminations | 3 | done | Core `8146381`; four tools, `/why` and two cleanup hooks. 64 tests pass on Python 3.11/3.13 and real Hermes 3.14.9; doctor/validate, Ruff/standards and cleanup pass. Tests cover cross-chat/registration isolation, expiry, midnight/DST and complete paging; [replay](docs/history/data-gate.md) evaluates 20 and explicitly leaves 833 unevaluated. Source gaps remain unknown. |
 | T5 | Card renderer and pick/runner-up/wildcard | All required fields or explicit unknowns; no padded slots | 2 | done | Core `9b24839`; D-014 provisional cards, enforced finalist/selected verification, empty slots and revision-checked private selection. 84 tests pass on Python 3.11/3.13 and real Hermes 3.14.9; six tools/two hooks, doctor/validate, Ruff/standards and independent cleanup pass. Prices, ETA, dishes and personal taste remain explicit unknowns. |
 | T6 | Taste store, scopes, feedback, diff | Diff accurate; unrelated prefs unchanged; view/correct/delete work | 3 | done | Core `4ceae78`; opt-in per-person SQLite tastes, exact diffs, controls, automatic private-session reconnection and supported cuisine/venue ranking. 103 tests pass locally on Python 3.11/3.13 plus the host-only identity test: all 104 pass on Hermes 3.14.9. Eight tools/three hooks; doctor/validate, Ruff/standards and cleanup pass. Deletion clears cached taste explanations even after binding eviction or another-process deletion. |
 | T7 | Optional onboarding with pairwise picks | First conversation offers onboarding or immediate search; skipping never blocks search; one brief reminder after the first venue choice offers later onboarding; 5 to 8 picks seed the profile; text fallback works | 2 | done | Core `5ce47ba`; six optional choices, atomic seeding, direct later-onboarding entry, button/text fallback and one-time selected-venue reminder wired to the host. 123 local tests pass on Python 3.11/3.13 and all 124 on Hermes 3.14.9; doctor/validate, Ruff/standards and independent cleanup pass. Tests cover failed-save rollback, profile-isolated drafts and reconnection; live model/Telegram presentation remains unverified (V2). |
@@ -123,3 +123,15 @@ three-way overlap, independent contextvars plus forwarded host kwargs, partial
 allowance at the 12-call limit, exception/structured-error isolation, stale-batch
 rejection and per-conversation browser serialization across overlapping batches.
 Native provider verification and measurements remain required before handoff.
+
+T12d consolidation checkpoint: 104 tests run locally, one host-only skip; Ruff passes.
+Registration now exposes eight tools/four hooks. Confirmed companions follow the active
+source-led request, including individual dietary needs; tests cover preview-only recall,
+subset selection, replacement, another-process deletion and consent. Reusable source
+lists remain reviewable/editable through spoon_profile and readable locale commands.
+Owner identity swaps and deletion after binding eviction invalidate research context.
+Removed tests exercise the deleted discovery/gating/hour-parser pipeline, not current
+acceptance. Surviving privacy, SQLite, onboarding, household validation, text/link,
+source-list and directory-entrypoint coverage is retained or migrated. Old architecture
+and data-gate receipts are archived; current docs describe only the source-led runtime.
+Native verification, city comparison and owner-profile adoption remain pending.
