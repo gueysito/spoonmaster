@@ -162,3 +162,7 @@ does not rerun pre_llm_call for redirects. Added request-scoped cancellation to 
 spoon_dine tool, with stale-ID and late-result regression coverage; 22 focused flow tests
 pass. Native cancellation replay remains pending. Bundled venue source instructions now
 refer to host tools instead of the removed website adapter.
+
+Native companion check confirmed a selected child's stored dietary field reaches research
+only after direct confirmation. Removed obsolete guidance asking for a separate solo command
+before replacement; replacement already clears the previous attachment by request identity.

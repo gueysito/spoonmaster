@@ -349,8 +349,9 @@ class CompanionService:
                 "to view the group and confirm who is joining and which saved needs apply. "
                 "Never assume every member is attending. Recall stages a preview, not consent. "
                 "A direct /spoon companions use command activates it for the current request only. "
-                "For solo or changed company, ask the user to clear the old party with "
-                "/spoon companions solo before a new search. "
+                "Starting a replacement spoon_dine request clears the prior outing's party. "
+                "For solo or changed company, start that replacement directly; no extra solo "
+                "command is required. Recalling a saved group still requires fresh confirmation. "
                 "Never use saved companions for unrelated outings."
             }
         except TasteError:
