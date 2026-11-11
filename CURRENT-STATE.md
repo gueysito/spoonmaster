@@ -6,7 +6,7 @@ The retained owner test profile stays on its prior version until verification fi
 
 ## Current verification
 
-- 106 tests run locally with one host-only skip; all 106 pass on Hermes.
+- 107 tests verified on Hermes; a new redirect-cancellation regression passes locally.
 - Ruff, standards, doctor/validate pass with eight tools and four hooks.
 - Thread tests cover context propagation, partial budgets and browser serialization.
 - Consent, identity isolation, expiry, deletion and source-list controls are covered.

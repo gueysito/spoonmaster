@@ -231,6 +231,10 @@ when to revisit. Agent recommendations are noted as such.
   pairs are best-effort information, not an additional citation admission rule.
 - Code recognizes a short exact cancellation list. The model interprets new cities
   and constraints through spoon_dine; hooks do not parse dining intent.
+  Native terminal redirection bypasses pre_llm_call on the verified host revision.
+  The existing spoon_dine tool therefore also accepts action=cancel plus request_id;
+  the model calls it before acknowledging mid-turn cancellation. Stale cancellation
+  IDs cannot clear a replacement. This preserves four hooks and avoids intent parsing.
 - Migrate companions to the current request with reviewed party confirmation,
   selected-member needs and revision checks. Keep source-list review/edit through
   a surviving tool and private controls. Remove obsolete map pipeline and parsers,

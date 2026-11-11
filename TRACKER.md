@@ -154,3 +154,11 @@ using an older closed address. General research guidance now prioritizes checkin
 moves/reopenings/shared kitchens before exclusion. The same SF request then retained
 the newer operation and three distinct options in 104.7 seconds with three research
 batches. No restaurant-specific code or new admission gate was added.
+
+Native steering checkpoint: acknowledgement preserved the request; city and child-allergy
+updates each produced a replacement, and the final answer and /why retained both.
+Mid-turn cancellation stopped the model but left plugin state because the native host
+does not rerun pre_llm_call for redirects. Added request-scoped cancellation to the existing
+spoon_dine tool, with stale-ID and late-result regression coverage; 22 focused flow tests
+pass. Native cancellation replay remains pending. Bundled venue source instructions now
+refer to host tools instead of the removed website adapter.

@@ -45,9 +45,13 @@ START = schema(
         "for short source-led searches/reads and spoon_present to save and render the comparison. "
         "Tell the user meaningful progress BETWEEN calls. A new location or constraint replaces "
         "the request; never finish old work after steering. Use only user-stated location. "
+        "On cancellation, including a mid-turn redirect, call action=cancel with the active "
+        "request_id before acknowledging. Start requires location and meal; cancel does not. "
         "Do not put private addresses, names, allergies or other sensitive facts in public queries."
     ),
     {
+        "action": {"type": "string", "enum": ["start", "cancel"]},
+        "request_id": STRING,
         "location": STRING,
         "meal": STRING,
         "constraints": STRING,
@@ -59,7 +63,7 @@ START = schema(
             "description": "Established city for reusable source priorities; optional.",
         },
     },
-    ["location", "meal"],
+    [],
 )
 RESEARCH = schema(
     "spoon_research",
@@ -338,9 +342,20 @@ class ResearchFlow:
     def start(self, args, session_id=None, **kwargs):
         if session_key(session_id) is None:
             return json.dumps({"error": "conversation_context_required"})
+        if isinstance(args, dict) and args.get("action") == "cancel":
+            if set(args) != {"action", "request_id"} or not text(args["request_id"], 100):
+                return json.dumps({"error": "invalid_arguments"})
+            with self.lock:
+                record = self.requests.get(session_id)
+                if record and record["id"] != args["request_id"]:
+                    return json.dumps({"error": "request_changed_or_expired"})
+                self.requests.pop(session_id, None)
+            return json.dumps({"cancelled": True})
         if (
             not isinstance(args, dict)
             or set(args) - set(START["parameters"]["properties"])
+            or args.get("action", "start") != "start"
+            or "request_id" in args
             or not text(args.get("location"), 200)
             or not text(args.get("meal"), 200)
             or any(not text(v, 1000) for v in args.values())
@@ -408,7 +423,8 @@ class ResearchFlow:
                     "before spending the call allowance on less relevant alternatives. "
                     "Narrate real progress and its reason between calls, especially after 15s. "
                     "If the user steers, start a replacement request with updated constraints; "
-                    "if they cancel, stop. Do not wait for maps or do source-ladder onboarding. "
+                    "if they cancel, call spoon_dine action=cancel with this request_id, then "
+                    "stop. Do not wait for maps or do source-ladder onboarding. "
                     "After about 60s, present supported results with gaps. For "
                     "explicit future time "
                     "use destination date/time, otherwise the supplied current UTC "

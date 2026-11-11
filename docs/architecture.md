@@ -24,7 +24,10 @@ host permissions, provider allowance and access restrictions. No provider is ins
 
 A request retains a random ID, owner scope, current tastes, user-stated meal/location,
 evidence and the actual comparison. It expires after 30 minutes; at most 100 requests
-remain per registration. Replacement drops the previous request. Explicit cancel phrases
+remain per registration. Replacement drops the previous request. Terminal redirects can
+bypass the input hook, so the model also uses spoon_dine action=cancel with the active
+request_id before acknowledging cancellation. Stale IDs cannot cancel newer requests.
+Explicit cancel phrases
 clear it; other intent is interpreted by the model through a replacement `spoon_dine`.
 The input hook does not classify cities, allergies or arbitrary free text.
 

@@ -255,6 +255,22 @@ class ResearchFlowTests(unittest.TestCase):
         self.assertEqual({r["evidence_id"] for r in results}, {"e1", "e2"})
         self.assertEqual(set(self.flow.requests["owner"]["evidence"]), {"e1", "e2"})
 
+    def test_model_cancel_after_redirect_is_scoped_and_rejects_stale_work(self):
+        prior = self.request
+        self.start("Tokyo")
+
+        def cancel(identifier):
+            return json.loads(
+                self.flow.start({"action": "cancel", "request_id": identifier}, session_id="owner")
+            )
+
+        self.assertEqual(cancel(prior)["error"], "request_changed_or_expired")
+        self.assertIsNotNone(self.flow.current("owner"))
+        self.assertEqual(cancel(self.request), {"cancelled": True})
+        self.assertIsNone(self.flow.current("owner"))
+        self.assertEqual(self.research()["error"], "request_changed_or_expired")
+        self.assertEqual(cancel(self.request), {"cancelled": True})
+
     def test_urls_are_indexed_before_excerpt_clipping(self):
         self.body = (
             "Noodle House serves hand-pulled noodles in the Marina. "

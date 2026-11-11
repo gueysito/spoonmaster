@@ -82,8 +82,8 @@
             "booking"
           ],
           "domains": [],
-          "access": "existing_adapter",
-          "reason": "Prioritize venue-published hours and booking facts; apply the existing verification safeguards."
+          "access": "host_permitted",
+          "reason": "Current branch menus, published hours and booking facts through available host tools with normal access controls."
         },
         {
           "name": "TableCheck, Gurunavi and NAVITIME",
@@ -160,8 +160,8 @@
             "booking"
           ],
           "domains": [],
-          "access": "existing_adapter",
-          "reason": "Verify hours and menu through the existing linked-venue adapter."
+          "access": "host_permitted",
+          "reason": "Current branch menus and published hours through available host tools with normal access controls."
         },
         {
           "name": "Chope and Grab Dine Out",
@@ -213,8 +213,8 @@
             "booking"
           ],
           "domains": [],
-          "access": "existing_adapter",
-          "reason": "Verify hours and published facts through the existing linked-venue adapter."
+          "access": "host_permitted",
+          "reason": "Current branch menus and published hours through available host tools with normal access controls."
         },
         {
           "name": "Local guides",
@@ -335,8 +335,8 @@
             "current_facts",
             "booking"
           ],
-          "access": "existing_adapter",
-          "reason": "Published hours/menu/contact facts through existing bounded verification."
+          "access": "host_permitted",
+          "reason": "Published hours/menu/contact facts through available host tools with normal access controls."
         }
       ],
       "notes": [
@@ -435,8 +435,8 @@
             "current_facts",
             "booking"
           ],
-          "access": "existing_adapter",
-          "reason": "Published hours/menu/contact facts through existing bounded verification."
+          "access": "host_permitted",
+          "reason": "Published hours/menu/contact facts through available host tools with normal access controls."
         }
       ],
       "notes": [
