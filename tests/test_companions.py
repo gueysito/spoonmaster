@@ -265,6 +265,32 @@ class CompanionTests(unittest.TestCase):
         self.command(preview["confirmation"].removeprefix("/spoon "))
         self.assertEqual(self.store.read("local-cli")["family"]["household"], group)
 
+    def test_expired_party_cannot_render_an_old_comparison_as_solo(self):
+        identifier = self.activate()
+        self.clock[0] += 901
+        result = json.loads(
+            self.dining.present(
+                {"request_id": identifier, "candidates": [], "coverage": "Old research"},
+                session_id="chat",
+            )
+        )
+        self.assertEqual(result["error"], "request_changed_or_expired")
+        self.assertIsNone(self.dining.why(session_id="chat"))
+
+    def test_companion_fields_are_not_injected_into_public_search_arguments(self):
+        identifier = self.activate()
+        sent = []
+        self.dining.dispatch = lambda tool, args, **kwargs: sent.append(args) or "menu"
+        self.dining.research(
+            {
+                "request_id": identifier,
+                "tool": "web_search",
+                "arguments_json": '{"query":"Tokyo noodles menu"}',
+            },
+            session_id="chat",
+        )
+        self.assertEqual(sent, [{"query": "Tokyo noodles menu"}])
+
     def test_reset_and_another_profile_cannot_reuse_pending_confirmation(self):
         preview = self.prepare()
         command = preview["confirmation"].removeprefix("/spoon ")

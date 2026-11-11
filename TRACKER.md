@@ -135,3 +135,9 @@ acceptance. Surviving privacy, SQLite, onboarding, household validation, text/li
 source-list and directory-entrypoint coverage is retained or migrated. Old architecture
 and data-gate receipts are archived; current docs describe only the source-led runtime.
 Native verification, city comparison and owner-profile adoption remain pending.
+
+T12d expiry review: confirmed-party expiry now rejects a caller's earlier request
+snapshot instead of allowing it to render as solo. Added regressions for that case
+and for not injecting stored dietary fields into public query arguments; 18 companion
+tests pass. Initial native run at `7e40d80` passed all 104 tests, doctor/validate with
+eight tools/four hooks, and script teardown. Final expiry change needs native rerun.

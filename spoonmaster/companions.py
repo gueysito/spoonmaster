@@ -328,6 +328,10 @@ class CompanionService:
     def context(self, session, request_id=None):
         with self.lock:
             party = self._party(session, request_id)
+            # Pruning an expired party also drops its request. Do not let callers
+            # holding an earlier record render that stale comparison as solo.
+            if request_id and self.dining.current(session, request_id) is None:
+                raise TasteError("request_changed_or_expired")
             return copy.deepcopy(party["household"]) if party else None
 
     def before_turn(self, session_id=None, user_message="", **kwargs):
