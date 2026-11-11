@@ -166,3 +166,6 @@ profile and does not change live agents.
 Final preview review preserves explicit publication-date metadata and reminds the model
 to fill cuisine/neighborhood gaps in saved lists without overwriting useful city coverage.
 115 local tests (one host-only skip), Ruff and standards pass; native replay underway.
+Native validation passed all 115 tests and the terminal choice enabled source memory.
+The replay exposed an opaque rejection for query-bearing reusable-source URLs. Repair
+now identifies invalid entries and directs stable-source links without weakening URL rules.

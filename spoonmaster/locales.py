@@ -319,7 +319,23 @@ class LocaleService:
                     }
                 )
             if not valid_sources(args["sources"]):
-                raise TasteError("invalid_sources")
+                invalid = []
+                if isinstance(args["sources"], list):
+                    invalid = [
+                        i for i, source in enumerate(args["sources"]) if not valid_sources([source])
+                    ]
+                return json.dumps(
+                    {
+                        "error": "invalid_sources",
+                        "saved": False,
+                        "invalid_indices": invalid,
+                        "repair": "Use 1-8 unique sources with name (100 chars), role, reason "
+                        "(300 chars), and a public HTTPS URL without queries or fragments. "
+                        "If an article/venue URL requires query parameters, use its stable source "
+                        "homepage for this reusable list; keep the exact article URL in dining "
+                        "citations. Repair only the invalid entries; do not repeat the research.",
+                    }
+                )
             item = {k: args[k] for k in ("country_code", "city", "sources")}
             item["retrieved_at"] = None
             prior = LocaleStore(path).read_city(owner, key)
@@ -528,7 +544,13 @@ SOURCE_SCHEMA = {
                     "required": ["name", "url", "role", "reason"],
                     "properties": {
                         "name": {"type": "string", "maxLength": 100},
-                        "url": {"type": "string", "maxLength": 2048},
+                        "url": {
+                            "type": "string",
+                            "maxLength": 2048,
+                            "description": "Stable public HTTPS source page without query "
+                            "or fragment. Use source homepage when an article needs query "
+                            "parameters; exact article links remain dining citations.",
+                        },
                         "role": {"type": "string", "enum": list(ROLES)},
                         "reason": {"type": "string", "maxLength": 300},
                     },

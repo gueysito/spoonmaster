@@ -222,6 +222,16 @@ class LocaleTests(unittest.TestCase):
         self.assertIn("Separate user", service.before_turn(session_id="chat")["context"])
         self.assertIsNone(self.store.read_city("local-cli", place("PT", "Lisbon")))
 
+    def test_query_url_repair_keeps_valid_source_and_saves_after_correction(self):
+        self.store.set_memory("local-cli", True)
+        venue = {**SOURCES[0], "url": "https://venue.example.com/shop?id=12"}
+        result = self.tool("propose", "PT", "Lisbon", sources=[SOURCES[0], venue])
+        self.assertEqual(result["invalid_indices"], [1])
+        self.assertIn("homepage", result["repair"])
+        self.assertIsNone(self.store.read_city("local-cli", place("PT", "Lisbon")))
+        venue["url"] = "https://venue.example.com/"
+        self.assertTrue(self.tool("propose", "PT", "Lisbon", sources=[SOURCES[0], venue])["saved"])
+
     def test_choice_opt_in_and_stale_sources_remain_refreshable_leads(self):
         choices = []
 
