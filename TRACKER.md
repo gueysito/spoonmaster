@@ -148,3 +148,9 @@ a URL-index cutoff at 128 links, contrary to the approved full-response indexing
 Removed that cutoff and added a 131-URL citation regression; 26 focused research tests
 pass. Five-city requests use the same code path and no confirmed party; their receipt
 identifies the measured revision separately from these boundary corrections.
+
+Five-city replay found a model coverage regression: SF excluded a user-named venue
+using an older closed address. General research guidance now prioritizes checking
+moves/reopenings/shared kitchens before exclusion. The same SF request then retained
+the newer operation and three distinct options in 104.7 seconds with three research
+batches. No restaurant-specific code or new admission gate was added.
