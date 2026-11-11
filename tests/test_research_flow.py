@@ -251,12 +251,17 @@ class ResearchFlowTests(unittest.TestCase):
             "data": {
                 "web": [
                     {"url": "https://example.com/first", "text": "First review. " * 1500},
-                    {"url": "https://example.com/later", "text": "Promising later restaurant."},
+                    {
+                        "url": "https://example.com/later",
+                        "text": "Promising later restaurant.",
+                        "published_date": "2026-11-01",
+                    },
                 ]
             }
         }
         result = self.research()
         self.assertIn("Promising later restaurant.", result["untrusted_text"])
+        self.assertIn("published_date: 2026-11-01", result["untrusted_text"])
         self.assertLess(len(json.dumps(result)), 4000)
         self.assertNotIn("text", result["sources"][0])
         read = json.loads(

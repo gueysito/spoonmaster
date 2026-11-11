@@ -244,6 +244,12 @@ def retained_evidence(raw, parameters, *, preview=False):
                         if isinstance((v := value.get(k)), str)
                     )
                 )
+                dates = [
+                    f"{key}: {value[key]}"
+                    for key in ("published_date", "published_at", "publishedDate", "date")
+                    if isinstance(value.get(key), str)
+                ]
+                parts = dates + parts
                 excerpt = "\n".join(v for v in parts if not any(v != p and v in p for p in parts))
                 if excerpt:
                     sources.append({"url": url, "text": excerpt})
@@ -428,6 +434,7 @@ class ResearchFlow:
                     "For scout_needed or review_required, include discovery of credible local "
                     "and cuisine-specific sources in the first research batch, alongside broad "
                     "restaurant discovery. Reuse saved source leads but refresh stale facts. "
+                    "Even confirmed lists may lack this cuisine/neighborhood; research those gaps. "
                     "Do not seed every discovery query with guessed restaurant names. Independent "
                     "restaurants and chains are eligible unless the user says otherwise. Follow up "
                     "promising alternatives already surfaced before settling on finalists; retain "

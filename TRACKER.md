@@ -162,3 +162,7 @@ profile and does not change live agents.
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
 | T12e | Source discovery, durable opt-in and lean evidence | Credible unfamiliar-city sources; broader alternatives; meaningful delay updates; relevant source guidance and nonduplicated previews; concise comparison; private opt-in city memory with advisory host-memory offer; focused checks and one long mixed-city replay | 4 | in progress | Implementation checkpoint: consent/revocation/deletion, source reuse, later search leads, detailed reads and indexed citations covered. Native replay and final checks next. |
+
+Final preview review preserves explicit publication-date metadata and reminds the model
+to fill cuisine/neighborhood gaps in saved lists without overwriting useful city coverage.
+115 local tests (one host-only skip), Ruff and standards pass; native replay underway.
