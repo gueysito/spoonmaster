@@ -28,7 +28,7 @@ class ResearchFlowTests(unittest.TestCase):
             },
         }
 
-        def dispatch(tool, args):
+        def dispatch(tool, args, **kwargs):
             self.calls.append((tool, args))
             return json.dumps(self.body)
 
@@ -137,7 +137,7 @@ class ResearchFlowTests(unittest.TestCase):
     def test_changed_request_discards_late_tool_output(self):
         old = self.request
 
-        def dispatch(*_):
+        def dispatch(*_, **kwargs):
             self.start("Canggu Bali")
             return json.dumps(self.body)
 
@@ -167,7 +167,7 @@ class ResearchFlowTests(unittest.TestCase):
         self.assertEqual(len(self.calls), 12)
 
     def test_failed_search_does_not_manufacture_a_candidate(self):
-        self.flow.dispatch = lambda *_: (_ for _ in ()).throw(RuntimeError("outage"))
+        self.flow.dispatch = lambda *_, **kwargs: (_ for _ in ()).throw(RuntimeError("outage"))
         self.research()
         self.assertIn("error", self.present([self.candidate()]))
         self.assertIn("haven't established", self.present([])["text"])
@@ -245,7 +245,7 @@ class ResearchFlowTests(unittest.TestCase):
     def test_overlapping_research_reserves_distinct_evidence_ids(self):
         barrier = threading.Barrier(2)
 
-        def dispatch(*_):
+        def dispatch(*_, **kwargs):
             barrier.wait(timeout=5)
             return self.body
 

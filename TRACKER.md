@@ -117,3 +117,9 @@ the verified Hermes source revision remained `2bd378ed1b8d`.
 | ID | Task | Acceptance | Est | Status | Evidence |
 |---|---|---|---|---|---|
 | T12d | Research fan-out and one source-led path | Three-entry context-preserving host batches; narrow cancellation; citation indexing before clipping; confirmed companions and reusable source lists; eight tools/four hooks; obsolete pipeline removed; native verification and matched five-city latency/quality before owner handoff | 6 | in progress | First checkpoint: 20 research-flow tests pass, including overlapping calls, elapsed-time budget, acknowledgement/cancel and URL truncation. Baseline measurements running in a disposable host profile. |
+
+T12d fan-out checkpoint: 25 focused tests pass. Real worker threads demonstrate
+three-way overlap, independent contextvars plus forwarded host kwargs, partial
+allowance at the 12-call limit, exception/structured-error isolation, stale-batch
+rejection and per-conversation browser serialization across overlapping batches.
+Native provider verification and measurements remain required before handoff.
