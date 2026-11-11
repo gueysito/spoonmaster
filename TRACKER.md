@@ -141,3 +141,10 @@ snapshot instead of allowing it to render as solo. Added regressions for that ca
 and for not injecting stored dietary fields into public query arguments; 18 companion
 tests pass. Initial native run at `7e40d80` passed all 104 tests, doctor/validate with
 eight tools/four hooks, and script teardown. Final expiry change needs native rerun.
+
+The native rerun at `cb58b46` passed all 106 tests plus doctor/validate; both validation
+roots were independently confirmed absent. Final source-heavy-page review reproduced
+a URL-index cutoff at 128 links, contrary to the approved full-response indexing rule.
+Removed that cutoff and added a 131-URL citation regression; 26 focused research tests
+pass. Five-city requests use the same code path and no confirmed party; their receipt
+identifies the measured revision separately from these boundary corrections.

@@ -43,7 +43,7 @@ After workers finish, the lock protects the current-request and companion checks
 storage. Replacement, cancellation or changed company discards the stale batch.
 Host timeouts remain host-owned; elapsed time is guidance, not a 75-second cutoff.
 
-Each successful result retains a 16,000-character excerpt, up to 128 public URLs indexed
+Each successful result retains a 16,000-character excerpt, public URLs indexed
 before clipping, best-effort source/excerpt pairs and retrieval time. Pairings are
 informational. Present requires a retained quote and URL but does not certify semantic
 truth or correspondence between them. Citation URL acceptance grants no fetch permission.

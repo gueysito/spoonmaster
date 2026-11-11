@@ -267,6 +267,15 @@ class ResearchFlowTests(unittest.TestCase):
         self.assertEqual(result["sources"], [])
         self.assertIn("text", self.present([self.candidate()]))
 
+    def test_source_heavy_response_does_not_drop_late_citation_urls(self):
+        self.body = (
+            "Noodle House serves hand-pulled noodles in the Marina. "
+            + " ".join(f"https://example.com/{i}" for i in range(130))
+            + " https://example.com/noodles"
+        )
+        self.assertEqual(len(self.research()["urls"]), 131)
+        self.assertIn("text", self.present([self.candidate()]))
+
     def test_why_keeps_reasons_without_repeating_same_source(self):
         self.research()
         item = self.candidate()

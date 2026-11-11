@@ -1,28 +1,27 @@
 # Current state
 
-The owner-approved source-led consolidation (D-021/T12d) is in progress.
-It removes map-dependent restaurant admission and uses normal readable replies.
-The retained owner test profile loads the verified code; saved tastes are unchanged.
+The owner-approved source-led consolidation (D-021/T12d) is in native verification.
+It uses batched host research, confirmed companions and reusable city source lists.
+The retained owner test profile stays on its prior version until verification finishes.
 
 ## Current verification
 
-- 249 tests run locally with one host-only skip; all 249 pass on Hermes.
-- Ruff, standards, doctor/validate pass with 14 tools and four hooks.
-- Live Tokyo, Canggu, SF, NYC and El Paso comparisons return distinct alternatives.
-- Native terminal checks cover readable controls, Maps links, /why and mid-turn steering.
-- Research can take two to three minutes. Progress uses streamed model updates;
-  timed plugin notices were removed because this CLI delivered them after completion.
-- Voice remains supported through host transcription, not a new audio service.
-- Telegram delivery and voice-note ingestion need their respective surfaces; the
-  owner is not required to set up terminal audio or reproduce engineering tests.
+- 106 tests run locally with one host-only skip; all 106 pass on Hermes.
+- Ruff, standards, doctor/validate pass with eight tools and four hooks.
+- Thread tests cover context propagation, partial budgets and browser serialization.
+- Consent, identity isolation, expiry, deletion and source-list controls are covered.
+- Five matched baseline city runs completed; candidate measurements are in progress.
+- Native model steering and final owner-profile adoption remain to be verified.
+- Voice uses host transcription. Voice ingestion and Telegram rendering need their
+  respective surfaces; terminal audio setup is not an owner acceptance duty.
 
 ## Next action
 
-Finish T12d fan-out, companion/source-list migration and legacy removal; verify
-matched city runs and native installation before updating the owner test profile.
+Finish native city/steering checks, record measured quality and latency, then publish
+and adopt the verified commit into the retained owner test profile.
 
-## Baseline and limits
+## Boundaries
 
-The prior map tools, taste storage, companions and locale ladders remain available.
-Earlier verification receipts are in TRACKER; they do not prove current restaurant quality.
-No public release, catalog submission or live-agent installation is authorized here.
+The obsolete map pipeline is removed. Model judgment interprets sources and ranks;
+code enforces evidence retention, consent, bounded work and conversation isolation.
+T13/T14 and public submission remain separate. No live-agent installation is included.

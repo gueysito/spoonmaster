@@ -214,9 +214,11 @@ def retained_evidence(raw, parameters):
     """Index source URLs before excerpt clipping; structured pairings are informational."""
     full = flatten(raw)
     urls, sources = [], []
+    seen = set()
 
     def add(value):
-        if public_url(value) and value not in urls and len(urls) < 128:
+        if public_url(value) and value not in seen:
+            seen.add(value)
             urls.append(value)
 
     def visit(value):

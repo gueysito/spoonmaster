@@ -89,7 +89,7 @@ or shell tool is part of plugin runtime. The development scripts invoke Hermes o
 inside owned test profiles.
 
 Evidence and requests are process-local: at most 100 conversations, 12 operations each,
-16,000 excerpt characters per operation, 128 citation URLs and 16 best-effort source
+16,000 excerpt characters per operation, indexed citation URLs and 16 best-effort source
 pairs. Requests expire after 30 minutes and clear on reset/finalization/replacement.
 In-flight host calls finish under host timeouts; their stale results are discarded.
 
