@@ -55,6 +55,16 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 | T16 | Demo video, X post, submission form | Owner records, posts and submits | 2 | done | Owner confirmed demo and form submission on 2026-11-11. |
 | T13b | Catalog browser permission fix | No browser proxy; native guarded execution with request-bound post-tool evidence; regression/native checks; corrected disclosures and catalog pin | 2 | done | D-023; published `4ef303a`, catalog commit `77f897f`, [reviewer reply](https://github.com/NousResearch/hermes-agent/pull/153203#issuecomment-6812561666). 124 local tests (two host-only skips), all 124 native tests, doctor/validate/scanner, Ruff/standards/diff and catalog validation pass; synthetic native hook-to-citation/blocked-result checks and cleanup verified. Maintainer admission remains pending. |
 
+T13b live verification (2026-11-11): the published runtime passed a one-page native
+agent test against `https://www.ichiranusa.com/`: one real browser call (7.9s), exact
+output captured as `e1`, quoted branch/ramen evidence accepted by `spoon_present`, and
+a provisional ICHIRAN Brooklyn recommendation delivered with source/Maps links.
+No search/extraction fallback or terminal call; unknown hours/prices/independent quality
+remained explicit. With browser/terminal disabled, neither tool was exposed, the native
+bridge refused browser execution, single/mixed-batch proxies were rejected, and collection
+returned no evidence with all 12 operations remaining. Test profile and upload cleanup
+verified. Runtime unchanged from `4ef303a`; image/other-backend testing remains separate.
+
 ## Verification rows
 
 T12 owner retest correction (2026-11-10): raw `/spoon profile` output now has a human

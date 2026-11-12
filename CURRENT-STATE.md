@@ -8,8 +8,9 @@ The repository is public under MIT. Long-chat limitations remain documented.
 
 - 124 local tests, two host-only skips; Ruff, standards and diff checks pass.
 - All 124 native tests, doctor/validate and scanner pass; eight tools and six hooks.
-- Native synthetic hook-to-citation flow passes; test profile/upload cleanup verified.
-- Browser provider execution, image results and minimum-version behavior are unverified.
+- Live native browser → captured evidence → cited recommendation passes on a public venue page.
+- Disabled-browser native bridge/proxy/collection checks pass; isolated cleanup verified.
+- Image results, other browser backends and minimum-version behavior remain unverified.
 - Final source-URL repair: all 13 locale tests pass on Hermes.
 - Seven replay requests completed with five or six retained comparisons each.
 - Chinese discovery found China Town, but no final comparison was delivered.
@@ -19,7 +20,7 @@ The repository is public under MIT. Long-chat limitations remain documented.
 ## Next action
 
 Await maintainer re-review of [catalog PR #153203](https://github.com/NousResearch/hermes-agent/pull/153203),
-pinned to `4ef303a`. The owner confirmed demo/form submission. The recorded provider
+with the verified browser fix. The owner confirmed demo/form submission. The recorded provider
 rejection is not a release gate.
 
 ## Boundaries

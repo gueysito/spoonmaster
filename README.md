@@ -55,8 +55,12 @@ all accompanying text is public. No credentials or browser configuration are add
 Observed browser attempts share the 12-operation evidence allowance. The plugin does
 not limit native browser execution; Hermes owns it. Blocked/failed or stale calls add
 no evidence. Hosts missing the correlation/status fields, or image-only/unsupported
-results, leave a source gap; use search/extraction instead. The hook bridge was tested
-with synthetic public results on Hermes; live browser/provider behavior is not claimed.
+results, leave a source gap; use search/extraction instead. A live Hermes agent read
+the official ICHIRAN website through native browser execution, collected the real page
+text, and delivered a cited provisional recommendation. With browser access disabled,
+the native bridge refused execution and both proxy attempts and collection failed safely.
+This is a bounded one-page smoke test; image results and other browser backends remain
+unverified. The [tracker](TRACKER.md) records the verification scope.
 
 ## Personalization and controls
 
