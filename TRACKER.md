@@ -53,7 +53,7 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 | T14 | Security review at the public boundary | Owner chooses run, later or decline | 1 | planned | |
 | T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | done | Public MIT release; [catalog PR #153203](https://github.com/NousResearch/hermes-agent/pull/153203) opened. Maintainer admission awaits T13b. |
 | T16 | Demo video, X post, submission form | Owner records, posts and submits | 2 | done | Owner confirmed demo and form submission on 2026-11-11. |
-| T13b | Catalog browser permission fix | No browser proxy; native guarded execution with request-bound post-tool evidence; regression/native checks; corrected disclosures and catalog pin | 2 | in progress | D-023. 124 local tests (two host-only skips); all 124 native tests, doctor/validate and scanner pass with eight tools/six hooks. Synthetic native hook-to-citation flow, blocked-result rejection and cleanup verified. Ruff/standards/diff checks pass. Publication and catalog re-pin follow this checkpoint. |
+| T13b | Catalog browser permission fix | No browser proxy; native guarded execution with request-bound post-tool evidence; regression/native checks; corrected disclosures and catalog pin | 2 | done | D-023; published `4ef303a`, catalog commit `77f897f`, [reviewer reply](https://github.com/NousResearch/hermes-agent/pull/153203#issuecomment-6812561666). 124 local tests (two host-only skips), all 124 native tests, doctor/validate/scanner, Ruff/standards/diff and catalog validation pass; synthetic native hook-to-citation/blocked-result checks and cleanup verified. Maintainer admission remains pending. |
 
 ## Verification rows
 

@@ -1,6 +1,6 @@
 # Current state
 
-The catalog-review browser fix is verified for publication. Native browser execution
+The catalog-review browser fix is published and re-pinned for maintainer review. Native execution
 stays in Hermes's approval pipeline; Spoonmaster passively retains matching evidence.
 The repository is public under MIT. Long-chat limitations remain documented.
 
@@ -18,8 +18,9 @@ The repository is public under MIT. Long-chat limitations remain documented.
 
 ## Next action
 
-Publish T13b and update catalog PR #153203 for maintainer re-review. The owner confirmed
-demo/form submission. The recorded provider rejection is not a release gate.
+Await maintainer re-review of [catalog PR #153203](https://github.com/NousResearch/hermes-agent/pull/153203),
+pinned to `4ef303a`. The owner confirmed demo/form submission. The recorded provider
+rejection is not a release gate.
 
 ## Boundaries
 
