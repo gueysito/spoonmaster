@@ -122,4 +122,6 @@ def register(ctx):
     ctx.register_hook("on_session_reset", clear_context)
     ctx.register_hook("on_session_finalize", clear_context)
     ctx.register_hook("pre_llm_call", before_turn)
+    ctx.register_hook("pre_tool_call", dining.before_browser)
+    ctx.register_hook("post_tool_call", dining.after_browser)
     ctx.register_hook("transform_llm_output", dining.finish_output)

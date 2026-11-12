@@ -4,7 +4,6 @@ import contextvars
 import json
 import threading
 import unittest
-from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 from spoonmaster.research_flow import ResearchFlow
@@ -90,32 +89,3 @@ class BatchTests(unittest.TestCase):
         self.flow.dispatch = dispatch
         self.assertEqual(self.call()["error"], "request_changed_or_expired")
         self.assertEqual(self.flow.requests["s"]["evidence"], {})
-
-    def test_browser_order_and_cross_batch_serialization(self):
-        search_started, browser_started = threading.Event(), threading.Event()
-        browser_running = threading.Lock()
-        seen = []
-
-        def dispatch(tool, args, **kwargs):
-            if tool == "browser_exec":
-                self.assertTrue(browser_running.acquire(blocking=False))
-                try:
-                    browser_started.set()
-                    self.assertTrue(search_started.wait(5))
-                    seen.append(args["query"])
-                finally:
-                    browser_running.release()
-            else:
-                self.assertTrue(browser_started.wait(5))
-                search_started.set()
-            return "ok"
-
-        self.flow.dispatch = dispatch
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            first = pool.submit(self.call, ("browser_exec", "browser_exec", "web_search"))
-            self.assertTrue(browser_started.wait(5))
-            second = pool.submit(self.call, ("browser_exec",))
-            self.assertIn("results", first.result())
-            self.assertIn("results", second.result())
-        self.assertEqual(seen, ["0", "1", "0"])
-        self.assertEqual(self.flow.browser_locks, {})

@@ -14,7 +14,7 @@ def dining_context(*, now=None):
     return {
         "context": (
             "For dining use spoon_dine to start source-led research, spoon_research for "
-            "batches of independent search/read/browser calls, then spoon_present for the answer "
+            "batches of independent search/read calls, then spoon_present for the answer "
             "and /why. Maps are optional supporting evidence, not candidate admission. "
             "When a user chooses a researched place, check fresh hours using a new source-led "
             "request focused on that place; keep its previous context and source references. "

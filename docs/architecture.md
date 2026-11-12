@@ -15,10 +15,12 @@ a different time. The model converts to the destination's local time.
 
 Eight tools: `spoon_dine`, `spoon_research`, `spoon_present`, `spoon_ledger`,
 `spoon_onboard`, `spoon_profile`, `spoon_feedback`, `spoon_companions`.
-Commands: `/spoon` and `/why`. Four hooks: `pre_llm_call`, `on_session_reset`,
-`on_session_finalize`, `transform_llm_output`. No core patches or private dispatch APIs.
-`ctx.dispatch_tool` invokes installed research/search/read/browser tools subject to
-host permissions, provider allowance and access restrictions. No provider is installed.
+Commands: `/spoon` and `/why`. Six hooks: `pre_llm_call`, `on_session_reset`,
+`on_session_finalize`, `transform_llm_output`, `pre_tool_call`, `post_tool_call`.
+No core patches or private dispatch APIs. `ctx.dispatch_tool` directly invokes only
+the four allowlisted read-only research/search/extract tools. It does not enforce
+session toolset selection or invoke pre-tool guards. Execution tools are excluded.
+No provider is installed. Provider allowance and source access remain host-owned.
 
 ## Research and concurrency
 
@@ -36,9 +38,24 @@ All entries are validated before dispatch. Under a short reentrant lock, each ad
 entry reserves a unique evidence ID and one of 12 available operations. Entries beyond
 the remaining allowance get a budget result. Network work happens outside that lock.
 Independent operations run in a thread pool. Every worker gets its own copied contextvars
-and the forwarded host context; PluginContext owns registry scope. Browser entries run
-in emission order in one worker and share a per-session lock across overlapping batches.
-Unused browser locks are removed after the last caller returns.
+and the forwarded host context; PluginContext owns registry scope.
+
+Native browser calls go through Hermes's ordinary tool pipeline. A passive pre-tool
+observer binds the host call ID/turn/task and current confirmed party to the active
+request, only for its unique named browser session. It reserves one of the same 12
+operations and returns no directive. The post-tool observer accepts only the matching
+`ok` JSON result with `success: true`, zero exit code and text `output`. Failed, blocked,
+unmatched, duplicate, expired or replaced calls retain nothing. Changed identity or
+company invalidates capture; changed company also rejects browser evidence at presentation.
+Request reset/deletion removes bindings and evidence together. Callback work is bounded
+to 12 bindings per request, a 1M-character input envelope and the usual 16k retained text.
+
+The observer reads only returned text, never code arguments, stderr, paths or images.
+Printed public URLs support citations; they do not establish that every printed word
+is public or true. `spoon_research` with `collect_browser: true` returns new browser
+evidence once without dispatching anything; presentation retains the usual quote/URL
+checks. Native browsing/serialization and approval stay host-owned. Missing hook fields
+or unsupported results fail closed; search/extraction remains the fallback.
 
 Exceptions and structured host errors produce per-entry failures, with no retained
 citation evidence or private provider exception text. Successful siblings survive.

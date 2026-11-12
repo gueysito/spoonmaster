@@ -261,3 +261,21 @@ when to revisit. Agent recommendations are noted as such.
   authorizes host-memory writes. No custom backend, synchronization or cross-agent claims.
 - Verify proportionately: focused behavior/privacy checks, required project/native gates
   and one long mixed-city replay. Do not repeat the whole earlier acceptance exercise.
+
+## D-023: Native browser execution with passive evidence capture (2026-11-11)
+
+- Owner approved the catalog-review fix, investigation and integration of the reviewer's
+  post-tool hook suggestion, publication, re-pin and reviewer reply.
+- Remove browser execution from direct research dispatch. Keep only read-only search
+  and extraction proxies; disclose their direct-dispatch permission boundary accurately.
+- The model calls native browser_exec through Hermes's normal guards. A passive pre-tool
+  observer binds a named request session, call/turn/task IDs and confirmed company;
+  post_tool_call retains only matching successful text. Neither hook returns directives.
+  A collect-only research mode exposes evidence IDs without invoking any host tool.
+- Keep request ownership, expiry, replacement, reset, shared operation allowance and
+  citation checks. Discard blocked, failed, stale, mismatched and duplicate results.
+- Alternatives: remove browser evidence entirely, or capture every browser result
+  without pre-call binding. The latter cannot reliably reject in-flight stale work.
+- Limits: supported text results only, no image capture or proof of source truth/privacy.
+  Missing host fields fail closed. No browser provider setup or live-profile upgrade.
+  The optional non-dining prompt optimization remains separate.

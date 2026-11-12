@@ -37,11 +37,26 @@ searches require no map match. Exact distance or travel-time claims require evid
 When a supported distance exceeds half a mile, country-appropriate ride-service links
 may appear. They open the service, with no fare, pickup or booking prefilled.
 
-Available host routes are `research_search`, `research_read`, `web_search`, `web_extract`
-and `browser_exec`. Actual availability varies by installation. Host permissions,
-provider allowances, website terms and access restrictions still apply. The plugin
-adds no credentials, subscriptions or provider configuration and never bypasses logins
-or bot protection. Browser operations are serialized per conversation.
+The plugin proxies only the read-only host routes `research_search`, `research_read`,
+`web_search` and `web_extract`. This direct registry dispatch does not run the host's
+normal session-toolset and pre-tool approval pipeline. It never proxies `browser_exec`
+or other code-execution tools. Provider allowances and website restrictions still apply.
+
+Browser evidence is optional. The model calls native `browser_exec` only when the host
+exposes it, through Hermes's normal permission and approval pipeline. It uses the named
+`browser_session` returned by `spoon_dine`, prints public page URLs and relevant text,
+then calls `spoon_research` with `request_id` and `collect_browser: true`. Passive
+pre/post-tool hooks bind the call to the request and retain only successful matching
+text output. They never execute code, change arguments or grant approval. Browser code,
+diagnostics, workspace paths and images are not retained as evidence. Private account
+content must not be printed for dining research; public-URL filtering cannot prove that
+all accompanying text is public. No credentials or browser configuration are added.
+
+Observed browser attempts share the 12-operation evidence allowance. The plugin does
+not limit native browser execution; Hermes owns it. Blocked/failed or stale calls add
+no evidence. Hosts missing the correlation/status fields, or image-only/unsupported
+results, leave a source gap; use search/extraction instead. The hook bridge was tested
+with synthetic public results on Hermes; live browser/provider behavior is not claimed.
 
 ## Personalization and controls
 
@@ -105,8 +120,9 @@ inside owned test profiles.
 
 At runtime Spoonmaster reads its bundled source guidance and its own Hermes profile
 data. It does not read credential stores or write to other memory plugins. Public
-research can reach search providers and venue or publisher sites through the enabled
-Hermes tools. Which providers and sites are contacted depends on the host and the request.
+research can reach search providers and venue or publisher sites through Hermes tools.
+Which providers and sites are contacted depends on the host and the request; the direct
+read-only routes and native browser permission boundary are described above.
 
 Evidence and requests are process-local: at most 100 conversations, 12 operations each,
 16,000 excerpt characters per operation, indexed citation URLs and 16 best-effort source
@@ -151,7 +167,7 @@ or existing conversations. Remote actions require named authorization. Retained 
 test profiles are removed after testing ends; disposable engineering profiles are
 removed after verification. Live agents are not changed by these scripts.
 
-Eight tools and four hooks are documented in [architecture](docs/architecture.md).
+Eight tools and six hooks are documented in [architecture](docs/architecture.md).
 The manifest declares Hermes `>=0.21.5`; compatibility was checked on an installed
 Hermes build, without testing the minimum version separately. The CLI was exercised
 live. Telegram display and voice ingestion need verification on those surfaces.

@@ -51,8 +51,9 @@ Local-pilot exposure; estimate 6 hours total, reforecast before exceeding 12 hou
 | T12b | Discovery latency and repeat-request consistency | Live same-area search returns map candidates; a second cuisine seconds later still gets cards; no cooldown error paths; timeouts classified | 2 | done | D-019. Client/server deadlines 45/30 s from measured 33 to 38 s responses; 10-minute recentered area cache; waiting cooldowns and locks; map query beside the web pass; parallel finalist page reads; 504/socket timeouts report `source_timeout`. 230 local tests pass (one host-only skip), Ruff/standards/diff-check pass. Live Shibuya: first discovery 37.8 s with 853 venues (failed at 15 s before), second cuisine 0.0 s from cache. Hermes host rerun pending. |
 | T13 | README disclosures and catalog entry draft | Disclose host delegation, storage and capabilities; match the catalog entry to the release commit | 1 | done | README disclosures and catalog entry prepared against the public release. The source-led runtime has no direct Overpass backend. |
 | T14 | Security review at the public boundary | Owner chooses run, later or decline | 1 | planned | |
-| T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | blocked | Public repository and MIT license verified on main. Catalog PR awaits owner approval. |
-| T16 | Demo video, X post, submission form | Owner records, posts and submits | 2 | blocked | Owner action |
+| T15 | Public visibility, license, catalog PR | Owner approval for each | 1 | done | Public MIT release; [catalog PR #153203](https://github.com/NousResearch/hermes-agent/pull/153203) opened. Maintainer admission awaits T13b. |
+| T16 | Demo video, X post, submission form | Owner records, posts and submits | 2 | done | Owner confirmed demo and form submission on 2026-11-11. |
+| T13b | Catalog browser permission fix | No browser proxy; native guarded execution with request-bound post-tool evidence; regression/native checks; corrected disclosures and catalog pin | 2 | in progress | D-023. 124 local tests (two host-only skips); all 124 native tests, doctor/validate and scanner pass with eight tools/six hooks. Synthetic native hook-to-citation flow, blocked-result rejection and cleanup verified. Ruff/standards/diff checks pass. Publication and catalog re-pin follow this checkpoint. |
 
 ## Verification rows
 

@@ -63,7 +63,7 @@ class RegistrationTests(unittest.TestCase):
     def command(self, args):
         return self.ctx.commands["spoon"](args, session_id="s", platform="cli")
 
-    def test_eight_tools_four_hooks_and_registration_has_no_storage_or_network(self):
+    def test_eight_tools_six_hooks_and_registration_has_no_storage_or_network(self):
         self.assertEqual(
             set(self.ctx.tools),
             {
@@ -79,7 +79,14 @@ class RegistrationTests(unittest.TestCase):
         )
         self.assertEqual(
             set(self.ctx.hooks),
-            {"on_session_reset", "on_session_finalize", "pre_llm_call", "transform_llm_output"},
+            {
+                "on_session_reset",
+                "on_session_finalize",
+                "pre_llm_call",
+                "transform_llm_output",
+                "pre_tool_call",
+                "post_tool_call",
+            },
         )
         self.assertFalse(self.ctx.state.data_dir.exists())
         package = Path(self.temp.name) / "fixture_plugin"
